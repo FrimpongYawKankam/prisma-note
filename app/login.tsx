@@ -1,22 +1,39 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Image, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const { height, width } = Dimensions.get('window');
+
+// Ensure proper redirect handling for Expo AuthSession
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState('');
 
-  // Google Auth setup with all required client IDs
+  // Google Auth setup with correct redirectUri and clientId
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: '105342935662-ej0kqvn1h6hsm7lifo1jlflh2ud1basj.apps.googleusercontent.com',
-    iosClientId: '105342935662-e0cjrhh4ovf11gg9fm5bvko0hi232j0a.apps.googleusercontent.com',
-    androidClientId: '105342935662-ein86altf32t085s7d7v7ot8e25hn2gn.apps.googleusercontent.com',
+    clientId: '105342935662-ej0kqvn1h6hsm7lifo1jlflh2ud1basj.apps.googleusercontent.com',
+    redirectUri: AuthSession.makeRedirectUri({
+      scheme: 'prismanote', // Must match your app.json
+    }),
   });
 
   useEffect(() => {
@@ -79,7 +96,7 @@ export default function LoginScreen() {
           </View>
           <Text style={styles.headerText}>Think it. Make it.</Text>
           <Text style={styles.subText}>Log into your PrismaNote account</Text>
-          
+
           {/* Email */}
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -138,7 +155,7 @@ export default function LoginScreen() {
 
           {/* Terms and Help */}
           <Text style={styles.termsText}>
-            By continuing, you  acknowledge that you understand and agree to the Terms & condition and Privacy Policy
+            By continuing, you acknowledge that you understand and agree to the Terms & condition and Privacy Policy
           </Text>
           <View style={styles.bottomLinksRow}>
             <TouchableOpacity>
@@ -157,7 +174,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#111',
+    backgroundColor: 'black',
   },
   outerContainer: {
     flex: 1,
@@ -186,9 +203,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 75,
     resizeMode: 'contain',
-    backgroundColor: 'black',
     borderRadius: 12,
-    color: '#fff',
   },
   headerText: {
     fontSize: 32,

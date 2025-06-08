@@ -3,11 +3,12 @@
     "name": "PrismaNote",
     "slug": "PrismaNote",
     "scheme": "prismanote",
+    "owner": "frimpongyawkankam03",
 "ios": {
-  "bundleIdentifier": "com.yourcompany.prismanote"
+  "bundleIdentifier": "com.frimpongyawkankam03.prismanote"
 },
 "android": {
-  "package": "com.yourcompany.prismanote"
+  "package": "com.frimpongyawkankam03.prismanote"
 }
   }
 }
