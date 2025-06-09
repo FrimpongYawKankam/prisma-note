@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "PrismaNote",
-    "slug": "PrismaNote",
-    "scheme": "prismanote",
+    "name": "Prisma-Note",
+    "slug": "Prisma-Note",
+    "scheme": "prisma-note",
     "owner": "frimpongyawkankam03",
-"ios": {
-  "bundleIdentifier": "com.frimpongyawkankam03.prismanote"
-},
-"android": {
-  "package": "com.frimpongyawkankam03.prismanote"
-}
+    "ios": {
+      "bundleIdentifier": "com.frimpongyawkankam03.prisma-note"
+    },
+    "android": {
+      "package": "com.frimpongyawkankam03.prisma-note"
+    }
   }
 }
