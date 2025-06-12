@@ -1,34 +1,39 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function SignupScreen() {
   const router = useRouter();
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSignup = async () => {
-    if (name && email && password) {
-      // Save user data to AsyncStorage
-      await AsyncStorage.setItem('user', JSON.stringify({ email, password }));
-      alert('Signup successful!');
-      router.push('/login'); // Redirect to the login page after signup
+    if (username && email && password) {
+      const userData = { username, email, password };
+      try {
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+        Alert.alert('Signup successful', 'You can now log in.');
+        router.push('/login');
+      } catch (error) {
+        Alert.alert('Error', 'Failed to save user data.');
+      }
     } else {
-      alert('Please fill in all fields');
+      Alert.alert('Missing Fields', 'Please fill in all fields.');
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
+
       <TextInput
         style={styles.input}
-        placeholder="Name"
+        placeholder="Username"
         placeholderTextColor="#808080"
-        value={name}
-        onChangeText={setName}
+        value={username}
+        onChangeText={setUsername}
       />
       <TextInput
         style={styles.input}
@@ -45,13 +50,12 @@ export default function SignupScreen() {
         value={password}
         onChangeText={setPassword}
       />
-      <Button title="Sign Up" onPress={handleSignup} />
 
-      {/* Divider */}
+      <Button title="Sign Up" onPress={handleSignup} color="#1E90FF" />
+
       <Text style={styles.orText}>OR</Text>
 
-      {/* Login Button */}
-      <Button title="Login" onPress={() => router.push('/login')} />
+      <Button title="Login" onPress={() => router.push('/login')} color="#888" />
     </View>
   );
 }
@@ -59,28 +63,29 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000', // Black background
+    paddingHorizontal: 20,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 20,
+    color: '#fff',
+    marginBottom: 24,
   },
   input: {
-    width: '80%',
-    height: 40,
+    width: '100%',
+    height: 48,
     backgroundColor: '#1a1a1a',
-    color: '#FFFFFF',
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    color: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   orText: {
-    color: '#FFFFFF',
-    marginVertical: 15,
+    marginVertical: 16,
+    color: '#fff',
     fontSize: 16,
   },
 });

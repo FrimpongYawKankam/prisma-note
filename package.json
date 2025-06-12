@@ -1,5 +1,5 @@
 {
-  "name": "prismanotes",
+  "name": "prisma-note",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -42,7 +42,8 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "expo-apple-authentication": "~7.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
