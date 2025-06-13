@@ -30,8 +30,6 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordWarning, setPasswordWarning] = useState('');
 
-  // Log the redirect URI for debugging Google Auth
-  console.log('Redirect URI:', AuthSession.makeRedirectUri({ useProxy: true }));
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: '105342935662-ej0kqvn1h6hsm7lifo1jlflh2ud1basj.apps.googleusercontent.com',
