@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -16,6 +17,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 
 export default function CreateScreen() {
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
@@ -37,12 +39,19 @@ export default function CreateScreen() {
       const notes = storedNotes ? JSON.parse(storedNotes) : [];
       const updatedNotes = [...notes, newNote];
       await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
+
+      // Clear input
       setTitle('');
       setContent('');
       Keyboard.dismiss();
-      Alert.alert('Success', 'Note saved successfully!');
+
+      // Feedback
+      Alert.alert('Success ✅', 'Note saved successfully!', [
+        { text: 'OK', onPress: () => router.push('/') },
+      ]);
     } catch (error) {
       console.error('Error saving note:', error);
+      Alert.alert('Error ❌', 'Failed to save the note. Please try again.');
     }
   };
 
@@ -53,7 +62,7 @@ export default function CreateScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.headerRow}>
-          <Text style={styles.header}>Create</Text>
+          <Text style={styles.header}>New Note</Text>
           <TouchableOpacity onPress={saveNote}>
             <Ionicons name="checkmark-done-outline" size={28} color="#64ffda" />
           </TouchableOpacity>
@@ -61,16 +70,16 @@ export default function CreateScreen() {
 
         <TextInput
           style={styles.titleInput}
-          placeholder="Untitled"
-          placeholderTextColor="#555"
+          placeholder="Title"
+          placeholderTextColor="#666"
           value={title}
           onChangeText={setTitle}
         />
 
         <TextInput
           style={styles.contentInput}
-          placeholder="Start writing..."
-          placeholderTextColor="#666"
+          placeholder="Start typing your note here..."
+          placeholderTextColor="#888"
           value={content}
           onChangeText={setContent}
           multiline
@@ -99,10 +108,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   titleInput: {
-    fontSize: 22,
+    fontSize: 20,
     color: '#fff',
     fontWeight: '600',
-    backgroundColor: '#121212',
+    backgroundColor: '#1a1a1a',
     padding: 14,
     borderRadius: 12,
     marginBottom: 12,
@@ -111,7 +120,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#eee',
-    backgroundColor: '#121212',
+    backgroundColor: '#1a1a1a',
     padding: 16,
     borderRadius: 12,
     textAlignVertical: 'top',
