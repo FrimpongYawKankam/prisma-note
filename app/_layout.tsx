@@ -10,7 +10,8 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="login" />
             <Stack.Screen name="signup" />
-            <Stack.Screen name="(tabs)/_layout" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" />  {/* 👈 This loads app/(tabs)/_layout.tsx */}
+            <Stack.Screen name="note-details" />
           </Stack>
         </SafeAreaView>
       </View>
@@ -21,6 +22,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000', // Black background for the entire app
+    backgroundColor: '#000000',
   },
 });

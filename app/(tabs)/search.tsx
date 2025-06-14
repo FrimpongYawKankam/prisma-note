@@ -1,64 +1,53 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  FlatList,
-  ListRenderItem,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-type Note = {
-  id: string;
-  title: string;
-};
-
-const dummyNotes: Note[] = [
-  { id: '1', title: 'Weekly Reflection' },
-  { id: '2', title: 'React Native Guide' },
-  { id: '3', title: 'Database Project Ideas' },
-  { id: '4', title: 'UI/UX Feedback' },
-  { id: '5', title: 'Exam Prep Checklist' },
-];
+interface Note {
+  text: string;
+  createdAt: string;
+}
 
 export default function Search(): JSX.Element {
   const [query, setQuery] = useState('');
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [userData, setUserData] = useState({ username: '' });
   const router = useRouter();
 
-  const filteredNotes = dummyNotes.filter(note =>
-    note.title.toLowerCase().includes(query.toLowerCase())
-  );
+  useEffect(() => {
+    const loadNotes = async () => {
+      const user = await AsyncStorage.getItem('user');
+      const savedNotes = await AsyncStorage.getItem('notes');
+      if (user) setUserData(JSON.parse(user));
+      if (savedNotes) setNotes(JSON.parse(savedNotes));
+    };
+    loadNotes();
+  }, []);
 
-  const renderItem: ListRenderItem<Note> = ({ item }) => (
-    <TouchableOpacity
-      style={styles.noteCard}
-      onPress={() => router.push({ pathname: '/note-details', params: { title: item.title } })}
-    >
-      <Text style={styles.noteTitle}>{item.title}</Text>
-    </TouchableOpacity>
+  const filteredNotes = notes.filter((note) =>
+    note?.text?.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Search Notes</Text>
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.header}>Search Notes</Text>
       <TextInput
+        placeholder="Search..."
+        placeholderTextColor="#aaa"
         style={styles.input}
-        placeholder="Type to search..."
-        placeholderTextColor="#888"
         value={query}
         onChangeText={setQuery}
       />
       <FlatList
         data={filteredNotes}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        ListEmptyComponent={
-          <Text style={styles.noResult}>No matching notes found.</Text>
-        }
+        keyExtractor={(item, index) => item.createdAt + index}
+        renderItem={({ item }) => (
+          <View style={styles.noteItem}>
+            <Text style={styles.noteText}>{item.text}</Text>
+          </View>
+        )}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -66,40 +55,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    paddingTop: 60,
-    paddingHorizontal: 20,
+    padding: 20,
   },
-  heading: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '600',
-    marginBottom: 15,
+  header: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#64ffda',
+    marginBottom: 10,
   },
   input: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#1a1a1a',
     color: '#fff',
-    padding: 14,
-    borderRadius: 12,
-    fontSize: 16,
+    padding: 10,
+    borderRadius: 8,
     marginBottom: 20,
   },
-  noteCard: {
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+  noteItem: {
     backgroundColor: '#1a1a1a',
-    borderRadius: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#333',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
   },
-  noteTitle: {
+  noteText: {
     color: '#fff',
     fontSize: 16,
-  },
-  noResult: {
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 20,
-    fontStyle: 'italic',
   },
 });
