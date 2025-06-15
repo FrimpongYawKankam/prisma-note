@@ -1,10 +1,18 @@
+import { useTheme } from '@/context/ThemeContext'; // ✅ Use your custom theme context
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 export default function InboxScreen() {
   const [userData, setUserData] = useState({ username: '' });
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -15,60 +23,60 @@ export default function InboxScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerText}>
-        Hello, <Text style={styles.highlight}>{userData.username || 'User'}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+      <Text style={[styles.headerText, { color: isDark ? '#fff' : '#111' }]}>
+        Hello, <Text style={{ color: '#64ffda' }}>{userData.username || 'User'}</Text>
       </Text>
-      <Text style={styles.subText}>Here's your activity log and inbox 💌</Text>
+      <Text style={[styles.subText, { color: isDark ? '#aaa' : '#555' }]}>
+        Here's your activity log and inbox 💌
+      </Text>
 
       <View style={styles.inboxBox}>
-        <Ionicons name="mail-open-outline" size={64} color="#888" style={styles.icon} />
-        <Text style={styles.title}>No New Messages</Text>
-        <Text style={styles.subtitle}>
+        <Ionicons
+          name="mail-open-outline"
+          size={64}
+          color={isDark ? '#666' : '#999'}
+          style={styles.icon}
+        />
+        <Text style={[styles.title, { color: isDark ? '#eee' : '#222' }]}>No New Messages</Text>
+        <Text style={[styles.subtitle, { color: isDark ? '#999' : '#666' }]}>
           Your inbox is clear. Notifications and shared notes will appear here.
         </Text>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     paddingTop: 60,
     paddingHorizontal: 20,
   },
   headerText: {
-    color: '#fff',
     fontSize: 26,
     fontWeight: '700',
-  },
-  highlight: {
-    color: '#64ffda',
+    marginBottom: 4,
   },
   subText: {
-    color: '#888',
     fontSize: 16,
     marginBottom: 40,
   },
   inboxBox: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
     marginTop: -40,
   },
   icon: {
     marginBottom: 20,
   },
   title: {
-    color: '#fff',
     fontSize: 22,
     fontWeight: '600',
     marginBottom: 8,
   },
   subtitle: {
-    color: '#aaa',
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: 20,

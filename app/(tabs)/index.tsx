@@ -1,4 +1,4 @@
-// HomeScreen.tsx
+import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -21,6 +21,9 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [userData, setUserData] = useState({ username: '', email: '' });
   const [notes, setNotes] = useState([]);
   const [noteInput, setNoteInput] = useState('');
@@ -102,7 +105,7 @@ export default function HomeScreen() {
           style={{
             marginLeft: level * 20,
             borderLeftWidth: level > 0 ? 1 : 0,
-            borderLeftColor: '#333',
+            borderLeftColor: isDark ? '#444' : '#ccc',
             paddingLeft: 8,
           }}
         >
@@ -112,16 +115,27 @@ export default function HomeScreen() {
                 <Ionicons
                   name={isExpanded ? 'chevron-down' : 'chevron-forward'}
                   size={16}
-                  color="#aaa"
+                  color={isDark ? '#aaa' : '#555'}
                   style={{ marginRight: 6 }}
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.noteItem} onPress={() => handleEditNote(node)}>
-                <Text style={styles.noteText}>{node.title}</Text>
-                <Text style={styles.noteTimestamp}>{new Date(node.createdAt).toLocaleDateString()}</Text>
+              <TouchableOpacity
+                style={[
+                  styles.noteItem,
+                  {
+                    backgroundColor: isDark ? '#1a1a1a' : '#f4f4f4',
+                    borderColor: isDark ? '#2a2a2a' : '#ccc',
+                  },
+                ]}
+                onPress={() => handleEditNote(node)}
+              >
+                <Text style={[styles.noteText, { color: isDark ? '#00ffcc' : '#00796B' }]}>{node.title}</Text>
+                <Text style={[styles.noteTimestamp, { color: isDark ? '#888' : '#666' }]}>
+                  {new Date(node.createdAt).toLocaleDateString()}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setParentId(node.id)}>
-                <Ionicons name="add-circle-outline" size={20} color="#64ffda" style={{ marginLeft: 8 }} />
+                <Ionicons name="add-circle-outline" size={20} color={isDark ? '#64ffda' : '#00796B'} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             </View>
           </Swipeable>
@@ -136,15 +150,17 @@ export default function HomeScreen() {
     <Provider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <SafeAreaView style={styles.container}>
+          <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
             <View style={styles.headerRow}>
-              <Text style={styles.headerText}>📝 <Text style={styles.highlight}>PrismaNote</Text></Text>
+              <Text style={[styles.headerText, { color: isDark ? '#fff' : '#000' }]}>
+                📝 <Text style={[styles.highlight, { color: isDark ? '#64ffda' : '#00796B' }]}>PrismaNote</Text>
+              </Text>
               <Menu
                 visible={menuVisible}
                 onDismiss={() => setMenuVisible(false)}
                 anchor={
                   <TouchableOpacity onPress={() => setMenuVisible(true)}>
-                    <Ionicons name="ellipsis-vertical" size={24} color="#fff" />
+                    <Ionicons name="ellipsis-vertical" size={24} color={isDark ? '#fff' : '#000'} />
                   </TouchableOpacity>
                 }
               >
@@ -156,31 +172,34 @@ export default function HomeScreen() {
               </Menu>
             </View>
 
-            <Text style={styles.subText}>Welcome back, {userData.username || 'User'}!</Text>
+            <Text style={[styles.subText, { color: isDark ? '#aaa' : '#444' }]}>
+              Welcome back, {userData.username || 'User'}!
+            </Text>
 
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { backgroundColor: isDark ? '#111' : '#eee' }]}>
               <TextInput
                 placeholder="Write a note..."
-                placeholderTextColor="#aaa"
-                style={styles.input}
+                placeholderTextColor={isDark ? '#aaa' : '#888'}
+                style={[styles.input, { color: isDark ? '#fff' : '#000' }]}
                 value={noteInput}
                 onChangeText={setNoteInput}
               />
-              <TouchableOpacity style={styles.addButton} onPress={handleAddNote}>
-                <Ionicons name="add" size={24} color="#fff" />
+              <TouchableOpacity style={[styles.addButton, { backgroundColor: isDark ? '#222' : '#ccc' }]} onPress={handleAddNote}>
+                <Ionicons name="add" size={24} color={isDark ? '#fff' : '#000'} />
               </TouchableOpacity>
             </View>
 
-            <View style={{ height: 1, backgroundColor: '#333', marginVertical: 10 }} />
+            <View style={{ height: 1, backgroundColor: isDark ? '#333' : '#ddd', marginVertical: 10 }} />
 
             {notes.length === 0 ? (
-              <Text style={styles.emptyText}>Start by creating your first note!</Text>
+              <Text style={[styles.emptyText, { color: isDark ? '#666' : '#888' }]}>
+                Start by creating your first note!
+              </Text>
             ) : (
               <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {renderNested(flatNotes)}
               </ScrollView>
             )}
-
           </SafeAreaView>
         </TouchableWithoutFeedback>
       </GestureHandlerRootView>
@@ -189,37 +208,34 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000', padding: 20 },
+  container: { flex: 1, padding: 20 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerText: { color: '#fff', fontSize: 26, fontWeight: '700' },
-  highlight: { color: '#64ffda' },
-  subText: { color: '#aaa', fontSize: 16, marginBottom: 10 },
+  headerText: { fontSize: 26, fontWeight: '700' },
+  highlight: { fontWeight: '700' },
+  subText: { fontSize: 16, marginBottom: 10 },
   inputContainer: {
     flexDirection: 'row',
-    backgroundColor: '#111',
     borderRadius: 8,
     paddingHorizontal: 10,
     alignItems: 'center',
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  input: { flex: 1, color: '#fff', height: 40, fontSize: 16, paddingVertical: 5 },
-  addButton: { padding: 8, backgroundColor: '#222', borderRadius: 6 },
+  input: { flex: 1, height: 40, fontSize: 16, paddingVertical: 5 },
+  addButton: { padding: 8, borderRadius: 6 },
   noteRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
   expandIconContainer: { padding: 5 },
   noteItem: {
-    backgroundColor: '#1a1a1a',
     borderRadius: 8,
     padding: 10,
     flex: 1,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
   },
-  noteText: { color: '#00ffcc', fontSize: 16 },
-  noteTimestamp: { color: '#888', fontSize: 12, marginTop: 4 },
+  noteText: { fontSize: 16 },
+  noteTimestamp: { fontSize: 12, marginTop: 4 },
   deleteButton: {
     backgroundColor: 'red',
     justifyContent: 'center',
@@ -229,7 +245,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyText: {
-    color: '#666',
     textAlign: 'center',
     marginTop: 50,
     fontSize: 16,
@@ -239,3 +254,4 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
 });
+

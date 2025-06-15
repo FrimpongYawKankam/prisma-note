@@ -1,3 +1,4 @@
+import { useTheme } from '@/context/ThemeContext'; // ✅ using custom theme
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -7,6 +8,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,6 +20,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default function CreateScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
@@ -31,7 +36,7 @@ export default function CreateScreen() {
       id: uuidv4(),
       title: title.trim(),
       content: content.trim(),
-      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     try {
@@ -40,12 +45,10 @@ export default function CreateScreen() {
       const updatedNotes = [...notes, newNote];
       await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
 
-      // Clear input
       setTitle('');
       setContent('');
       Keyboard.dismiss();
 
-      // Feedback
       Alert.alert('Success ✅', 'Note saved successfully!', [
         { text: 'OK', onPress: () => router.push('/') },
       ]);
@@ -57,42 +60,58 @@ export default function CreateScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.headerRow}>
-          <Text style={styles.header}>New Note</Text>
-          <TouchableOpacity onPress={saveNote}>
-            <Ionicons name="checkmark-done-outline" size={28} color="#64ffda" />
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView style={[styles.safe, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.headerRow}>
+            <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>New Note</Text>
+            <TouchableOpacity onPress={saveNote}>
+              <Ionicons name="checkmark-done-outline" size={28} color="#64ffda" />
+            </TouchableOpacity>
+          </View>
 
-        <TextInput
-          style={styles.titleInput}
-          placeholder="Title"
-          placeholderTextColor="#666"
-          value={title}
-          onChangeText={setTitle}
-        />
+          <TextInput
+            style={[
+              styles.titleInput,
+              {
+                backgroundColor: isDark ? '#1a1a1a' : '#eee',
+                color: isDark ? '#fff' : '#000',
+              },
+            ]}
+            placeholder="Title"
+            placeholderTextColor={isDark ? '#aaa' : '#666'}
+            value={title}
+            onChangeText={setTitle}
+          />
 
-        <TextInput
-          style={styles.contentInput}
-          placeholder="Start typing your note here..."
-          placeholderTextColor="#888"
-          value={content}
-          onChangeText={setContent}
-          multiline
-        />
-      </KeyboardAvoidingView>
+          <TextInput
+            style={[
+              styles.contentInput,
+              {
+                backgroundColor: isDark ? '#1a1a1a' : '#eee',
+                color: isDark ? '#eee' : '#000',
+              },
+            ]}
+            placeholder="Start typing your note here..."
+            placeholderTextColor={isDark ? '#aaa' : '#666'}
+            value={content}
+            onChangeText={setContent}
+            multiline
+          />
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#000',
     paddingHorizontal: 20,
     paddingTop: 60,
   },
@@ -103,15 +122,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   header: {
-    color: '#fff',
     fontSize: 26,
     fontWeight: '700',
   },
   titleInput: {
     fontSize: 20,
-    color: '#fff',
     fontWeight: '600',
-    backgroundColor: '#1a1a1a',
     padding: 14,
     borderRadius: 12,
     marginBottom: 12,
@@ -119,8 +135,6 @@ const styles = StyleSheet.create({
   contentInput: {
     flex: 1,
     fontSize: 16,
-    color: '#eee',
-    backgroundColor: '#1a1a1a',
     padding: 16,
     borderRadius: 12,
     textAlignVertical: 'top',

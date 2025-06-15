@@ -8,8 +8,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme
+  View,
+  Keyboard
 } from 'react-native';
+import { useTheme } from '@/context/ThemeContext'; // 👈 Use custom theme
 
 interface Note {
   id: string;
@@ -24,8 +26,8 @@ export default function Search(): JSX.Element {
   const [notes, setNotes] = useState<Note[]>([]);
   const [userData, setUserData] = useState({ username: '' });
   const router = useRouter();
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const { theme } = useTheme(); // 👈 Access theme context
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     const loadNotes = async () => {
@@ -39,38 +41,59 @@ export default function Search(): JSX.Element {
 
   const filteredNotes = notes.filter((note) =>
     (note?.title?.toLowerCase()?.includes(query.toLowerCase()) ||
-     note?.content?.toLowerCase()?.includes(query.toLowerCase()))
+      note?.content?.toLowerCase()?.includes(query.toLowerCase()))
   );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <Text style={[styles.header, { color: isDark ? '#64ffda' : '#333' }]}>Search Notes</Text>
+      <Text style={[styles.header, { color: isDark ? '#64ffda' : '#222' }]}>
+        Search Notes
+      </Text>
 
       <TextInput
         placeholder="Type to search..."
-        placeholderTextColor={isDark ? '#666' : '#aaa'}
-        style={[styles.input, { backgroundColor: isDark ? '#1a1a1a' : '#eee', color: isDark ? '#fff' : '#000' }]}
+        placeholderTextColor={isDark ? '#666' : '#888'}
+        style={[
+          styles.input,
+          {
+            backgroundColor: isDark ? '#1a1a1a' : '#f0f0f0',
+            color: isDark ? '#fff' : '#000',
+            borderColor: isDark ? '#333' : '#ccc',
+          },
+        ]}
         value={query}
         onChangeText={setQuery}
+        onSubmitEditing={Keyboard.dismiss}
       />
 
       {filteredNotes.length === 0 ? (
-        <Text style={[styles.emptyText, { color: isDark ? '#888' : '#666' }]}>No matching notes found.</Text>
+        <Text style={[styles.emptyText, { color: isDark ? '#777' : '#888' }]}>
+          No matching notes found.
+        </Text>
       ) : (
         <FlatList
           data={filteredNotes}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.noteItem, { backgroundColor: isDark ? '#1a1a1a' : '#f8f8f8' }]}
+              style={[
+                styles.noteItem,
+                {
+                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
+                  borderColor: isDark ? '#333' : '#ccc',
+                },
+              ]}
               onPress={() => router.push({ pathname: '/note-detail', params: { id: item.id } })}
             >
-              <Text style={[styles.noteTitle, { color: isDark ? '#00ffcc' : '#333' }]}>{item.title}</Text>
-              <Text style={[styles.noteDate, { color: isDark ? '#aaa' : '#999' }]}>
+              <Text style={[styles.noteTitle, { color: isDark ? '#00ffcc' : '#333' }]}>
+                {item.title}
+              </Text>
+              <Text style={[styles.noteDate, { color: isDark ? '#aaa' : '#666' }]}>
                 {new Date(item.createdAt).toLocaleDateString()}
               </Text>
               <Text style={[styles.noteSnippet, { color: isDark ? '#ccc' : '#444' }]}>
-                {item.content.slice(0, 60)}{item.content.length > 60 ? '...' : ''}
+                {item.content.slice(0, 60)}
+                {item.content.length > 60 ? '...' : ''}
               </Text>
             </TouchableOpacity>
           )}
@@ -88,20 +111,20 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   input: {
     padding: 12,
     borderRadius: 10,
     fontSize: 16,
     marginBottom: 20,
+    borderWidth: 1,
   },
   noteItem: {
     padding: 15,
     borderRadius: 10,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#333',
   },
   noteTitle: {
     fontSize: 18,

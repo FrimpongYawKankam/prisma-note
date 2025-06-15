@@ -1,27 +1,14 @@
-import { Stack } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+// app/_layout.tsx
+import { Slot } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ThemeProvider } from '../context/ThemeContext'; // ✅ Make sure path is correct
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <View style={styles.container}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="login" />
-            <Stack.Screen name="signup" />
-            <Stack.Screen name="(tabs)" />  {/* 👈 This loads app/(tabs)/_layout.tsx */}
-            <Stack.Screen name="note-details" />
-          </Stack>
-        </SafeAreaView>
-      </View>
-    </SafeAreaProvider>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <Slot />
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-});
