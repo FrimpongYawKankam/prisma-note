@@ -5,11 +5,15 @@ import React, { useState } from 'react';
 import {
   Alert,
   Button,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 
 export default function SignupScreen() {
@@ -20,17 +24,19 @@ export default function SignupScreen() {
   const [passwordWarning, setPasswordWarning] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const validatePassword = (pwd: string) => {
-    const regex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{6,}$/;
-    return regex.test(pwd);
+  const validatePassword = (password: string) => {
+    const pattern =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!]).{6,}$/;
+    return pattern.test(password);
   };
 
   const handleSignup = async () => {
     if (username && email && password) {
       if (!validatePassword(password)) {
-        Alert.alert('Invalid Password', 'Please enter a valid password.');
+        Alert.alert('Weak Password', 'Please enter a stronger password.');
         return;
       }
+
       const userData = { username, email, password };
       try {
         await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -45,74 +51,95 @@ export default function SignupScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        placeholderTextColor="#808080"
-        value={username}
-        onChangeText={setUsername}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#808080"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <View style={styles.passwordContainer}>
-        <TextInput
-          style={[styles.input, { flex: 1, marginBottom: 0 }]}
-          placeholder="Password"
-          placeholderTextColor="#808080"
-          secureTextEntry={!showPassword}
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            if (text.length > 0 && !validatePassword(text)) {
-              setPasswordWarning(
-                'Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
-              );
-            } else {
-              setPasswordWarning('');
-            }
-          }}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.wrapper}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Image
+          source={require('@/assets/images/auth-bg-2.png')}
+          style={styles.image}
         />
-        <TouchableOpacity
-          style={styles.eyeIcon}
-          onPress={() => setShowPassword((prev) => !prev)}
-        >
-          <Ionicons
-            name={showPassword ? 'eye-off' : 'eye'}
-            size={24}
-            color="#888"
+
+        <Text style={styles.title}>Sign Up</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          placeholderTextColor="#808080"
+          value={username}
+          onChangeText={setUsername}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#808080"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={[styles.input, { flex: 1, marginBottom: 0 }]}
+            placeholder="Password"
+            placeholderTextColor="#808080"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (text.length > 0 && !validatePassword(text)) {
+                setPasswordWarning(
+                  'Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
+                );
+              } else {
+                setPasswordWarning('');
+              }
+            }}
           />
-        </TouchableOpacity>
-      </View>
-      {passwordWarning ? (
-        <Text style={styles.warningText}>{passwordWarning}</Text>
-      ) : null}
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Ionicons
+              name={showPassword ? 'eye-off' : 'eye'}
+              size={24}
+              color="#ccc"
+              style={{ marginLeft: -35 }}
+            />
+          </TouchableOpacity>
+        </View>
 
-      <Button title="Sign Up" onPress={handleSignup} color="#1E90FF" />
+        {passwordWarning !== '' && (
+          <Text style={styles.warning}>{passwordWarning}</Text>
+        )}
 
-      <Text style={styles.orText}>OR</Text>
+        <Button title="Sign Up" onPress={handleSignup} color="#1E90FF" />
 
-      <Button title="Login" onPress={() => router.push('/login')} color="#888" />
-    </View>
+        <Text style={styles.orText}>OR</Text>
+
+        <Button
+          title="Login"
+          onPress={() => router.push('/login')}
+          color="#888"
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
     backgroundColor: '#000',
-    justifyContent: 'center',
+  },
+  container: {
+    padding: 20,
     alignItems: 'center',
-    paddingHorizontal: 20,
+  },
+  image: {
+    width: 260,
+    height: 260,
+    resizeMode: 'contain',
+    marginTop: 20,
+    marginBottom: 10,
   },
   title: {
     fontSize: 28,
@@ -135,17 +162,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1a1a1a',
     borderRadius: 8,
+    paddingRight: 12,
     marginBottom: 16,
   },
-  eyeIcon: {
-    paddingHorizontal: 12,
-  },
-  warningText: {
-    color: '#ff5252',
-    fontSize: 13,
-    marginBottom: 8,
-    textAlign: 'left',
-    width: '100%',
+  warning: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   orText: {
     marginVertical: 16,
