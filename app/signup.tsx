@@ -1,16 +1,36 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Alert,
+  Button,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 export default function SignupScreen() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordWarning, setPasswordWarning] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const validatePassword = (pwd: string) => {
+    const regex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{6,}$/;
+    return regex.test(pwd);
+  };
 
   const handleSignup = async () => {
     if (username && email && password) {
+      if (!validatePassword(password)) {
+        Alert.alert('Invalid Password', 'Please enter a valid password.');
+        return;
+      }
       const userData = { username, email, password };
       try {
         await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -41,15 +61,41 @@ export default function SignupScreen() {
         placeholderTextColor="#808080"
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#808080"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={[styles.input, { flex: 1, marginBottom: 0 }]}
+          placeholder="Password"
+          placeholderTextColor="#808080"
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (text.length > 0 && !validatePassword(text)) {
+              setPasswordWarning(
+                'Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
+              );
+            } else {
+              setPasswordWarning('');
+            }
+          }}
+        />
+        <TouchableOpacity
+          style={styles.eyeIcon}
+          onPress={() => setShowPassword((prev) => !prev)}
+        >
+          <Ionicons
+            name={showPassword ? 'eye-off' : 'eye'}
+            size={24}
+            color="#888"
+          />
+        </TouchableOpacity>
+      </View>
+      {passwordWarning ? (
+        <Text style={styles.warningText}>{passwordWarning}</Text>
+      ) : null}
 
       <Button title="Sign Up" onPress={handleSignup} color="#1E90FF" />
 
@@ -82,6 +128,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
+  },
+  passwordContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  eyeIcon: {
+    paddingHorizontal: 12,
+  },
+  warningText: {
+    color: '#ff5252',
+    fontSize: 13,
+    marginBottom: 8,
+    textAlign: 'left',
+    width: '100%',
   },
   orText: {
     marginVertical: 16,
