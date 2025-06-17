@@ -30,7 +30,6 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordWarning, setPasswordWarning] = useState('');
 
-
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: '105342935662-ej0kqvn1h6hsm7lifo1jlflh2ud1basj.apps.googleusercontent.com',
     redirectUri: AuthSession.makeRedirectUri({
@@ -98,7 +97,6 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo at the very top */}
           <View style={styles.logoTopContainer}>
             <Image
               source={require('../assets/images/logo.jpeg')}
@@ -160,8 +158,13 @@ export default function LoginScreen() {
             <TouchableOpacity style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
+
+            {/* ✅ Login Button with Icon */}
             <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginButtonText}>Log in</Text>
+              <View style={styles.buttonContent}>
+                <Ionicons name="log-in-outline" size={20} color="#fff" style={styles.icon} />
+                <Text style={styles.loginButtonText}>Log in</Text>
+              </View>
             </TouchableOpacity>
 
             {/* Divider */}
@@ -192,7 +195,6 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Terms and Help */}
             <Text style={styles.termsText}>
               By continuing, you acknowledge that you understand and agree to the Terms & condition and Privacy Policy
             </Text>
@@ -237,14 +239,8 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     backgroundColor: 'black',
-    borderRadius: 0,
     padding: 32,
     paddingTop: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-    justifyContent: 'flex-start',
   },
   logo: {
     width: 100,
@@ -257,20 +253,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginBottom: 8,
-    textAlign: 'left',
   },
   subText: {
     fontSize: 24,
     color: '#fff',
     marginBottom: 24,
-    textAlign: 'left',
   },
   label: {
     color: '#fff',
     fontSize: 16,
     marginBottom: 4,
     marginTop: 12,
-    textAlign: 'left',
   },
   input: {
     height: 48,
@@ -316,6 +309,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    marginRight: 8,
+  },
   loginButtonText: {
     color: '#fff',
     fontWeight: '600',
@@ -339,7 +340,6 @@ const styles = StyleSheet.create({
   socialRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginVertical: 18,
     paddingHorizontal: 8,
   },
@@ -351,10 +351,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
   },
   signupContainer: {
     marginTop: 18,

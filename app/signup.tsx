@@ -4,11 +4,8 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
-  Button,
+  Dimensions,
   Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -22,130 +19,132 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordWarning, setPasswordWarning] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [secureText, setSecureText] = useState(true);
 
-  const validatePassword = (password: string) => {
+  const validatePassword = (text: string) => {
     const pattern =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!]).{6,}$/;
-    return pattern.test(password);
+    return pattern.test(text);
   };
 
   const handleSignup = async () => {
-    if (username && email && password) {
-      if (!validatePassword(password)) {
-        Alert.alert('Weak Password', 'Please enter a stronger password.');
-        return;
-      }
-
-      const userData = { username, email, password };
-      try {
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        Alert.alert('Signup successful', 'You can now log in.');
-        router.push('/login');
-      } catch (error) {
-        Alert.alert('Error', 'Failed to save user data.');
-      }
-    } else {
+    if (!username || !email || !password) {
       Alert.alert('Missing Fields', 'Please fill in all fields.');
+      return;
+    }
+    if (!validatePassword(password)) {
+      Alert.alert('Invalid Password', 'Please enter a strong password.');
+      return;
+    }
+    const userData = { username, email, password };
+    try {
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      Alert.alert('Signup successful', 'You can now log in.');
+      router.push('/login');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save user data.');
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.wrapper}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Image
-          source={require('@/assets/images/auth-bg-2.png')}
-          style={styles.image}
-        />
+    <View style={styles.container}>
+      <Image
+        source={require('@/assets/images/notion-desk.png')}
+        style={styles.image}
+        resizeMode="contain"
+      />
 
-        <Text style={styles.title}>Sign Up</Text>
+      <Text style={styles.title}>Sign Up</Text>
 
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        placeholderTextColor="#808080"
+        value={username}
+        onChangeText={setUsername}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#808080"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      />
+
+      <View style={styles.passwordContainer}>
         <TextInput
-          style={styles.input}
-          placeholder="Username"
+          style={{ flex: 1, color: '#fff' }}
+          placeholder="Password"
           placeholderTextColor="#808080"
-          value={username}
-          onChangeText={setUsername}
+          secureTextEntry={secureText}
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (text.length > 0 && !validatePassword(text)) {
+              setPasswordWarning(
+                'Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
+              );
+            } else {
+              setPasswordWarning('');
+            }
+          }}
         />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#808080"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <View style={styles.passwordContainer}>
-          <TextInput
-            style={[styles.input, { flex: 1, marginBottom: 0 }]}
-            placeholder="Password"
-            placeholderTextColor="#808080"
-            secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (text.length > 0 && !validatePassword(text)) {
-                setPasswordWarning(
-                  'Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
-                );
-              } else {
-                setPasswordWarning('');
-              }
-            }}
+        <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+          <Ionicons
+            name={secureText ? 'eye-off' : 'eye'}
+            size={24}
+            color="#fff"
+            style={{ marginLeft: 8 }}
           />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Ionicons
-              name={showPassword ? 'eye-off' : 'eye'}
-              size={24}
-              color="#ccc"
-              style={{ marginLeft: -35 }}
-            />
-          </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
+
+      {passwordWarning ? (
+        <Text style={styles.warning}>{passwordWarning}</Text>
+      ) : null}
+
+      {/* Sign Up Button with Icon */}
+      <TouchableOpacity style={styles.button} onPress={handleSignup}>
+        <View style={styles.buttonContent}>
+          <Ionicons name="person-add-outline" size={20} color="#fff" style={styles.icon} />
+          <Text style={styles.buttonText}>Sign Up</Text>
         </View>
+      </TouchableOpacity>
 
-        {passwordWarning !== '' && (
-          <Text style={styles.warning}>{passwordWarning}</Text>
-        )}
+      <Text style={styles.orText}>OR</Text>
 
-        <Button title="Sign Up" onPress={handleSignup} color="#1E90FF" />
-
-        <Text style={styles.orText}>OR</Text>
-
-        <Button
-          title="Login"
-          onPress={() => router.push('/login')}
-          color="#888"
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {/* Login Button with Icon */}
+      <TouchableOpacity style={styles.button} onPress={() => router.push('/login')}>
+        <View style={styles.buttonContent}>
+          <Ionicons name="log-in-outline" size={20} color="#fff" style={styles.icon} />
+          <Text style={styles.buttonText}>Login</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-  wrapper: {
+  container: {
     flex: 1,
     backgroundColor: '#000',
-  },
-  container: {
-    padding: 20,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   image: {
-    width: 260,
-    height: 260,
-    resizeMode: 'contain',
-    marginTop: 20,
-    marginBottom: 10,
+    width: width * 1.0,
+    height: width * 0.5,
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   input: {
     width: '100%',
@@ -162,18 +161,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1a1a1a',
     borderRadius: 8,
-    paddingRight: 12,
     marginBottom: 16,
+    paddingHorizontal: 16,
+    height: 48,
   },
   warning: {
-    color: 'red',
+    color: '#FF6347',
     fontSize: 12,
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: 8,
+    alignSelf: 'flex-start',
   },
   orText: {
     marginVertical: 16,
     color: '#fff',
     fontSize: 16,
+  },
+  button: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#1E90FF',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#1E90FF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  icon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
