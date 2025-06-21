@@ -11,7 +11,7 @@ import {
   View,
   Keyboard
 } from 'react-native';
-import { useTheme } from '@/context/ThemeContext'; // 👈 Use custom theme
+import { useTheme } from '../../src/context/ThemeContext'; 
 
 interface Note {
   id: string;
@@ -21,7 +21,7 @@ interface Note {
   parentId?: string | null;
 }
 
-export default function Search(): JSX.Element {
+export default function Search(): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
   const [userData, setUserData] = useState({ username: '' });

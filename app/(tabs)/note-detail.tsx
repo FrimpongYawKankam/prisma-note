@@ -1,4 +1,4 @@
-import { useTheme } from '@/context/ThemeContext'; // ✅ Import custom hook
+import { useTheme } from '../../src/context/ThemeContext'; // ✅ Import custom hook
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
