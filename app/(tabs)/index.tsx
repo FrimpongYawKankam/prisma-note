@@ -1,4 +1,3 @@
-import { useTheme } from '../../src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -16,6 +15,7 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { Menu, Provider } from 'react-native-paper';
+import { useTheme } from '../../src/context/ThemeContext';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -29,14 +29,30 @@ export default function HomeScreen() {
   const [noteInput, setNoteInput] = useState('');
   const [parentId, setParentId] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<ExpandedNodes>({});
-  const [menuVisible, setMenuVisible] = useState(false);
-
-  useEffect(() => {
+  const [menuVisible, setMenuVisible] = useState(false);  useEffect(() => {
     const loadData = async () => {
-      const user = await AsyncStorage.getItem('user');
-      const savedNotes = await AsyncStorage.getItem('notes');
-      if (user) setUserData(JSON.parse(user));
-      if (savedNotes) setNotes(JSON.parse(savedNotes));
+      try {
+        const userString = await AsyncStorage.getItem('user');
+        const savedNotesString = await AsyncStorage.getItem('notes');
+        
+        // Only parse if the strings exist
+        if (userString) {
+          const user = JSON.parse(userString);
+          setUserData({
+            username: user.fullName || user.username || '',
+            email: user.email
+          });
+        }
+        if (savedNotesString) setNotes(JSON.parse(savedNotesString));
+        else {
+          // Initialize with empty notes array if none exists
+          await AsyncStorage.setItem('notes', JSON.stringify([]));
+        }
+      } catch (error) {
+        console.error('Error loading data from AsyncStorage:', error);
+        // Initialize with empty data if there's an error
+        setNotes([]);
+      }
     };
     loadData();
   }, []);

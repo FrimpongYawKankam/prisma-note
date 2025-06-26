@@ -1,4 +1,3 @@
-import { useTheme } from '../src/context/ThemeContext'; // ✅ Use custom theme
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -11,20 +10,39 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useAuth } from '../src/context/AuthContext';
+import { useTheme } from '../src/context/ThemeContext'; // ✅ Use custom theme
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState({ username: '', email: '' });
   const { theme } = useTheme(); // ✅ access custom theme
+  const { logout, user } = useAuth();
   const isDark = theme === 'dark';
-
   useEffect(() => {
     const fetchUser = async () => {
-      const user = await AsyncStorage.getItem('user');
-      if (user) setUserData(JSON.parse(user));
+      if (user) {
+        setUserData({
+          username: user.fullName || user.username || '',
+          email: user.email
+        });
+      } else {
+        try {
+          const userFromStorage = await AsyncStorage.getItem('user');
+          if (userFromStorage) {
+            const parsedUser = JSON.parse(userFromStorage);
+            setUserData({
+              username: parsedUser.fullName || parsedUser.username || '',
+              email: parsedUser.email
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+        }
+      }
     };
     fetchUser();
-  }, []);
+  }, [user]);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
@@ -33,8 +51,12 @@ export default function ProfileScreen() {
         text: 'Logout',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.removeItem('user');
-          router.replace('/login');
+          try {
+            await logout();
+            router.replace('/login');
+          } catch (error) {
+            console.error('Logout error:', error);
+          }
         },
       },
     ]);

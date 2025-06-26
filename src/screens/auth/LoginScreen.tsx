@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
@@ -19,6 +18,7 @@ import {
     View,
 } from 'react-native';
 import MessageBox from '../../components/ui/MessageBox';
+import { useAuth } from '../../context/AuthContext';
 
 const { height, width } = Dimensions.get('window');
 
@@ -53,28 +53,43 @@ export default function LoginScreen() {
     const regex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{6,}$/;
     return regex.test(pwd);
   };
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     try {
-      const storedUser = await AsyncStorage.getItem('user');
-      if (storedUser) {
-        const { email: storedEmail, password: storedPassword } = JSON.parse(storedUser);
-        if (email === storedEmail && password === storedPassword) {
-          setErrorMessage('Login successful!');
-          setMessageType('success');
-          setTimeout(() => router.push('/(tabs)'), 1000);
-        } else {
-          setErrorMessage('Invalid email or password');
-          setMessageType('error');
-        }
-      } else {
-        setErrorMessage('No user found. Please sign up first.');
+      setErrorMessage('');
+      setMessageType('info');
+      
+      // Validate inputs
+      if (!email || !password) {
+        setErrorMessage('Please enter both email and password');
         setMessageType('error');
+        return;
       }
-    } catch (error) {
-      console.error('Error during login:', error);
-      setErrorMessage('An error occurred. Please try again.');
+      
+      // Call the login API
+      await login(email, password);
+      
+      // Success - JWT will be stored by the authService
+      setErrorMessage('Login successful!');
+      setMessageType('success');
+      setTimeout(() => router.push('/(tabs)'), 1000);
+    } catch (error: any) {
+      // Handle different error types
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        const message = error.response.data.message || 'Invalid credentials';
+        setErrorMessage(message);
+      } else if (error.request) {
+        // The request was made but no response was received
+        setErrorMessage('Network error. Please check your connection.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setErrorMessage('An unexpected error occurred');
+      }
       setMessageType('error');
+      console.error('Error during login:', error);
     }
   };
 

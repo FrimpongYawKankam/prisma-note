@@ -1,21 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import MessageBox from '../../components/ui/MessageBox';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SignupScreen() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [fullName, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordWarning, setPasswordWarning] = useState('');
@@ -28,27 +28,45 @@ export default function SignupScreen() {
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!]).{6,}$/;
     return pattern.test(text);
   };
-
+  const { register } = useAuth();
+  
   const handleSignup = async () => {
-    if (!username || !email || !password) {
+    if (!fullName || !email || !password) {
       setErrorMessage('Please fill in all fields.');
       setMessageType('error');
       return;
     }
+    
     if (!validatePassword(password)) {
       setErrorMessage('Please enter a strong password.');
       setMessageType('error');
       return;
     }
-    const userData = { username, email, password };
+    
     try {
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      setErrorMessage('Signup successful. You can now log in.');
+      // Call the register API
+      await register(fullName, email, password);
+        // Success
+      setErrorMessage('Signup successful! Please check your email for verification code.');
       setMessageType('success');
-      setTimeout(() => router.push('/login'), 1500);
-    } catch (error) {
-      setErrorMessage('Failed to save user data.');
+      
+      // Redirect to OTP verification screen after a delay
+      setTimeout(() => router.push({
+        pathname: '/otp-verification',
+        params: { email }
+      }), 1500);
+    } catch (error: any) {
+      // Handle different error types
+      if (error.response) {
+        const message = error.response.data.message || 'Registration failed';
+        setErrorMessage(message);
+      } else if (error.request) {
+        setErrorMessage('Network error. Please check your connection.');
+      } else {
+        setErrorMessage('An unexpected error occurred');
+      }
       setMessageType('error');
+      console.error('Error during signup:', error);
     }
   };
   return (
@@ -65,9 +83,9 @@ export default function SignupScreen() {
 
       <TextInput
         style={styles.input}
-        placeholder="Username"
+        placeholder="Full Name"
         placeholderTextColor="#808080"
-        value={username}
+        value={fullName}
         onChangeText={setUsername}
       />
       <TextInput
