@@ -1,4 +1,4 @@
-import { useTheme } from '@/context/ThemeContext'; // ✅ Custom theme context
+import { useTheme } from '../src/context/ThemeContext'; // ✅ Custom theme context
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -18,7 +18,7 @@ export default function AboutScreen() {
 
       <Text style={[styles.title, { color: isDark ? '#64ffda' : '#00796b' }]}>About PrismaNotes</Text>
       <Text style={[styles.text, { color: isDark ? '#ccc' : '#333' }]}>
-        PrismaNotes is a lightweight, minimal Notion-style note-taking app built with Expo and React Native.
+        PrismaNote is a lightweight, minimal Notion-style note-taking app built with Expo and React Native.
       </Text>
     </View>
   );

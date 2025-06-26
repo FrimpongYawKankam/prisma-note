@@ -1,4 +1,4 @@
-import { useTheme } from '@/context/ThemeContext'; // ✅ Use your custom theme context
+import { useTheme } from '../../src/context/ThemeContext'; // ✅ Use your custom theme context
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';

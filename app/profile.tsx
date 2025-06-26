@@ -1,4 +1,4 @@
-import { useTheme } from '@/context/ThemeContext'; // ✅ Use custom theme
+import { useTheme } from '../src/context/ThemeContext'; // ✅ Use custom theme
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';

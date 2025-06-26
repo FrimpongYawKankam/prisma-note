@@ -1,4 +1,4 @@
-import { useTheme } from '@/context/ThemeContext';
+import { useTheme } from '../../src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -25,10 +25,10 @@ export default function HomeScreen() {
   const isDark = theme === 'dark';
 
   const [userData, setUserData] = useState({ username: '', email: '' });
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [noteInput, setNoteInput] = useState('');
-  const [parentId, setParentId] = useState(null);
-  const [expandedNodes, setExpandedNodes] = useState({});
+  const [parentId, setParentId] = useState<string | null>(null);
+  const [expandedNodes, setExpandedNodes] = useState<ExpandedNodes>({});
   const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
@@ -41,7 +41,11 @@ export default function HomeScreen() {
     loadData();
   }, []);
 
-  const saveNotes = async (newNotes) => {
+  interface SaveNotesFn {
+    (newNotes: Note[]): Promise<void>;
+  }
+
+  const saveNotes: SaveNotesFn = async (newNotes) => {
     setNotes(newNotes);
     await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
   };
@@ -63,18 +67,26 @@ export default function HomeScreen() {
     Keyboard.dismiss();
   };
 
-  const handleDeleteNote = (id) => {
-    const deleteRecursive = (list, noteId) =>
+  interface DeleteRecursiveFn {
+    (list: Note[], noteId: string): Note[];
+  }
+
+  const handleDeleteNote = (id: string) => {
+    const deleteRecursive: DeleteRecursiveFn = (list, noteId) =>
       list.filter((note) => note.id !== noteId && (!note.parentId || note.parentId !== noteId));
-    const updatedNotes = deleteRecursive(notes, id);
+    const updatedNotes: Note[] = deleteRecursive(notes, id);
     saveNotes(updatedNotes);
   };
 
-  const handleEditNote = (note) => {
+  const handleEditNote = (note: Note) => {
     router.push({ pathname: '/note-detail', params: { id: note.id } });
   };
 
-  const toggleExpand = (id) => {
+  interface ToggleExpandFn {
+    (id: string): void;
+  }
+
+  const toggleExpand: ToggleExpandFn = (id) => {
     setExpandedNodes((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
@@ -83,17 +95,34 @@ export default function HomeScreen() {
     router.replace('/login');
   };
 
-  const buildTree = (list, parent = null) =>
+  interface BuildTreeFn {
+    (list: Note[], parent?: string | null): Note[];
+  }
+
+  const buildTree: BuildTreeFn = (list, parent = null) =>
     list.filter((item) => item.parentId === parent).map((item) => ({
       ...item,
       children: buildTree(list, item.id),
     }));
 
-  const renderNested = (nodes, level = 0) =>
-    nodes.map((node) => {
+  interface Note {
+    id: string;
+    title: string;
+    content: string;
+    createdAt: string;
+    children: Note[];
+    parentId: string | null;
+  }
+
+  interface ExpandedNodes {
+    [id: string]: boolean;
+  }
+
+  const renderNested = (nodes: Note[], level: number = 0): React.ReactNode =>
+    nodes.map((node: Note) => {
       const isExpanded = expandedNodes[node.id];
 
-      const rightActions = () => (
+      const rightActions = (): React.ReactNode => (
         <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteNote(node.id)}>
           <Ionicons name="trash" size={24} color="#fff" />
         </TouchableOpacity>

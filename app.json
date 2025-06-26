@@ -10,6 +10,10 @@
     },
     "android": {
       "package": "com.frimpongyawkankam03.prisma-note"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser"
+    ]
   }
 }

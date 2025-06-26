@@ -1,4 +1,4 @@
-import { useTheme } from '@/context/ThemeContext'; // ✅ import theme context
+import { useTheme } from '../src/context/ThemeContext'; // ✅ import theme context
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
