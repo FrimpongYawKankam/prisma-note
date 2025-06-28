@@ -30,12 +30,12 @@ export default function OtpVerificationScreen() {
 
   const inputRefs = useRef<Array<TextInput | null>>(Array(6).fill(null));
 
-  // Set up refs for OTP input fields
+  // set up refs for OTP input fields
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, 6);
   }, []);
 
-  // Countdown timer for resend button
+  // countdown timer for resend button
   useEffect(() => {
     if (resendDisabled && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -46,13 +46,13 @@ export default function OtpVerificationScreen() {
   }, [resendDisabled, countdown]);
 
   const handleOtpChange = (text: string, index: number) => {
-    // Only allow single digit numbers
+    // only allow single digit numbers
     if (text.match(/^[0-9]$/) || text === '') {
       const newOtp = [...otp];
       newOtp[index] = text;
       setOtp(newOtp);
 
-      // Auto focus to next field if text is entered
+      // auto focus to next field if text is entered
       if (text !== '' && index < 5) {
         inputRefs.current[index + 1]?.focus();
       }
