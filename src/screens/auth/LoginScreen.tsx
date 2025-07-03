@@ -5,17 +5,17 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import MessageBox from '../../components/ui/MessageBox';
 import { useAuth } from '../../context/AuthContext';
@@ -54,7 +54,6 @@ export default function LoginScreen() {
     return regex.test(pwd);
   };
   const { login } = useAuth();
-
   const handleLogin = async () => {
     try {
       setErrorMessage('');
@@ -62,34 +61,51 @@ export default function LoginScreen() {
       
       // Validate inputs
       if (!email || !password) {
-        setErrorMessage('Please enter both email and password');
-        setMessageType('error');
+        setTimeout(() => {
+          setErrorMessage('Please enter both email and password');
+          setMessageType('error');
+        }, 0);
         return;
       }
       
-      // Call the login API
-      await login(email, password);
-      
-      // Success - JWT will be stored by the authService
-      setErrorMessage('Login successful!');
-      setMessageType('success');
-      setTimeout(() => router.push('/(tabs)'), 1000);
-    } catch (error: any) {
-      // Handle different error types
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        const message = error.response.data.message || 'Invalid credentials';
-        setErrorMessage(message);
-      } else if (error.request) {
-        // The request was made but no response was received
-        setErrorMessage('Network error. Please check your connection.');
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        setErrorMessage('An unexpected error occurred');
+      try {
+        // Call the login API
+        await login(email, password);
+        
+        // Success - JWT will be stored by the authService
+        setErrorMessage('Login successful!');
+        setMessageType('success');
+        setTimeout(() => router.push('/(tabs)'), 1000);
+      } catch (error: any) {
+        // Handle different error types
+        let message = 'An unexpected error occurred';
+        
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          message = error.response.data?.message || 'Invalid credentials';
+        } else if (error.request) {
+          // The request was made but no response was received
+          message = 'Network error. Please check your connection.';
+        } else if (error.message) {
+          // Something happened in setting up the request that triggered an Error
+          message = error.message;
+        }
+        
+        setTimeout(() => {
+          setErrorMessage(message);
+          setMessageType('error');
+        }, 0);
+        
+        console.error('Error during login:', error);
       }
-      setMessageType('error');
-      console.error('Error during login:', error);
+    } catch (unexpectedError) {
+      // Catch any unexpected errors in the login process itself
+      console.error('Unexpected login error:', unexpectedError);
+      setTimeout(() => {
+        setErrorMessage('An unexpected error occurred. Please try again.');
+        setMessageType('error');
+      }, 0);
     }
   };
 

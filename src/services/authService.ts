@@ -233,6 +233,66 @@ api.interceptors.response.use(
   }
 );
 
+// Simpler atob implementation for environments where it's not available
+function safeAtob(str: string): string {
+  try {
+    // Use built-in atob if available
+    if (typeof atob === 'function') {
+      return atob(str);
+    }
+    
+    // Simple base64 decoder implementation
+    const keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let output = '';
+    let chr1, chr2, chr3;
+    let enc1, enc2, enc3, enc4;
+    let i = 0;
+    
+    // Remove all characters that are not A-Z, a-z, 0-9, +, /, or =
+    const base64 = str.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+    
+    do {
+      enc1 = keyStr.indexOf(base64.charAt(i++));
+      enc2 = keyStr.indexOf(base64.charAt(i++));
+      enc3 = keyStr.indexOf(base64.charAt(i++));
+      enc4 = keyStr.indexOf(base64.charAt(i++));
+      
+      chr1 = (enc1 << 2) | (enc2 >> 4);
+      chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+      chr3 = ((enc3 & 3) << 6) | enc4;
+      
+      output = output + String.fromCharCode(chr1);
+      
+      if (enc3 !== 64) {
+        output = output + String.fromCharCode(chr2);
+      }
+      if (enc4 !== 64) {
+        output = output + String.fromCharCode(chr3);
+      }
+    } while (i < base64.length);
+    
+    return output;
+  } catch (error) {
+    console.error('Error decoding base64:', error);
+    return '';
+  }
+};
+
+// Utility function to parse JWT token
+const parseJwt = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = safeAtob(base64);
+    
+    // Convert the decoded string to JSON
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.error('Error parsing JWT token:', error);
+    return null;
+  }
+};
+
 // Auth service methods
 export const login = async (email: string, password: string) => {
   try {
@@ -249,17 +309,93 @@ export const login = async (email: string, password: string) => {
     
     // Real API implementation
     const response = await api.post('/auth/login', { email, password });
+    console.log('Login response data:', JSON.stringify(response.data));
+    
+    // Extract data from response
+    const token = response.data.token || response.data.accessToken;
+    const refreshToken = response.data.refreshToken || token; // Fallback to same token if refresh token is not provided
     
     // Store tokens in AsyncStorage
-    await AsyncStorage.setItem('jwt_token', response.data.accessToken);
-    await AsyncStorage.setItem('refresh_token', response.data.refreshToken);
-    await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+    await AsyncStorage.setItem('jwt_token', token);
+    if (refreshToken) {
+      await AsyncStorage.setItem('refresh_token', refreshToken);
+    }
+    
+    // Handle user data - first store anything that came in the response
+    if (response.data.user) {
+      await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    
+    // Always try to get fresh user data from the API regardless
+    if (token) {
+      try {
+        console.log('Fetching user data after login...');
+        // Try to get user data from the new endpoint with Bearer token
+        let userResponse;
+        
+        try {
+          // First try with /api prefix
+          userResponse = await api.get('/auth/users/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        } catch (firstError) {
+          console.log('First endpoint failed, trying alternative endpoint...');
+          // If that fails, try without /api prefix
+          userResponse = await api.get('/users/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+        
+        if (userResponse.data) {
+          // Store user info in AsyncStorage
+          await AsyncStorage.setItem('user', JSON.stringify(userResponse.data));
+          
+          // Add user to response data for consistent handling
+          response.data.user = userResponse.data;
+        }
+      } catch (endpointError) {
+        console.log('Error fetching user from /users/me endpoint:', endpointError);
+        console.log('Falling back to JWT extraction...');
+        
+        // Endpoint call failed, fall back to JWT extraction
+        const tokenPayload = parseJwt(token);
+        
+        if (tokenPayload) {
+          // Create user object from token payload
+          const user = {
+            id: tokenPayload.id || tokenPayload.userId || tokenPayload.sub || '',
+            email: tokenPayload.email || email,
+            fullName: tokenPayload.fullName || tokenPayload.name || email.split('@')[0],
+            isVerified: tokenPayload.isVerified !== undefined ? tokenPayload.isVerified : true,
+            role: tokenPayload.role || 'USER'
+          };
+          
+          // Store user info in AsyncStorage
+          await AsyncStorage.setItem('user', JSON.stringify(user));
+          
+          // Add user to response data for consistent handling
+          response.data.user = user;
+        } else {
+          // Create minimal user object if token couldn't be parsed
+          const user = {
+            id: '',
+            email: email,
+            fullName: email.split('@')[0],
+            isVerified: true,
+            role: 'USER'
+          };
+          await AsyncStorage.setItem('user', JSON.stringify(user));
+          response.data.user = user;
+        }
+      }
+    }
     
     return response.data;
   } catch (error) {
+    console.error('Login error details:', error);
     throw error;
   }
-};
+}
 
 export const register = async (fullName: string, email: string, password: string) => {
   if (USE_MOCK_AUTH) {
@@ -376,6 +512,41 @@ export const resendOtp = async (email: string) => {
 export const isAuthenticated = async () => {
   const token = await AsyncStorage.getItem('jwt_token');
   return !!token;
+};
+
+// Fetch current user details from API
+export const getCurrentUser = async () => {
+  try {
+    const token = await AsyncStorage.getItem('jwt_token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    // Make explicit request with token in Authorization header
+    let response;
+    
+    try {
+      // First try with /api prefix
+      response = await api.get('/api/users/me', {
+        headers: { 
+          Authorization: `Bearer ${token}`
+        }
+      });
+    } catch (firstAttemptError) {
+      // If that fails, try without /api prefix
+      response = await api.get('/users/me', {
+        headers: { 
+          Authorization: `Bearer ${token}`
+        }
+      });
+    }
+    
+    console.log('Current user data:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch current user:', error);
+    throw error;
+  }
 };
 
 // Export the API instance for other service modules to use

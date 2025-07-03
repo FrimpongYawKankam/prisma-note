@@ -2,20 +2,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import MessageBox from '../../components/ui/MessageBox';
 import { useAuth } from '../../context/AuthContext';
 
 export default function SignupScreen() {
   const router = useRouter();
-  const [fullName, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordWarning, setPasswordWarning] = useState('');
@@ -29,48 +29,64 @@ export default function SignupScreen() {
     return pattern.test(text);
   };
   const { register } = useAuth();
-  
-  const handleSignup = async () => {
+    const handleSignup = async () => {
+    // Reset error message first
+    setErrorMessage('');
+    
     if (!fullName || !email || !password) {
-      setErrorMessage('Please fill in all fields.');
-      setMessageType('error');
+      // Use timeout to avoid state updates during render
+      setTimeout(() => {
+        setErrorMessage('Please fill in all fields.');
+        setMessageType('error');
+      }, 0);
       return;
     }
     
     if (!validatePassword(password)) {
-      setErrorMessage('Please enter a strong password.');
-      setMessageType('error');
+      setTimeout(() => {
+        setErrorMessage('Please enter a strong password.');
+        setMessageType('error');
+      }, 0);
       return;
     }
     
     try {
       // Call the register API
       await register(fullName, email, password);
-        // Success
-      setErrorMessage('Signup successful! Please check your email for verification code.');
-      setMessageType('success');
       
-      // Redirect to OTP verification screen after a delay
-      setTimeout(() => router.push({
-        pathname: '/otp-verification',
-        params: { email }
-      }), 1500);
+      // Success - use requestAnimationFrame to schedule after render
+      requestAnimationFrame(() => {
+        setErrorMessage('Signup successful! Please check your email for verification code.');
+        setMessageType('success');
+        
+        // Redirect to OTP verification screen after a delay
+        setTimeout(() => router.push({
+          pathname: '/otp-verification',
+          params: { email }
+        }), 1500);
+      });
     } catch (error: any) {
       // Handle different error types
+      let message = 'An unexpected error occurred';
+      
       if (error.response) {
-        const message = error.response.data.message || 'Registration failed';
-        setErrorMessage(message);
+        message = error.response.data?.message || 'Registration failed';
       } else if (error.request) {
-        setErrorMessage('Network error. Please check your connection.');
-      } else {
-        setErrorMessage('An unexpected error occurred');
+        message = 'Network error. Please check your connection.';
       }
-      setMessageType('error');
+      
+      // Schedule state update safely
+      requestAnimationFrame(() => {
+        setErrorMessage(message);
+        setMessageType('error');
+      });
+      
       console.error('Error during signup:', error);
     }
   };
   return (
     <View style={styles.container}>
+      {/* add keyboardoidnig view to allow user to hide keyboard when clicking on another part of the screen */}
       <MessageBox message={errorMessage} type={messageType} />
       
       <Image
@@ -86,7 +102,7 @@ export default function SignupScreen() {
         placeholder="Full Name"
         placeholderTextColor="#808080"
         value={fullName}
-        onChangeText={setUsername}
+        onChangeText={setFullName}
       />
       <TextInput
         style={styles.input}

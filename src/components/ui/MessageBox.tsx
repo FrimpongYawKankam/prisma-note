@@ -14,9 +14,12 @@ const MessageBox: React.FC<MessageBoxProps> = ({
 }) => {
   const [visible, setVisible] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
-
   useEffect(() => {
-    if (message) {
+    // Only run effect if message changes and isn't empty
+    if (!message) return;
+
+    // Delay the state update to avoid React insertion phase conflicts
+    const showMessage = () => {
       setVisible(true);
       // Fade in
       Animated.timing(fadeAnim, {
@@ -24,18 +27,29 @@ const MessageBox: React.FC<MessageBoxProps> = ({
         duration: 300,
         useNativeDriver: true,
       }).start();
+    };
 
-      // After duration, fade out
-      const timer = setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => setVisible(false));
-      }, duration);
+    // Use requestAnimationFrame to schedule after render is complete
+    const animationId = requestAnimationFrame(showMessage);
+    
+    // After duration, fade out
+    const timer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        // Delay the state update slightly
+        requestAnimationFrame(() => {
+          setVisible(false);
+        });
+      });
+    }, duration);
 
-      return () => clearTimeout(timer);
-    }
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(animationId);
+    };
   }, [message, duration, fadeAnim]);
 
   if (!message || !visible) return null;

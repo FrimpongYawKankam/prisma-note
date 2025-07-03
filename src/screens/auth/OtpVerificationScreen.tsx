@@ -60,7 +60,7 @@ export default function OtpVerificationScreen() {
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    // Move to previous field on backspace when field is empty
+    // move to previous field on backspace when field is empty
     if (e.nativeEvent.key === 'Backspace' && otp[index] === '' && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }

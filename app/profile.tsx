@@ -15,15 +15,14 @@ import { useTheme } from '../src/context/ThemeContext'; // ✅ Use custom theme
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [userData, setUserData] = useState({ username: '', email: '' });
+  const [userData, setUserData] = useState({ fullName: '', email: '' });
   const { theme } = useTheme(); // ✅ access custom theme
   const { logout, user } = useAuth();
   const isDark = theme === 'dark';
   useEffect(() => {
-    const fetchUser = async () => {
-      if (user) {
+    const fetchUser = async () => {      if (user) {
         setUserData({
-          username: user.fullName || user.username || '',
+          fullName: user.fullName || '',
           email: user.email
         });
       } else {
@@ -32,7 +31,7 @@ export default function ProfileScreen() {
           if (userFromStorage) {
             const parsedUser = JSON.parse(userFromStorage);
             setUserData({
-              username: parsedUser.fullName || parsedUser.username || '',
+              fullName: parsedUser.fullName || '',
               email: parsedUser.email
             });
           }
@@ -69,13 +68,12 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       <View style={styles.profileContainer}>
-        <View style={[styles.avatarText, { backgroundColor: isDark ? '#1a1a1a' : '#eee' }]}>
-          <Text style={[styles.avatarInitials, { color: '#2e7d32' }]}>
-            {userData.username ? userData.username.charAt(0).toUpperCase() : 'U'}
+        <View style={[styles.avatarText, { backgroundColor: isDark ? '#1a1a1a' : '#eee' }]}>          <Text style={[styles.avatarInitials, { color: '#2e7d32' }]}>
+            {userData.fullName ? userData.fullName.charAt(0).toUpperCase() : 'U'}
           </Text>
         </View>
         <Text style={[styles.name, { color: isDark ? '#fff' : '#000' }]}>
-          {userData.username || 'Username'}
+          {userData.fullName || 'Full Name'}
         </Text>
         <Text style={[styles.email, { color: isDark ? '#aaa' : '#555' }]}>
           {userData.email || 'user@example.com'}

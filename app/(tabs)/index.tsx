@@ -3,18 +3,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Keyboard,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Keyboard,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { Menu, Provider } from 'react-native-paper';
+import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -22,9 +23,10 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 export default function HomeScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const { isAuthenticated, user, refreshUserData } = useAuth();
   const isDark = theme === 'dark';
 
-  const [userData, setUserData] = useState({ username: '', email: '' });
+  const [userData, setUserData] = useState({ fullName: '', email: '' });
   const [notes, setNotes] = useState<Note[]>([]);
   const [noteInput, setNoteInput] = useState('');
   const [parentId, setParentId] = useState<string | null>(null);
@@ -32,15 +34,28 @@ export default function HomeScreen() {
   const [menuVisible, setMenuVisible] = useState(false);  useEffect(() => {
     const loadData = async () => {
       try {
+        // Try to refresh user data from auth context first
+        if (isAuthenticated) {
+          await refreshUserData();
+        }
+        
         const userString = await AsyncStorage.getItem('user');
         const savedNotesString = await AsyncStorage.getItem('notes');
-        
-        // Only parse if the strings exist
-        if (userString) {
-          const user = JSON.parse(userString);
+          // First try to use user data from context (most up-to-date)
+        if (user) {
+          console.log('User data from context:', user);
           setUserData({
-            username: user.fullName || user.username || '',
+            fullName: user.fullName || '',
             email: user.email
+          });
+        }
+        // Fallback to stored data if context doesn't have user
+        else if (userString) {
+          const storedUser = JSON.parse(userString);
+          console.log('User data from storage:', storedUser);
+          setUserData({
+            fullName: storedUser.fullName || '',
+            email: storedUser.email
           });
         }
         if (savedNotesString) setNotes(JSON.parse(savedNotesString));
@@ -215,10 +230,8 @@ export default function HomeScreen() {
                 <Menu.Item onPress={() => { setMenuVisible(false); router.push('/about'); }} title="About" />
                 <Menu.Item onPress={() => { setMenuVisible(false); handleLogout(); }} title="Log Out" />
               </Menu>
-            </View>
-
-            <Text style={[styles.subText, { color: isDark ? '#aaa' : '#444' }]}>
-              Welcome back, {userData.username || 'User'}!
+            </View>            <Text style={[styles.subText, { color: isDark ? '#aaa' : '#444' }]}>
+              Welcome back, {user?.fullName || userData.fullName || 'User'}!
             </Text>
 
             <View style={[styles.inputContainer, { backgroundColor: isDark ? '#111' : '#eee' }]}>
