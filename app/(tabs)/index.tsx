@@ -89,23 +89,29 @@ export default function HomeScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
             <View style={styles.headerRow}>
-              <Text style={[styles.headerText, { color: isDark ? '#fff' : '#000' }]}>📝 <Text style={{ color: isDark ? '#64ffda' : '#00796B' }}>PrismaNote</Text></Text>
+              <Text style={[styles.headerText, { color: isDark ? '#fff' : '#000' }]}>
+                📝 <Text style={{ color: isDark ? '#64ffda' : '#00796B' }}>PrismaNote</Text>
+              </Text>
               <Menu
                 visible={menuVisible}
                 onDismiss={() => setMenuVisible(false)}
-                anchor={<TouchableOpacity onPress={() => setMenuVisible(true)}>
-                  <Ionicons name="ellipsis-vertical" size={24} color={isDark ? '#fff' : '#000'} />
-                </TouchableOpacity>}
+                anchor={
+                  <TouchableOpacity onPress={() => setMenuVisible(true)}>
+                    <Ionicons name="ellipsis-vertical" size={24} color={isDark ? '#fff' : '#000'} />
+                  </TouchableOpacity>
+                }
               >
                 <Menu.Item onPress={() => { setMenuVisible(false); router.push('/profile'); }} title="Profile" />
                 <Menu.Item onPress={() => { setMenuVisible(false); router.push('/help'); }} title="Help" />
                 <Menu.Item onPress={() => { setMenuVisible(false); router.push('/settings'); }} title="Settings" />
                 <Menu.Item onPress={() => { setMenuVisible(false); router.push('/about'); }} title="About" />
-                <Menu.Item onPress={async () => { setMenuVisible(false); await AsyncStorage.removeItem('user'); router.replace('/login'); }} title="Log Out" />
+                {/* Log Out option removed */}
               </Menu>
             </View>
 
-            <Text style={[styles.subText, { color: isDark ? '#aaa' : '#444' }]}>Welcome back, {user?.fullName || userData.fullName || 'User'}!</Text>
+            <Text style={[styles.subText, { color: isDark ? '#aaa' : '#444' }]}>
+              Welcome back, {user?.fullName || userData.fullName || 'User'}!
+            </Text>
 
             <View style={[styles.inputContainer, { backgroundColor: isDark ? '#111' : '#eee' }]}>
               <TextInput
@@ -115,7 +121,10 @@ export default function HomeScreen() {
                 value={noteInput}
                 onChangeText={setNoteInput}
               />
-              <TouchableOpacity style={[styles.addButton, { backgroundColor: isDark ? '#222' : '#ccc' }]} onPress={handleAddNote}>
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: isDark ? '#222' : '#ccc' }]}
+                onPress={handleAddNote}
+              >
                 <Ionicons name="add" size={24} color={isDark ? '#fff' : '#000'} />
               </TouchableOpacity>
             </View>
@@ -131,13 +140,18 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   onLongPress={drag}
                   onPress={() => handleEditNote(item)}
-                  style={[styles.noteItem, {
-                    backgroundColor: isDark ? '#1a1a1a' : '#f4f4f4',
-                    borderColor: isDark ? '#2a2a2a' : '#ccc'
-                  }]}
+                  style={[
+                    styles.noteItem,
+                    {
+                      backgroundColor: isDark ? '#1a1a1a' : '#f4f4f4',
+                      borderColor: isDark ? '#2a2a2a' : '#ccc',
+                    },
+                  ]}
                 >
                   <Text style={[styles.noteText, { color: isDark ? '#00ffcc' : '#00796B' }]}>{item.title}</Text>
-                  <Text style={[styles.noteTimestamp, { color: isDark ? '#888' : '#666' }]}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                  <Text style={[styles.noteTimestamp, { color: isDark ? '#888' : '#666' }]}>
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </Text>
                   <Markdown style={{ body: { color: isDark ? '#ddd' : '#333', fontSize: 14 } }}>
                     {item.content.slice(0, 100) + '...'}
                   </Markdown>
