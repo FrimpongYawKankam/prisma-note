@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 
 // For testing/development without a working backend
-const USE_MOCK_AUTH = false; // Set to true to use mock authentication instead of real API calls
+const USE_MOCK_AUTH = true; // Set to true to use mock authentication instead of real API calls
 
 // Mock user database for testing when USE_MOCK_AUTH is true
 const mockUsers = [

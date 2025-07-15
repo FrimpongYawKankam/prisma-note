@@ -1,4 +1,4 @@
-import { useTheme } from '../../src/context/ThemeContext'; // ✅ Import custom hook
+import { useTheme } from '../src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,7 +26,7 @@ interface Note {
 export default function NoteDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { theme } = useTheme(); // ✅ Use theme context
+  const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   const [note, setNote] = useState<Note | null>(null);
@@ -45,7 +45,17 @@ export default function NoteDetail() {
             setNote(selectedNote);
             setTitle(selectedNote.title);
             setContent(selectedNote.content || '');
+          } else {
+            // New note: clear title/content
+            setNote(null);
+            setTitle('');
+            setContent('');
           }
+        } else {
+          // No notes found: new note
+          setNote(null);
+          setTitle('');
+          setContent('');
         }
       } catch (error) {
         Alert.alert('Error', 'Failed to load note.');
@@ -110,7 +120,8 @@ export default function NoteDetail() {
     ]);
   };
 
-  if (!note) {
+  // Show loading if note is not loaded and not a new note
+  if (!note && id) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
         <Text style={[styles.message, { color: isDark ? '#aaa' : '#444' }]}>Loading note...</Text>
@@ -167,7 +178,7 @@ export default function NoteDetail() {
                 color: isDark ? '#eee' : '#111',
               },
             ]}
-            placeholder="Start writing here..."
+            placeholder={note ? "Start writing here..." : "# New note\nStart writing..."}
             placeholderTextColor={isDark ? '#666' : '#aaa'}
             value={content}
             onChangeText={handleContentChange}
@@ -217,7 +228,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// Dynamically adjust markdown style based on theme
 const getMarkdownStyles = (isDark: boolean) => ({
   body: {
     color: isDark ? '#ccc' : '#333',
@@ -226,5 +236,4 @@ const getMarkdownStyles = (isDark: boolean) => ({
     paddingBottom: 40,
   },
   heading1: { color: '#64ffda' },
-  heading2: { color: '#64ffda' },
 });
