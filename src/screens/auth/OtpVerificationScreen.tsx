@@ -2,28 +2,34 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import MessageBox from '../../components/ui/MessageBox';
+import { MessageBox } from '../../components/ui/MessageBox';
+import { ModernButton } from '../../components/ui/ModernButton';
+import { ModernCard } from '../../components/ui/ModernCard';
+import { useTheme } from '../../context/ThemeContext';
 import * as authService from '../../services/authService';
+import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function OtpVerificationScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { email } = useLocalSearchParams();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [errorMessage, setErrorMessage] = useState('');
-  const [messageType, setMessageType] = useState<'error' | 'success' | 'info'>('info');
+  const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
   const [isLoading, setIsLoading] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(30);
@@ -139,173 +145,166 @@ export default function OtpVerificationScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <MessageBox message={errorMessage} type={messageType} />
-      
-      <Image
-        source={require('../../../assets/images/notion-desk.png')}
-        style={styles.image}
-        resizeMode="contain"
-      />
-      
-      <Text style={styles.title}>OTP Verification</Text>
-      <Text style={styles.subtitle}>
-        Please enter the 6-digit code sent to your email
-      </Text>
-      
-      <View style={styles.otpContainer}>
-        {[0, 1, 2, 3, 4, 5].map((index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => {
-              if (ref) inputRefs.current[index] = ref;
-            }}
-            style={styles.otpInput}
-            value={otp[index]}
-            onChangeText={(text) => handleOtpChange(text, index)}
-            onKeyPress={(e) => handleKeyPress(e, index)}
-            keyboardType="number-pad"
-            maxLength={1}
-            selectTextOnFocus
-          />
-        ))}
-      </View>
-      
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={handleVerifyOtp}
-        disabled={isLoading}
+      <KeyboardAvoidingView
+        style={[styles.outerContainer, { backgroundColor: colors.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <View style={styles.buttonContent}>
-          {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#fff" style={styles.icon} />
-              <Text style={styles.buttonText}>Verify OTP</Text>
-            </>
-          )}
-        </View>
-      </TouchableOpacity>
-      
-      <View style={styles.resendContainer}>
-        <Text style={styles.resendText}>Didn't receive the code? </Text>
-        <TouchableOpacity 
-          onPress={handleResendOtp}
-          disabled={resendDisabled || isLoading}
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={[
-            styles.resendButtonText,
-            resendDisabled && { opacity: 0.5 }
-          ]}>
-            {resendDisabled ? `Resend in ${countdown}s` : 'Resend OTP'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <View style={styles.buttonContent}>
-          <Ionicons name="arrow-back" size={20} color="#fff" style={styles.icon} />
-          <Text style={styles.buttonText}>Back to Signup</Text>
-        </View>
-      </TouchableOpacity>
-    </KeyboardAvoidingView>
+          <View style={styles.logoTopContainer}>
+            <Image
+              source={require('../../../assets/images/notion-desk.png')}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
+          
+          <ModernCard style={styles.card} padding="lg">
+            <Text style={[styles.headerText, { color: colors.text }]}>OTP Verification</Text>
+            <Text style={[styles.subText, { color: colors.textMuted }]}>
+              Please enter the 6-digit code sent to your email
+            </Text>
+            
+            <View style={styles.otpContainer}>
+              {[0, 1, 2, 3, 4, 5].map((index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => {
+                    if (ref) inputRefs.current[index] = ref;
+                  }}
+                  style={[
+                    styles.otpInput,
+                    { 
+                      borderColor: colors.border,
+                      backgroundColor: colors.surface,
+                      color: colors.text 
+                    }
+                  ]}
+                  value={otp[index]}
+                  onChangeText={(text) => handleOtpChange(text, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
+            
+            <ModernButton
+              title="Verify OTP"
+              onPress={handleVerifyOtp}
+              loading={isLoading}
+              variant="gradient"
+              size="md"
+              leftIcon={<Ionicons name="checkmark-circle-outline" size={18} color="#fff" />}
+              enableHaptics
+              style={{ marginBottom: Spacing.sm }}
+            />
+            
+            <View style={styles.resendContainer}>
+              <Text style={[styles.resendText, { color: colors.textMuted }]}>Didn't receive the code? </Text>
+              <TouchableOpacity 
+                onPress={handleResendOtp}
+                disabled={resendDisabled || isLoading}
+              >
+                <Text style={[
+                  styles.resendButtonText,
+                  { color: colors.primary },
+                  resendDisabled && { opacity: 0.5 }
+                ]}>
+                  {resendDisabled ? `Resend in ${countdown}s` : 'Resend OTP'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ModernButton
+              title="Back to Signup"
+              onPress={() => router.push('/signup')}
+              variant="outline"
+              size="md"
+              leftIcon={<Ionicons name="arrow-back" size={18} color={colors.text} />}
+              enableHaptics
+              style={{ marginTop: Spacing.sm }}
+            />
+          </ModernCard>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#000',
-    paddingHorizontal: 20,
+  },
+  outerContainer: {
+    flex: 1,
+    paddingHorizontal: Spacing.base,
     justifyContent: 'center',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingVertical: Spacing.xl,
+    justifyContent: 'center',
+  },
+  logoTopContainer: {
     alignItems: 'center',
+    marginTop: Spacing.base,
+    marginBottom: Spacing.sm,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   image: {
-    width: width * 1.0,
-    height: width * 0.5,
-    marginBottom: 16,
+    width: 120,
+    height: 100,
+    marginBottom: Spacing.sm,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
+  headerText: {
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: Typography.fontWeight.bold as any,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#aaa',
-    marginBottom: 30,
+  subText: {
+    fontSize: Typography.fontSize.base,
+    marginBottom: Spacing.lg,
     textAlign: 'center',
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginBottom: 30,
+    marginBottom: Spacing.lg,
   },
   otpInput: {
-    width: width / 8,
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#1E90FF',
-    borderRadius: 8,
-    color: '#fff',
-    fontSize: 24,
+    width: width / 9,
+    height: 56,
+    borderWidth: 2,
+    borderRadius: BorderRadius.md,
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold as any,
     textAlign: 'center',
-    backgroundColor: '#1a1a1a',
-  },
-  button: {
-    width: '100%',
-    height: 48,
-    backgroundColor: '#1E90FF',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#1E90FF',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  backButton: {
-    width: '100%',
-    height: 48,
-    backgroundColor: '#333',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  icon: {
-    marginRight: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   resendContainer: {
     flexDirection: 'row',
-    marginTop: 20,
-    marginBottom: 20,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginVertical: Spacing.lg,
   },
   resendText: {
-    color: '#aaa',
-    fontSize: 14,
+    fontSize: Typography.fontSize.sm,
   },
   resendButtonText: {
-    color: '#1E90FF',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semiBold as any,
+    textDecorationLine: 'underline',
   },
 });

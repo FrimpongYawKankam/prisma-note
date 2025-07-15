@@ -1,65 +1,83 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Keyboard,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Keyboard,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
-import DraggableFlatList from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Markdown from 'react-native-markdown-display';
 import { Menu, Provider } from 'react-native-paper';
+import { ModernCard } from '../../src/components/ui/ModernCard';
+import { ModernInput } from '../../src/components/ui/ModernInput';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { BorderRadius, Spacing, Typography } from '../../src/styles/tokens';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  parentId?: string | null;
+}
+
 export default function HomeScreen() {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const { isAuthenticated, user, refreshUserData } = useAuth();
-  const isDark = theme === 'dark';
 
   const [userData, setUserData] = useState({ fullName: '', email: '' });
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [noteInput, setNoteInput] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (isAuthenticated) await refreshUserData();
-        const userString = await AsyncStorage.getItem('user');
-        const savedNotesString = await AsyncStorage.getItem('notes');
+  const loadData = useCallback(async () => {
+    try {
+      if (isAuthenticated) await refreshUserData();
+      const userString = await AsyncStorage.getItem('user');
+      const savedNotesString = await AsyncStorage.getItem('notes');
 
-        if (user) {
-          setUserData({ fullName: user.fullName || '', email: user.email });
-        } else if (userString) {
-          const storedUser = JSON.parse(userString);
-          setUserData({ fullName: storedUser.fullName || '', email: storedUser.email });
-        }
-
-        if (savedNotesString) {
-          setNotes(JSON.parse(savedNotesString));
-        } else {
-          await AsyncStorage.setItem('notes', JSON.stringify([]));
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setNotes([]);
+      if (user) {
+        setUserData({ fullName: user.fullName || '', email: user.email });
+      } else if (userString) {
+        const storedUser = JSON.parse(userString);
+        setUserData({ fullName: storedUser.fullName || '', email: storedUser.email });
       }
-    };
-    loadData();
-  }, []);
 
-  const saveNotes = async (newNotes) => {
+      if (savedNotesString) {
+        setNotes(JSON.parse(savedNotesString));
+      } else {
+        await AsyncStorage.setItem('notes', JSON.stringify([]));
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setNotes([]);
+    }
+  }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Reload notes when screen is focused (e.g., returning from create screen)
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const saveNotes = async (newNotes: Note[]) => {
     setNotes(newNotes);
     await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
   };
@@ -79,7 +97,7 @@ export default function HomeScreen() {
     Keyboard.dismiss();
   };
 
-  const handleEditNote = (note) => {
+  const handleEditNote = (note: Note) => {
     router.push({ pathname: '/note-detail', params: { id: note.id } });
   };
 
@@ -87,77 +105,140 @@ export default function HomeScreen() {
     <Provider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+          <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* Header Section */}
             <View style={styles.headerRow}>
-              <Text style={[styles.headerText, { color: isDark ? '#fff' : '#000' }]}>
-                📝 <Text style={{ color: isDark ? '#64ffda' : '#00796B' }}>PrismaNote</Text>
-              </Text>
+              <View>
+                <Text style={[styles.headerText, { color: colors.text }]}>
+                  📝 <Text style={{ color: colors.primary }}>PrismaNote</Text>
+                </Text>
+                <Text style={[styles.subText, { color: colors.textSecondary }]}>
+                  Welcome back, {user?.fullName || userData.fullName || 'User'}!
+                </Text>
+              </View>
               <Menu
                 visible={menuVisible}
                 onDismiss={() => setMenuVisible(false)}
                 anchor={
-                  <TouchableOpacity onPress={() => setMenuVisible(true)}>
-                    <Ionicons name="ellipsis-vertical" size={24} color={isDark ? '#fff' : '#000'} />
+                  <TouchableOpacity 
+                    onPress={() => setMenuVisible(true)}
+                    style={styles.menuButton}
+                  >
+                    <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
                   </TouchableOpacity>
                 }
+                contentStyle={{ backgroundColor: colors.surface }}
               >
-                <Menu.Item onPress={() => { setMenuVisible(false); router.push('/profile'); }} title="Profile" />
-                <Menu.Item onPress={() => { setMenuVisible(false); router.push('/help'); }} title="Help" />
-                <Menu.Item onPress={() => { setMenuVisible(false); router.push('/settings'); }} title="Settings" />
-                <Menu.Item onPress={() => { setMenuVisible(false); router.push('/about'); }} title="About" />
-                {/* Log Out option removed */}
+                <Menu.Item 
+                  onPress={() => { setMenuVisible(false); router.push('/profile'); }} 
+                  title="Profile" 
+                  titleStyle={{ color: colors.text }}
+                />
+                <Menu.Item 
+                  onPress={() => { setMenuVisible(false); router.push('/help'); }} 
+                  title="Help" 
+                  titleStyle={{ color: colors.text }}
+                />
+                <Menu.Item 
+                  onPress={() => { setMenuVisible(false); router.push('/settings'); }} 
+                  title="Settings" 
+                  titleStyle={{ color: colors.text }}
+                />
+                <Menu.Item 
+                  onPress={() => { setMenuVisible(false); router.push('/about'); }} 
+                  title="About" 
+                  titleStyle={{ color: colors.text }}
+                />
               </Menu>
             </View>
 
-            <Text style={[styles.subText, { color: isDark ? '#aaa' : '#444' }]}>
-              Welcome back, {user?.fullName || userData.fullName || 'User'}!
-            </Text>
-
-            <View style={[styles.inputContainer, { backgroundColor: isDark ? '#111' : '#eee' }]}>
-              <TextInput
+            {/* Input Section */}
+            <View style={styles.inputSection}>
+              <ModernInput
                 placeholder="Write a note..."
-                placeholderTextColor={isDark ? '#aaa' : '#888'}
-                style={[styles.input, { color: isDark ? '#fff' : '#000' }]}
                 value={noteInput}
                 onChangeText={setNoteInput}
+                rightIcon={
+                  <TouchableOpacity
+                    onPress={handleAddNote}
+                    disabled={noteInput.trim() === ''}
+                    style={[
+                      {
+                        backgroundColor: colors.primary,
+                        borderRadius: BorderRadius.md,
+                        padding: Spacing.sm,
+                        minWidth: 36,
+                        minHeight: 36,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      },
+                      noteInput.trim() === '' && { 
+                        backgroundColor: colors.textMuted,
+                        opacity: 0.5 
+                      }
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="add" 
+                      size={20} 
+                      color="#ffffff" 
+                    />
+                  </TouchableOpacity>
+                }
+                style={{ marginBottom: 0 }}
               />
-              <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: isDark ? '#222' : '#ccc' }]}
-                onPress={handleAddNote}
-              >
-                <Ionicons name="add" size={24} color={isDark ? '#fff' : '#000'} />
-              </TouchableOpacity>
             </View>
 
-            <View style={{ height: 1, backgroundColor: isDark ? '#333' : '#ddd', marginVertical: 10 }} />
+            {/* Divider */}
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <DraggableFlatList
-              data={notes}
-              keyExtractor={(item) => item.id}
-              onDragEnd={({ data }) => saveNotes(data)}
-              contentContainerStyle={{ paddingBottom: 100 }}
-              renderItem={({ item, drag }) => (
-                <TouchableOpacity
-                  onLongPress={drag}
-                  onPress={() => handleEditNote(item)}
-                  style={[
-                    styles.noteItem,
-                    {
-                      backgroundColor: isDark ? '#1a1a1a' : '#f4f4f4',
-                      borderColor: isDark ? '#2a2a2a' : '#ccc',
-                    },
-                  ]}
-                >
-                  <Text style={[styles.noteText, { color: isDark ? '#00ffcc' : '#00796B' }]}>{item.title}</Text>
-                  <Text style={[styles.noteTimestamp, { color: isDark ? '#888' : '#666' }]}>
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </Text>
-                  <Markdown style={{ body: { color: isDark ? '#ddd' : '#333', fontSize: 14 } }}>
-                    {item.content.slice(0, 100) + '...'}
-                  </Markdown>
-                </TouchableOpacity>
-              )}
-            />
+            {/* Notes List */}
+            {notes.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="document-text-outline" size={64} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+                  No notes yet
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                  Start by creating your first note above
+                </Text>
+              </View>
+            ) : (
+              <ScrollView 
+                style={styles.notesList}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                showsVerticalScrollIndicator={false}
+              >
+                {notes.map((note) => (
+                  <ModernCard
+                    key={note.id}
+                    onPress={() => handleEditNote(note)}
+                    style={styles.noteCard}
+                  >
+                    <Text style={[styles.noteTitle, { color: colors.primary }]}>
+                      {note.title}
+                    </Text>
+                    <Text style={[styles.noteTimestamp, { color: colors.textMuted }]}>
+                      {new Date(note.createdAt).toLocaleDateString()}
+                    </Text>
+                    <View style={styles.notePreview}>
+                      <Markdown 
+                        style={{ 
+                          body: { 
+                            color: colors.textSecondary, 
+                            fontSize: Typography.fontSize.sm,
+                            lineHeight: Typography.lineHeight.sm,
+                          } 
+                        }}
+                      >
+                        {note.content.slice(0, 100) + '...'}
+                      </Markdown>
+                    </View>
+                  </ModernCard>
+                ))}
+              </ScrollView>
+            )}
           </SafeAreaView>
         </TouchableWithoutFeedback>
       </GestureHandlerRootView>
@@ -166,10 +247,74 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerText: { fontSize: 26, fontWeight: '700' },
-  subText: { fontSize: 16, marginBottom: 10 },
+  container: { 
+    flex: 1, 
+    padding: Spacing.lg,
+  },
+  headerRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start',
+    marginBottom: Spacing.xl,
+  },
+  headerText: { 
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: '700' as const,
+    lineHeight: Typography.lineHeight['3xl'],
+  },
+  subText: { 
+    fontSize: Typography.fontSize.base,
+    lineHeight: Typography.lineHeight.base,
+    marginTop: Spacing.xs,
+  },
+  menuButton: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  inputSection: {
+    marginBottom: Spacing.lg,
+  },
+  divider: {
+    height: 1,
+    marginVertical: Spacing.lg,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: Spacing['4xl'],
+  },
+  emptyTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: '600' as const,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: Typography.fontSize.base,
+    textAlign: 'center' as const,
+    paddingHorizontal: Spacing.xl,
+  },
+  notesList: {
+    flex: 1,
+  },
+  noteCard: {
+    marginBottom: Spacing.base,
+  },
+  noteTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: '600' as const,
+    lineHeight: Typography.lineHeight.lg,
+    marginBottom: Spacing.xs,
+  },
+  noteTimestamp: {
+    fontSize: Typography.fontSize.sm,
+    marginBottom: Spacing.sm,
+  },
+  notePreview: {
+    marginTop: Spacing.xs,
+  },
+  // Legacy styles (to be removed)
   inputContainer: {
     flexDirection: 'row',
     borderRadius: 8,
@@ -190,5 +335,5 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   noteText: { fontSize: 16, marginBottom: 4 },
-  noteTimestamp: { fontSize: 12, marginBottom: 4 },
+  noteTimestampLegacy: { fontSize: 12, marginBottom: 4 },
 });

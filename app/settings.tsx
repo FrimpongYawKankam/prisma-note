@@ -1,15 +1,16 @@
-import { useTheme } from '../src/context/ThemeContext'; // ✅ import theme context
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { useTheme } from '../src/context/ThemeContext'; // ✅ import theme context
+import { safeNavigateBack } from '../src/utils/navigation';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -62,7 +63,7 @@ export default function SettingsScreen() {
 
         {/* Back */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
             <Ionicons name="arrow-back-outline" size={18} color={theme === 'dark' ? '#aaa' : '#555'} />
             <Text style={[styles.backText, theme === 'dark' ? styles.darkSubText : styles.lightSubText]}>
               Back

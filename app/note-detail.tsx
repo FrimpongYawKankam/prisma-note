@@ -1,11 +1,9 @@
-import { useTheme } from '../src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import debounce from 'lodash.debounce';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -15,6 +13,9 @@ import {
   View,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import { MessageBox } from '../src/components/ui/MessageBox';
+import { ModernDialog } from '../src/components/ui/ModernDialog';
+import { useTheme } from '../src/context/ThemeContext';
 
 interface Note {
   id: string;
@@ -33,6 +34,9 @@ export default function NoteDetail() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     const loadNote = async () => {
@@ -58,7 +62,8 @@ export default function NoteDetail() {
           setContent('');
         }
       } catch (error) {
-        Alert.alert('Error', 'Failed to load note.');
+        setMessage('Failed to load note.');
+        setMessageType('error');
       }
     };
     loadNote();
@@ -98,26 +103,23 @@ export default function NoteDetail() {
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete Note?', 'This will permanently delete the note.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const savedNotes = await AsyncStorage.getItem('notes');
-            if (savedNotes) {
-              const notes: Note[] = JSON.parse(savedNotes);
-              const updatedNotes = notes.filter((n) => n.id !== id);
-              await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
-              router.back();
-            }
-          } catch (err) {
-            Alert.alert('Error', 'Failed to delete note.');
-          }
-        },
-      },
-    ]);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      const savedNotes = await AsyncStorage.getItem('notes');
+      if (savedNotes) {
+        const notes: Note[] = JSON.parse(savedNotes);
+        const updatedNotes = notes.filter((n) => n.id !== id);
+        await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
+        setShowDeleteDialog(false);
+        router.back();
+      }
+    } catch (err) {
+      setMessage('Failed to delete note.');
+      setMessageType('error');
+    }
   };
 
   // Show loading if note is not loaded and not a new note
@@ -186,6 +188,31 @@ export default function NoteDetail() {
           />
         </>
       )}
+
+      <MessageBox
+        message={message}
+        type={messageType}
+        duration={3000}
+      />
+
+      <ModernDialog
+        visible={showDeleteDialog}
+        title="Delete Note?"
+        message="This will permanently delete the note."
+        buttons={[
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => setShowDeleteDialog(false),
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: confirmDelete,
+          },
+        ]}
+        onClose={() => setShowDeleteDialog(false)}
+      />
     </SafeAreaView>
   );
 }

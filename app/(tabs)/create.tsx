@@ -1,34 +1,39 @@
-import { useTheme } from '../../src/context/ThemeContext'; // ✅ using custom theme
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
+import { MessageBox } from '../../src/components/ui/MessageBox';
+import { ModernDialog } from '../../src/components/ui/ModernDialog';
+import { useTheme } from '../../src/context/ThemeContext'; // ✅ using custom theme
 
 export default function CreateScreen() {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const isDark = theme === 'dark';
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const saveNote = async () => {
     if (!title.trim() || !content.trim()) {
-      Alert.alert('Missing Info', 'Please enter both a title and content.');
+      setMessage('Please enter both a title and content.');
+      setMessageType('error');
       return;
     }
 
@@ -49,26 +54,25 @@ export default function CreateScreen() {
       setContent('');
       Keyboard.dismiss();
 
-      Alert.alert('Success ✅', 'Note saved successfully!', [
-        { text: 'OK', onPress: () => router.push('/') },
-      ]);
+      setShowSuccessDialog(true);
     } catch (error) {
       console.error('Error saving note:', error);
-      Alert.alert('Error ❌', 'Failed to save the note. Please try again.');
+      setMessage('Failed to save the note. Please try again.');
+      setMessageType('error');
     }
   };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={[styles.safe, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
         <KeyboardAvoidingView
           style={styles.container}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.headerRow}>
-            <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>New Note</Text>
+            <Text style={[styles.header, { color: colors.text }]}>New Note</Text>
             <TouchableOpacity onPress={saveNote}>
-              <Ionicons name="checkmark-done-outline" size={28} color="#64ffda" />
+              <Ionicons name="checkmark-done-outline" size={28} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
@@ -76,12 +80,13 @@ export default function CreateScreen() {
             style={[
               styles.titleInput,
               {
-                backgroundColor: isDark ? '#1a1a1a' : '#eee',
-                color: isDark ? '#fff' : '#000',
+                backgroundColor: colors.surface,
+                color: colors.text,
+                borderColor: colors.border,
               },
             ]}
             placeholder="Title"
-            placeholderTextColor={isDark ? '#aaa' : '#666'}
+            placeholderTextColor={colors.textMuted}
             value={title}
             onChangeText={setTitle}
           />
@@ -90,15 +95,39 @@ export default function CreateScreen() {
             style={[
               styles.contentInput,
               {
-                backgroundColor: isDark ? '#1a1a1a' : '#eee',
-                color: isDark ? '#eee' : '#000',
+                backgroundColor: colors.surface,
+                color: colors.text,
+                borderColor: colors.border,
               },
             ]}
             placeholder="Start typing your note here..."
-            placeholderTextColor={isDark ? '#aaa' : '#666'}
+            placeholderTextColor={colors.textMuted}
             value={content}
             onChangeText={setContent}
             multiline
+          />
+
+          <MessageBox
+            message={message}
+            type={messageType}
+            duration={3000}
+          />
+
+          <ModernDialog
+            visible={showSuccessDialog}
+            title="Success ✅"
+            message="Note saved successfully!"
+            buttons={[
+              {
+                text: 'OK',
+                style: 'default',
+                onPress: () => {
+                  setShowSuccessDialog(false);
+                  router.push('/');
+                },
+              },
+            ]}
+            onClose={() => setShowSuccessDialog(false)}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -131,6 +160,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1,
   },
   contentInput: {
     flex: 1,
@@ -138,5 +168,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     textAlignVertical: 'top',
+    borderWidth: 1,
   },
 });

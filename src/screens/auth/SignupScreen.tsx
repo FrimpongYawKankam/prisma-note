@@ -2,26 +2,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Dimensions,
-  Image,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import MessageBox from '../../components/ui/MessageBox';
+import { MessageBox } from '../../components/ui/MessageBox';
+import { ModernButton } from '../../components/ui/ModernButton';
+import { ModernCard } from '../../components/ui/ModernCard';
+import { ModernInput } from '../../components/ui/ModernInput';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { Spacing, Typography } from '../../styles/tokens';
+
+const { height, width } = Dimensions.get('window');
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordWarning, setPasswordWarning] = useState('');
-  const [secureText, setSecureText] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [messageType, setMessageType] = useState<'error' | 'success' | 'info'>('error');
+  const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('error');
+  const [isLoading, setIsLoading] = useState(false);
 
   const validatePassword = (text: string) => {
     const pattern =
@@ -29,33 +41,35 @@ export default function SignupScreen() {
     return pattern.test(text);
   };
   const { register } = useAuth();
-    const handleSignup = async () => {
-    // Reset error message first
-    setErrorMessage('');
-    
-    if (!fullName || !email || !password) {
-      // Use timeout to avoid state updates during render
-      setTimeout(() => {
-        setErrorMessage('Please fill in all fields.');
-        setMessageType('error');
-      }, 0);
-      return;
-    }
-    
-    if (!validatePassword(password)) {
-      setTimeout(() => {
-        setErrorMessage('Please enter a strong password.');
-        setMessageType('error');
-      }, 0);
-      return;
-    }
-    
+  
+  const handleSignup = async () => {
     try {
-      // Call the register API
-      await register(fullName, email, password);
+      setErrorMessage('');
+      setMessageType('info');
+      setIsLoading(true);
       
-      // Success - use requestAnimationFrame to schedule after render
-      requestAnimationFrame(() => {
+      // Validate inputs
+      if (!fullName || !email || !password) {
+        setTimeout(() => {
+          setErrorMessage('Please fill in all fields.');
+          setMessageType('error');
+        }, 0);
+        return;
+      }
+      
+      if (!validatePassword(password)) {
+        setTimeout(() => {
+          setErrorMessage('Please enter a strong password.');
+          setMessageType('error');
+        }, 0);
+        return;
+      }
+      
+      try {
+        // Call the register API
+        await register(fullName, email, password);
+        
+        // Success
         setErrorMessage('Signup successful! Please check your email for verification code.');
         setMessageType('success');
         
@@ -64,186 +78,220 @@ export default function SignupScreen() {
           pathname: '/otp-verification',
           params: { email }
         }), 1500);
-      });
-    } catch (error: any) {
-      // Handle different error types
-      let message = 'An unexpected error occurred';
-      
-      if (error.response) {
-        message = error.response.data?.message || 'Registration failed';
-      } else if (error.request) {
-        message = 'Network error. Please check your connection.';
+      } catch (error: any) {
+        // Handle different error types
+        let message = 'An unexpected error occurred';
+        
+        if (error.response) {
+          message = error.response.data?.message || 'Registration failed';
+        } else if (error.request) {
+          message = 'Network error. Please check your connection.';
+        } else if (error.message) {
+          message = error.message;
+        }
+        
+        setTimeout(() => {
+          setErrorMessage(message);
+          setMessageType('error');
+        }, 0);
+        
+        console.error('Error during signup:', error);
       }
-      
-      // Schedule state update safely
-      requestAnimationFrame(() => {
-        setErrorMessage(message);
+    } catch (unexpectedError) {
+      console.error('Unexpected signup error:', unexpectedError);
+      setTimeout(() => {
+        setErrorMessage('An unexpected error occurred. Please try again.');
         setMessageType('error');
-      });
-      
-      console.error('Error during signup:', error);
+      }, 0);
+    } finally {
+      setIsLoading(false);
     }
   };
+
   return (
-    <View style={styles.container}>
-      {/* add keyboardoidnig view to allow user to hide keyboard when clicking on another part of the screen */}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <MessageBox message={errorMessage} type={messageType} />
-      
-      <Image
-        source={require('../../../assets/images/notion-desk.png')}
-        style={styles.image}
-        resizeMode="contain"
-      />
+      <KeyboardAvoidingView
+        style={[styles.outerContainer, { backgroundColor: colors.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ModernCard style={styles.card} padding="lg">
+            <View style={styles.imageContainer}>
+              <Image
+                source={require('../../../assets/images/notion-desk.png')}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            </View>
+            
+            <Text style={[styles.headerText, { color: colors.text }]}>Create Account</Text>
+            <Text style={[styles.subText, { color: colors.textMuted }]}>Join PrismaNote and start organizing your ideas</Text>
 
-      <Text style={styles.title}>Sign Up</Text>
+            {/* Full Name */}
+            <ModernInput
+              label="Full Name"
+              value={fullName}
+              onChangeText={setFullName}
+              autoCapitalize="words"
+              style={{ marginBottom: Spacing.sm }}
+            />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Full Name"
-        placeholderTextColor="#808080"
-        value={fullName}
-        onChangeText={setFullName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#808080"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
+            {/* Email */}
+            <ModernInput
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              style={{ marginBottom: Spacing.sm }}
+            />
 
-      <View style={styles.passwordContainer}>
-        <TextInput
-          style={{ flex: 1, color: '#fff' }}
-          placeholder="Password"
-          placeholderTextColor="#808080"
-          secureTextEntry={secureText}
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            if (text.length > 0 && !validatePassword(text)) {
-              setPasswordWarning(
-                'Password must be at least 6 characters long.\nMust contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
-              );
-              setErrorMessage('Your password does not meet the requirements');
-              setMessageType('info');
-            } else {
-              setPasswordWarning('');
-              setErrorMessage('');
-            }
-          }}
-        />
-        <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-          <Ionicons
-            name={secureText ? 'eye-off' : 'eye'}
-            size={24}
-            color="#fff"
-            style={{ marginLeft: 8 }}
-          />
-        </TouchableOpacity>
-      </View>
+            {/* Password */}
+            <ModernInput
+              label="Password"
+              value={password}
+              onChangeText={(text: string) => {
+                setPassword(text);
+                if (text.length > 0 && !validatePassword(text)) {
+                  setPasswordWarning(
+                    'Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
+                  );
+                  setErrorMessage('Your password does not meet the requirements');
+                  setMessageType('info');
+                } else {
+                  setPasswordWarning('');
+                  setErrorMessage('');
+                }
+              }}
+              secureTextEntry={!showPassword}
+              error={passwordWarning}
+              rightIcon={
+                <TouchableOpacity
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={24}
+                    color={colors.textMuted}
+                  />
+                </TouchableOpacity>
+              }
+              style={{ marginBottom: Spacing.sm }}
+            />
 
-      {passwordWarning ? (
-        <Text style={styles.warning}>{passwordWarning}</Text>
-      ) : null}
+            {/* Sign Up Button */}
+            <ModernButton
+              title="Sign Up"
+              onPress={handleSignup}
+              loading={isLoading}
+              variant="gradient"
+              size="md"
+              leftIcon={<Ionicons name="person-add-outline" size={18} color="#fff" />}
+              enableHaptics
+              style={{ marginBottom: Spacing.sm }}
+            />
 
-      {/* Sign Up Button with Icon */}
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <View style={styles.buttonContent}>
-          <Ionicons name="person-add-outline" size={20} color="#fff" style={styles.icon} />
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </View>
-      </TouchableOpacity>
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textMuted }]}>or</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            </View>
 
-      <Text style={styles.orText}>OR</Text>
+            {/* Login Option */}
+            <View style={styles.loginContainer}>
+              <Text style={[styles.loginText, { color: colors.textMuted }]}>Already have an account?</Text>
+              <TouchableOpacity onPress={() => router.push('/login')}>
+                <Text style={[styles.loginLink, { color: colors.primary }]}>Log in</Text>
+              </TouchableOpacity>
+            </View>
 
-      {/* Login Button with Icon */}
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/login')}>
-        <View style={styles.buttonContent}>
-          <Ionicons name="log-in-outline" size={20} color="#fff" style={styles.icon} />
-          <Text style={styles.buttonText}>Login</Text>
-        </View>
-      </TouchableOpacity>
-    </View>
+            <Text style={[styles.termsText, { color: colors.textMuted }]}>
+              By signing up, you agree to our Terms of Service and Privacy Policy
+            </Text>
+          </ModernCard>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#000',
-    paddingHorizontal: 20,
+  },
+  outerContainer: {
+    flex: 1,
+    paddingHorizontal: Spacing.base,
     justifyContent: 'center',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingVertical: Spacing.xl,
+    justifyContent: 'center',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
+  },
+  imageContainer: {
     alignItems: 'center',
+    marginBottom: Spacing.sm,
   },
   image: {
-    width: width * 1.0,
-    height: width * 0.5,
-    marginBottom: 16,
+    width: 120,
+    height: 100,
+    marginBottom: Spacing.sm,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 20,
+  headerText: {
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: Typography.fontWeight.bold as any,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
-  input: {
-    width: '100%',
-    height: 48,
-    backgroundColor: '#1a1a1a',
-    color: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+  subText: {
+    fontSize: Typography.fontSize.lg,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
   },
-  passwordContainer: {
-    width: '100%',
+  dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    height: 48,
+    marginVertical: Spacing.sm,
   },
-  warning: {
-    color: '#FF6347',
-    fontSize: 12,
-    marginBottom: 8,
-    alignSelf: 'flex-start',
+  dividerLine: {
+    flex: 1,
+    height: 1,
   },
-  orText: {
-    marginVertical: 16,
-    color: '#fff',
-    fontSize: 16,
+  dividerText: {
+    marginHorizontal: Spacing.sm,
+    fontSize: Typography.fontSize.sm,
   },
-  button: {
-    width: '100%',
-    height: 48,
-    backgroundColor: '#1E90FF',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#1E90FF',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  buttonContent: {
-    flexDirection: 'row',
+  loginContainer: {
+    marginTop: Spacing.lg,
     alignItems: 'center',
   },
-  icon: {
-    marginRight: 8,
+  loginText: {
+    fontSize: Typography.fontSize.base,
+    marginBottom: Spacing.xs,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  loginLink: {
+    fontWeight: Typography.fontWeight.semiBold as any,
+    fontSize: Typography.fontSize.base,
+    marginTop: Spacing.xs,
+  },
+  termsText: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
 });

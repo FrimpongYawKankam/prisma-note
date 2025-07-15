@@ -6,19 +6,22 @@ import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
-  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
-import MessageBox from '../../components/ui/MessageBox';
+import { MessageBox } from '../../components/ui/MessageBox';
+import { ModernButton } from '../../components/ui/ModernButton';
+import { ModernCard } from '../../components/ui/ModernCard';
+import { ModernInput } from '../../components/ui/ModernInput';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { Spacing, Typography } from '../../styles/tokens';
 
 const { height, width } = Dimensions.get('window');
 
@@ -26,12 +29,14 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordWarning, setPasswordWarning] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [messageType, setMessageType] = useState<'error' | 'success' | 'info'>('error');
+  const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('error');
+  const [isLoading, setIsLoading] = useState(false);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: '105342935662-ej0kqvn1h6hsm7lifo1jlflh2ud1basj.apps.googleusercontent.com',
@@ -54,10 +59,12 @@ export default function LoginScreen() {
     return regex.test(pwd);
   };
   const { login } = useAuth();
+  
   const handleLogin = async () => {
     try {
       setErrorMessage('');
       setMessageType('info');
+      setIsLoading(true);
       
       // Validate inputs
       if (!email || !password) {
@@ -106,6 +113,8 @@ export default function LoginScreen() {
         setErrorMessage('An unexpected error occurred. Please try again.');
         setMessageType('error');
       }, 0);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -129,10 +138,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <MessageBox message={errorMessage} type={messageType} />
       <KeyboardAvoidingView
-        style={styles.outerContainer}
+        style={[styles.outerContainer, { backgroundColor: colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
@@ -140,119 +149,126 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.logoTopContainer}>
-            <Image
-              source={require('../../../assets/images/logo.jpeg')}
-              style={styles.logo}
-            />
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.headerText}>Think it. Make it.</Text>
-            <Text style={styles.subText}>Log into your PrismaNote account</Text>
+          <ModernCard style={styles.card} padding="lg">
+            <Text style={[styles.headerText, { color: colors.text }]}>Think it. Make it.</Text>
+            <Text style={[styles.subText, { color: colors.textMuted }]}>Log into your PrismaNote account</Text>
 
             {/* Email */}
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder=""
-              placeholderTextColor="white"
+            <ModernInput
+              label="Email"
               value={email}
               onChangeText={setEmail}
-              autoCapitalize="none"
               keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              style={{ marginBottom: Spacing.sm }}
             />
 
             {/* Password */}
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordInputContainer}>
-              <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                placeholder=""
-                placeholderTextColor="#888"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (text.length > 0 && !validatePassword(text)) {
-                    setPasswordWarning(
-                      "Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)"
-                    );
-                    setErrorMessage('Your password does not meet the requirements');
-                    setMessageType('info');
-                  } else {
-                    setPasswordWarning('');
-                    setErrorMessage('');
-                  }
-                }}
-              />
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setShowPassword((prev) => !prev)}
-                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
-              >
-                <Ionicons
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={24}
-                  color="#888"
-                />
-              </TouchableOpacity>
-            </View>
-            {passwordWarning ? (
-              <Text style={styles.passwordWarning}>{passwordWarning}</Text>
-            ) : null}
+            <ModernInput
+              label="Password"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (text.length > 0 && !validatePassword(text)) {
+                  setPasswordWarning(
+                    "Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)"
+                  );
+                  setErrorMessage('Your password does not meet the requirements');
+                  setMessageType('info');
+                } else {
+                  setPasswordWarning('');
+                  setErrorMessage('');
+                }
+              }}
+              secureTextEntry={!showPassword}
+              error={passwordWarning}
+              rightIcon={
+                <TouchableOpacity
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={24}
+                    color={colors.textMuted}
+                  />
+                </TouchableOpacity>
+              }
+              style={{ marginBottom: Spacing.sm }}
+            />
 
             <TouchableOpacity style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            {/* ✅ Login Button with Icon */}
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <View style={styles.buttonContent}>
-                <Ionicons name="log-in-outline" size={20} color="#fff" style={styles.icon} />
-                <Text style={styles.loginButtonText}>Log in</Text>
-              </View>
-            </TouchableOpacity>
+            {/* Login Button */}
+            <ModernButton
+              title="Log in"
+              onPress={handleLogin}
+              loading={isLoading}
+              variant="gradient"
+              size="md"
+              leftIcon={<Ionicons name="log-in-outline" size={18} color="#fff" />}
+              enableHaptics
+              style={{ marginBottom: Spacing.sm }}
+            />
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textMuted }]}>or continue with</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
             </View>
 
             {/* Social Buttons */}
             <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialIconButton} onPress={handleGoogleLogin}>
-                <Ionicons name="logo-google" size={32} color="#DB4437" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialIconButton} onPress={handleAppleLogin}>
-                <Ionicons name="logo-apple" size={32} color="#111" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialIconButton} onPress={handleMicrosoftLogin}>
-                <Ionicons name="logo-microsoft" size={32} color="#0078D4" />
-              </TouchableOpacity>
+              <ModernButton
+                title=""
+                onPress={handleGoogleLogin}
+                variant="outline"
+                size="md"
+                leftIcon={<Ionicons name="logo-google" size={28} color="#DB4437" />}
+                style={styles.socialButton}
+              />
+              <ModernButton
+                title=""
+                onPress={handleAppleLogin}
+                variant="outline"
+                size="md"
+                leftIcon={<Ionicons name="logo-apple" size={28} color={colors.text} />}
+                style={styles.socialButton}
+              />
+              <ModernButton
+                title=""
+                onPress={handleMicrosoftLogin}
+                variant="outline"
+                size="md"
+                leftIcon={<Ionicons name="logo-microsoft" size={28} color="#0078D4" />}
+                style={styles.socialButton}
+              />
             </View>
 
             {/* Signup Option */}
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? Register for free</Text>
+              <Text style={[styles.signupText, { color: colors.textMuted }]}>Don't have an account? Register for free</Text>
               <TouchableOpacity onPress={() => router.push('/signup')}>
-                <Text style={styles.signupLink}>Sign up</Text>
+                <Text style={[styles.signupLink, { color: colors.primary }]}>Sign up</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.termsText}>
+            <Text style={[styles.termsText, { color: colors.textMuted }]}>
               By continuing, you acknowledge that you understand and agree to the Terms & condition and Privacy Policy
             </Text>
             <View style={styles.bottomLinksRow}>
               <TouchableOpacity>
-                <Text style={styles.bottomLink}>Privacy & terms</Text>
+                <Text style={[styles.bottomLink, { color: colors.primary }]}>Privacy & terms</Text>
               </TouchableOpacity>
               <TouchableOpacity>
-                <Text style={styles.bottomLink}>Need help?</Text>
+                <Text style={[styles.bottomLink, { color: colors.primary }]}>Need help?</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ModernCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -262,132 +278,65 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'black',
   },
   outerContainer: {
     flex: 1,
-    backgroundColor: 'black',
-    width: width,
-    height: height,
-    justifyContent: 'flex-start',
+    paddingHorizontal: Spacing.base,
+    justifyContent: 'center',
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
-  },
-  logoTopContainer: {
-    alignItems: 'flex-start',
-    marginTop: 16,
-    marginLeft: 32,
-    marginBottom: 8,
+    paddingVertical: Spacing.xl,
+    justifyContent: 'center',
   },
   card: {
-    flex: 1,
     width: '100%',
-    backgroundColor: 'black',
-    padding: 32,
-    paddingTop: 8,
-  },
-  logo: {
-    width: 100,
-    height: 75,
-    resizeMode: 'contain',
-    borderRadius: 12,
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   headerText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: Typography.fontWeight.bold as any,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
   subText: {
-    fontSize: 24,
-    color: '#fff',
-    marginBottom: 24,
-  },
-  label: {
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 4,
-    marginTop: 12,
-  },
-  input: {
-    height: 48,
-    backgroundColor: '#232326',
-    color: '#fff',
-    marginBottom: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#222227',
-    fontSize: 16,
-  },
-  passwordInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 0,
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 16,
-    padding: 8,
-    zIndex: 1,
-  },
-  passwordWarning: {
-    color: '#ff5252',
-    fontSize: 13,
-    marginBottom: 8,
-    marginTop: 8,
+    fontSize: Typography.fontSize.lg,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
   },
   forgotPasswordContainer: {
     alignSelf: 'flex-end',
-    marginBottom: 16,
+    marginBottom: Spacing.sm,
   },
   forgotPasswordText: {
-    color: '#fff',
-    fontSize: 15,
+    fontSize: Typography.fontSize.base,
     textDecorationLine: 'underline',
-  },
-  loginButton: {
-    backgroundColor: '#2f80ed',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    marginRight: 8,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 20,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: Spacing.base,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#232326',
   },
   dividerText: {
-    marginHorizontal: 12,
-    color: '#888',
-    fontSize: 14,
+    marginHorizontal: Spacing.sm,
+    fontSize: Typography.fontSize.sm,
   },
   socialRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 18,
-    paddingHorizontal: 8,
+    marginVertical: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
+  },
+  socialButton: {
+    flex: 1,
+    marginHorizontal: Spacing.xs,
+    minWidth: 60,
+    aspectRatio: 1,
   },
   socialIconButton: {
     backgroundColor: '#fff',
@@ -396,39 +345,40 @@ const styles = StyleSheet.create({
     height: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 8,
+    marginHorizontal: Spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   signupContainer: {
-    marginTop: 18,
+    marginTop: Spacing.lg,
     alignItems: 'center',
   },
   signupText: {
-    color: '#fff',
-    fontSize: 15,
-    marginBottom: 4,
+    fontSize: Typography.fontSize.base,
+    marginBottom: Spacing.xs,
   },
   signupLink: {
-    color: '#2f80ed',
-    fontWeight: '600',
-    fontSize: 15,
-    marginTop: 4,
+    fontWeight: Typography.fontWeight.semiBold as any,
+    fontSize: Typography.fontSize.base,
+    marginTop: Spacing.xs,
   },
   termsText: {
-    color: '#fff',
-    fontSize: 13,
-    marginTop: 24,
-    marginBottom: 8,
+    fontSize: Typography.fontSize.sm,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   bottomLinksRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
   bottomLink: {
-    color: '#fff',
-    fontSize: 14,
+    fontSize: Typography.fontSize.sm,
     textDecorationLine: 'underline',
-    marginHorizontal: 12,
+    marginHorizontal: Spacing.sm,
   },
 });

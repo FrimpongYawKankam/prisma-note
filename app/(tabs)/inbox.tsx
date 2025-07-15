@@ -1,4 +1,3 @@
-import { useTheme } from '../../src/context/ThemeContext'; // ✅ Use your custom theme context
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
@@ -8,39 +7,43 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTheme } from '../../src/context/ThemeContext'; // ✅ Use your custom theme context
 
-export default function InboxScreen() {
-  const [userData, setUserData] = useState({ username: '' });
-  const { theme } = useTheme();
+export default function EventsScreen() {
+  const [userData, setUserData] = useState({ fullName: '' });
+  const { theme, colors } = useTheme();
   const isDark = theme === 'dark';
 
   useEffect(() => {
     const fetchUser = async () => {
       const user = await AsyncStorage.getItem('user');
-      if (user) setUserData(JSON.parse(user));
+      if (user) {
+        const parsedUser = JSON.parse(user);
+        setUserData({ fullName: parsedUser.fullName || parsedUser.email?.split('@')[0] || '' });
+      }
     };
     fetchUser();
   }, []);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <Text style={[styles.headerText, { color: isDark ? '#fff' : '#111' }]}>
-        Hello, <Text style={{ color: '#64ffda' }}>{userData.username || 'User'}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.headerText, { color: colors.text }]}>
+        Hello, <Text style={{ color: colors.primary }}>{userData.fullName || 'User'}</Text>
       </Text>
-      <Text style={[styles.subText, { color: isDark ? '#aaa' : '#555' }]}>
-        Here's your activity log and inbox 💌
+      <Text style={[styles.subText, { color: colors.textMuted }]}>
+        Manage your upcoming events and reminders
       </Text>
 
-      <View style={styles.inboxBox}>
+      <View style={styles.eventsBox}>
         <Ionicons
-          name="mail-open-outline"
+          name="calendar-outline"
           size={64}
-          color={isDark ? '#666' : '#999'}
+          color={colors.textMuted}
           style={styles.icon}
         />
-        <Text style={[styles.title, { color: isDark ? '#eee' : '#222' }]}>No New Messages</Text>
-        <Text style={[styles.subtitle, { color: isDark ? '#999' : '#666' }]}>
-          Your inbox is clear. Notifications and shared notes will appear here.
+        <Text style={[styles.title, { color: colors.text }]}>No Events Scheduled</Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+          Your calendar is clear. Planned events and reminders will appear here.
         </Text>
       </View>
     </SafeAreaView>
@@ -62,7 +65,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 40,
   },
-  inboxBox: {
+  eventsBox: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',

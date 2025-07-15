@@ -2,16 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Keyboard
+    FlatList,
+    Keyboard,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity
 } from 'react-native';
-import { useTheme } from '../../src/context/ThemeContext'; 
+import { useTheme } from '../../src/context/ThemeContext';
+import { Spacing, Typography } from '../../src/styles/tokens';
 
 interface Note {
   id: string;
@@ -24,16 +24,19 @@ interface Note {
 export default function Search(): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
-  const [userData, setUserData] = useState({ username: '' });
+  const [userData, setUserData] = useState({ fullName: '' });
   const router = useRouter();
-  const { theme } = useTheme(); // 👈 Access theme context
+  const { theme, colors } = useTheme();
   const isDark = theme === 'dark';
 
   useEffect(() => {
     const loadNotes = async () => {
       const user = await AsyncStorage.getItem('user');
       const savedNotes = await AsyncStorage.getItem('notes');
-      if (user) setUserData(JSON.parse(user));
+      if (user) {
+        const parsedUser = JSON.parse(user);
+        setUserData({ fullName: parsedUser.fullName || parsedUser.email?.split('@')[0] || '' });
+      }
       if (savedNotes) setNotes(JSON.parse(savedNotes));
     };
     loadNotes();
@@ -45,20 +48,20 @@ export default function Search(): React.JSX.Element {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <Text style={[styles.header, { color: isDark ? '#64ffda' : '#222' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.header, { color: colors.text }]}>
         Search Notes
       </Text>
 
       <TextInput
         placeholder="Type to search..."
-        placeholderTextColor={isDark ? '#666' : '#888'}
+        placeholderTextColor={colors.textMuted}
         style={[
           styles.input,
           {
-            backgroundColor: isDark ? '#1a1a1a' : '#f0f0f0',
-            color: isDark ? '#fff' : '#000',
-            borderColor: isDark ? '#333' : '#ccc',
+            backgroundColor: colors.surface,
+            color: colors.text,
+            borderColor: colors.border,
           },
         ]}
         value={query}
@@ -67,7 +70,7 @@ export default function Search(): React.JSX.Element {
       />
 
       {filteredNotes.length === 0 ? (
-        <Text style={[styles.emptyText, { color: isDark ? '#777' : '#888' }]}>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>
           No matching notes found.
         </Text>
       ) : (
@@ -79,19 +82,19 @@ export default function Search(): React.JSX.Element {
               style={[
                 styles.noteItem,
                 {
-                  backgroundColor: isDark ? '#1a1a1a' : '#fff',
-                  borderColor: isDark ? '#333' : '#ccc',
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
                 },
               ]}
               onPress={() => router.push({ pathname: '/note-detail', params: { id: item.id } })}
             >
-              <Text style={[styles.noteTitle, { color: isDark ? '#00ffcc' : '#333' }]}>
+              <Text style={[styles.noteTitle, { color: colors.text }]}>
                 {item.title}
               </Text>
-              <Text style={[styles.noteDate, { color: isDark ? '#aaa' : '#666' }]}>
+              <Text style={[styles.noteDate, { color: colors.textMuted }]}>
                 {new Date(item.createdAt).toLocaleDateString()}
               </Text>
-              <Text style={[styles.noteSnippet, { color: isDark ? '#ccc' : '#444' }]}>
+              <Text style={[styles.noteSnippet, { color: colors.textMuted }]}>
                 {item.content.slice(0, 60)}
                 {item.content.length > 60 ? '...' : ''}
               </Text>
@@ -106,12 +109,12 @@ export default function Search(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: Spacing.base,
   },
   header: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontSize: Typography.fontSize['3xl'],
+    fontWeight: Typography.fontWeight.bold as any,
+    marginBottom: Spacing.base,
   },
   input: {
     padding: 12,

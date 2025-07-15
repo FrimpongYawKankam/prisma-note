@@ -3,19 +3,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { ModernDialog } from '../src/components/ui/ModernDialog';
 import { useAuth } from '../src/context/AuthContext';
 import { useTheme } from '../src/context/ThemeContext'; // ✅ Use custom theme
+import { safeNavigateBack } from '../src/utils/navigation';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState({ fullName: '', email: '' });
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { theme } = useTheme(); // ✅ access custom theme
   const { logout, user } = useAuth();
   const isDark = theme === 'dark';
@@ -44,26 +46,21 @@ export default function ProfileScreen() {
   }, [user]);
 
   const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await logout();
-            router.replace('/login');
-          } catch (error) {
-            console.error('Logout error:', error);
-          }
-        },
-      },
-    ]);
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      await logout();
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      <TouchableOpacity style={styles.backButton} onPress={() => safeNavigateBack('/')}>
         <Ionicons name="arrow-back" size={24} color={isDark ? '#64ffda' : '#00796b'} />
       </TouchableOpacity>
 
@@ -94,6 +91,28 @@ export default function ProfileScreen() {
         <Ionicons name="log-out-outline" size={20} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
+
+      <ModernDialog
+        visible={showLogoutDialog}
+        title="Logout"
+        message="Are you sure you want to log out?"
+        buttons={[
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => setShowLogoutDialog(false),
+          },
+          {
+            text: 'Logout',
+            style: 'destructive',
+            onPress: () => {
+              setShowLogoutDialog(false);
+              confirmLogout();
+            },
+          },
+        ]}
+        onClose={() => setShowLogoutDialog(false)}
+      />
     </SafeAreaView>
   );
 }

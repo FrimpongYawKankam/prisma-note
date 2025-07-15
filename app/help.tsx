@@ -1,8 +1,9 @@
-import { useTheme } from '../src/context/ThemeContext'; // ✅ useTheme import
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../src/context/ThemeContext'; // ✅ useTheme import
+import { safeNavigateBack } from '../src/utils/navigation';
 
 export default function HelpScreen() {
   const { theme } = useTheme(); // ✅ Get current theme
@@ -12,7 +13,7 @@ export default function HelpScreen() {
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
       {/* Back Button */}
-      <TouchableOpacity onPress={router.back} style={styles.backButton}>
+      <TouchableOpacity onPress={() => safeNavigateBack('/')} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color={isDark ? '#64ffda' : '#00796b'} />
       </TouchableOpacity>
 
