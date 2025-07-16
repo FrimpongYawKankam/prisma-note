@@ -4,14 +4,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Keyboard,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  Keyboard,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Markdown from 'react-native-markdown-display';
@@ -134,11 +134,7 @@ export default function HomeScreen() {
                   title="Profile" 
                   titleStyle={{ color: colors.text }}
                 />
-                <Menu.Item 
-                  onPress={() => { setMenuVisible(false); router.push('/help'); }} 
-                  title="Help" 
-                  titleStyle={{ color: colors.text }}
-                />
+                {/* Help option removed as requested */}
                 <Menu.Item 
                   onPress={() => { setMenuVisible(false); router.push('/settings'); }} 
                   title="Settings" 
@@ -232,7 +228,9 @@ export default function HomeScreen() {
                           } 
                         }}
                       >
-                        {note.content.slice(0, 100) + '...'}
+                        {note.content && note.content !== '# New Note\nStart writing...'
+                          ? note.content.slice(0, 100) + '...'
+                          : '_No content yet_'}
                       </Markdown>
                     </View>
                   </ModernCard>

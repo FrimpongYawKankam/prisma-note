@@ -3,29 +3,31 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { ModernDialog } from '../src/components/ui/ModernDialog';
 import { useAuth } from '../src/context/AuthContext';
-import { useTheme } from '../src/context/ThemeContext'; // ✅ Use custom theme
+import { useTheme } from '../src/context/ThemeContext';
 import { safeNavigateBack } from '../src/utils/navigation';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState({ fullName: '', email: '' });
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const { theme } = useTheme(); // ✅ access custom theme
+  const { theme } = useTheme();
   const { logout, user } = useAuth();
   const isDark = theme === 'dark';
+
   useEffect(() => {
-    const fetchUser = async () => {      if (user) {
+    const fetchUser = async () => {
+      if (user) {
         setUserData({
           fullName: user.fullName || '',
-          email: user.email
+          email: user.email,
         });
       } else {
         try {
@@ -34,7 +36,7 @@ export default function ProfileScreen() {
             const parsedUser = JSON.parse(userFromStorage);
             setUserData({
               fullName: parsedUser.fullName || '',
-              email: parsedUser.email
+              email: parsedUser.email,
             });
           }
         } catch (error) {
@@ -45,7 +47,7 @@ export default function ProfileScreen() {
     fetchUser();
   }, [user]);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setShowLogoutDialog(true);
   };
 
@@ -65,9 +67,8 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       <View style={styles.profileContainer}>
-        <View style={[styles.avatarText, { backgroundColor: isDark ? '#1a1a1a' : '#eee' }]}>          <Text style={[styles.avatarInitials, { color: '#2e7d32' }]}>
-            {userData.fullName ? userData.fullName.charAt(0).toUpperCase() : 'U'}
-          </Text>
+        <View style={[styles.avatarIcon, { backgroundColor: isDark ? '#1a1a1a' : '#eee' }]}>
+          <Ionicons name="person-circle" size={90} color={isDark ? '#64ffda' : '#00796b'} />
         </View>
         <Text style={[styles.name, { color: isDark ? '#fff' : '#000' }]}>
           {userData.fullName || 'Full Name'}
@@ -129,17 +130,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 30,
   },
-  avatarText: {
+  avatarIcon: {
     width: 90,
     height: 90,
     borderRadius: 45,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
-  },
-  avatarInitials: {
-    fontSize: 36,
-    fontWeight: 'bold',
   },
   name: {
     fontSize: 22,
@@ -164,12 +161,11 @@ const styles = StyleSheet.create({
     marginTop: 40,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
     alignSelf: 'center',
-    backgroundColor: '#ff5252', // Solid red background
+    backgroundColor: '#ff5252',
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -177,8 +173,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   logoutText: {
-    color: '#fff',
+       color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
   },
 });

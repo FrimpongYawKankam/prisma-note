@@ -2,19 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useTheme } from '../src/context/ThemeContext'; // ✅ import theme context
+import { useTheme } from '../src/context/ThemeContext';
 import { safeNavigateBack } from '../src/utils/navigation';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme(); // ✅ use context
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <SafeAreaView style={[styles.container, theme === 'dark' ? styles.darkBg : styles.lightBg]}>
@@ -22,6 +22,17 @@ export default function SettingsScreen() {
         Settings
       </Text>
       <ScrollView>
+        {/* Profile Shortcut */}
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/profile')}>
+            <Ionicons name="person-circle-outline" size={22} color={theme === 'dark' ? '#fff' : '#000'} />
+            <Text style={[styles.rowText, theme === 'dark' ? styles.darkText : styles.lightText]}>
+              Profile
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={theme === 'dark' ? '#aaa' : '#555'} style={styles.arrow} />
+          </TouchableOpacity>
+        </View>
+
         {/* Appearance Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, theme === 'dark' ? styles.darkSubText : styles.lightSubText]}>
@@ -32,6 +43,24 @@ export default function SettingsScreen() {
             <Text style={[styles.rowText, theme === 'dark' ? styles.darkText : styles.lightText]}>
               {theme === 'dark' ? 'Dark Mode (On)' : 'Dark Mode (Off)'}
             </Text>
+            <Ionicons name="chevron-forward" size={18} color={theme === 'dark' ? '#aaa' : '#555'} style={styles.arrow} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Language Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, theme === 'dark' ? styles.darkSubText : styles.lightSubText]}>
+            Language
+          </Text>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => router.push('/language')}
+          >
+            <Ionicons name="language-outline" size={20} color={theme === 'dark' ? '#fff' : '#000'} />
+            <Text style={[styles.rowText, theme === 'dark' ? styles.darkText : styles.lightText]}>
+              English
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={theme === 'dark' ? '#aaa' : '#555'} style={styles.arrow} />
           </TouchableOpacity>
         </View>
 
@@ -40,11 +69,12 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, theme === 'dark' ? styles.darkSubText : styles.lightSubText]}>
             Account
           </Text>
-          <TouchableOpacity style={styles.row} onPress={() => alert('Account Settings coming soon!')}>
-            <Ionicons name="person-outline" size={20} color={theme === 'dark' ? '#fff' : '#000'} />
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/change-password')}>
+            <Ionicons name="key-outline" size={20} color={theme === 'dark' ? '#fff' : '#000'} />
             <Text style={[styles.rowText, theme === 'dark' ? styles.darkText : styles.lightText]}>
-              Manage Account
+              Change Password
             </Text>
+            <Ionicons name="chevron-forward" size={18} color={theme === 'dark' ? '#aaa' : '#555'} style={styles.arrow} />
           </TouchableOpacity>
         </View>
 
@@ -53,11 +83,12 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, theme === 'dark' ? styles.darkSubText : styles.lightSubText]}>
             Other
           </Text>
-          <TouchableOpacity style={styles.row} onPress={() => alert('Support coming soon!')}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/help')}>
             <Ionicons name="help-circle-outline" size={20} color={theme === 'dark' ? '#fff' : '#000'} />
             <Text style={[styles.rowText, theme === 'dark' ? styles.darkText : styles.lightText]}>
               Help & Support
             </Text>
+            <Ionicons name="chevron-forward" size={18} color={theme === 'dark' ? '#aaa' : '#555'} style={styles.arrow} />
           </TouchableOpacity>
         </View>
 
@@ -74,7 +105,6 @@ export default function SettingsScreen() {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -123,6 +153,10 @@ const styles = StyleSheet.create({
   rowText: {
     fontSize: 16,
     marginLeft: 12,
+    flex: 1,
+  },
+  arrow: {
+    marginLeft: 'auto',
   },
   footer: {
     marginTop: 40,
@@ -134,8 +168,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  backText: {
-    fontSize: 15,
+  backText: { fontSize: 15,
     marginLeft: 8,
   },
 });
