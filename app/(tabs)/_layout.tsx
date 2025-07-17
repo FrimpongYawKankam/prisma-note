@@ -26,7 +26,7 @@ export default function Tablayout() {
         }}
       />
       <Tabs.Screen
-        name="inbox"
+        name="event"
         options={{
           title: 'Events',
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" color={color} size={size} />,
