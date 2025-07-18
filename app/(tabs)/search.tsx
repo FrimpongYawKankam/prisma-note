@@ -88,13 +88,13 @@ export default function Search(): React.JSX.Element {
               ]}
               onPress={() => router.push({ pathname: '/note-detail', params: { id: item.id } })}
             >
-              <Text style={[styles.noteTitle, { color: colors.text }]}>
+              <Text style={[styles.noteTitle, { color: colors.primary }]}>
                 {item.title}
               </Text>
               <Text style={[styles.noteDate, { color: colors.textMuted }]}>
                 {new Date(item.createdAt).toLocaleDateString()}
               </Text>
-              <Text style={[styles.noteSnippet, { color: colors.textMuted }]}>
+              <Text style={[styles.noteSnippet, { color: colors.textSecondary }]}>
                 {item.content.slice(0, 60)}
                 {item.content.length > 60 ? '...' : ''}
               </Text>
