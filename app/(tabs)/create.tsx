@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -14,14 +13,17 @@ import {
     TouchableWithoutFeedback,
     View,
 } from 'react-native';
-import { v4 as uuidv4 } from 'uuid';
 import { MessageBox } from '../../src/components/ui/MessageBox';
 import { ModernDialog } from '../../src/components/ui/ModernDialog';
-import { useTheme } from '../../src/context/ThemeContext'; // ✅ using custom theme
+import { useAuth } from '../../src/context/AuthContext';
+import { useNotes } from '../../src/context/NotesContext';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function CreateScreen() {
   const router = useRouter();
   const { theme, colors } = useTheme();
+  const { createNote, loading, error } = useNotes();
+  const { isAuthenticated } = useAuth();
   const isDark = theme === 'dark';
 
   const [title, setTitle] = useState('');
@@ -29,36 +31,38 @@ export default function CreateScreen() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const saveNote = async () => {
-    if (!title.trim() || !content.trim()) {
-      setMessage('Please enter both a title and content.');
+    if (!isAuthenticated) {
+      setMessage('You must be logged in to create notes.');
       setMessageType('error');
       return;
     }
 
-    const newNote = {
-      id: uuidv4(),
-      title: title.trim(),
-      content: content.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    if (!title.trim()) {
+      setMessage('Please enter a title.');
+      setMessageType('error');
+      return;
+    }
 
     try {
-      const storedNotes = await AsyncStorage.getItem('notes');
-      const notes = storedNotes ? JSON.parse(storedNotes) : [];
-      const updatedNotes = [...notes, newNote];
-      await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
+      setSaving(true);
+      await createNote({
+        title: title.trim(),
+        content: content.trim() || undefined
+      });
 
       setTitle('');
       setContent('');
       Keyboard.dismiss();
-
       setShowSuccessDialog(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving note:', error);
-      setMessage('Failed to save the note. Please try again.');
+      setMessage(error.message || 'Failed to save the note. Please try again.');
       setMessageType('error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -71,7 +75,11 @@ export default function CreateScreen() {
         >
           <View style={styles.headerRow}>
             <Text style={[styles.header, { color: colors.text }]}>New Note</Text>
-            <TouchableOpacity onPress={saveNote}>
+            <TouchableOpacity 
+              onPress={saveNote} 
+              disabled={saving || loading}
+              style={{ opacity: (saving || loading) ? 0.6 : 1 }}
+            >
               <Ionicons name="checkmark-done-outline" size={28} color={colors.primary} />
             </TouchableOpacity>
           </View>

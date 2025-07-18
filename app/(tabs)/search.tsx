@@ -1,51 +1,81 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
-    Keyboard,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity
+  FlatList,
+  Keyboard,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { useAuth } from '../../src/context/AuthContext';
+import { useNotes } from '../../src/context/NotesContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { Spacing, Typography } from '../../src/styles/tokens';
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  parentId?: string | null;
-}
-
 export default function Search(): React.JSX.Element {
   const [query, setQuery] = useState('');
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [userData, setUserData] = useState({ fullName: '' });
   const router = useRouter();
   const { theme, colors } = useTheme();
+  const { isAuthenticated } = useAuth();
+  const { notes, searchNotes, searchResults, isSearching, clearSearch } = useNotes();
   const isDark = theme === 'dark';
 
   useEffect(() => {
-    const loadNotes = async () => {
-      const user = await AsyncStorage.getItem('user');
-      const savedNotes = await AsyncStorage.getItem('notes');
-      if (user) {
-        const parsedUser = JSON.parse(user);
-        setUserData({ fullName: parsedUser.fullName || parsedUser.email?.split('@')[0] || '' });
-      }
-      if (savedNotes) setNotes(JSON.parse(savedNotes));
+    // Clear search when component unmounts
+    return () => {
+      clearSearch();
     };
-    loadNotes();
-  }, []);
+  }, [clearSearch]);
 
-  const filteredNotes = notes.filter((note) =>
-    (note?.title?.toLowerCase()?.includes(query.toLowerCase()) ||
-      note?.content?.toLowerCase()?.includes(query.toLowerCase()))
-  );
+  const handleSearch = async (searchQuery: string) => {
+    setQuery(searchQuery);
+    
+    if (!isAuthenticated) {
+      return;
+    }
+    
+    if (searchQuery.trim() === '') {
+      clearSearch();
+      return;
+    }
+    
+    try {
+      await searchNotes(searchQuery.trim());
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+  };
+
+  // Use search results if searching, otherwise show all notes filtered locally for immediate feedback
+  const displayNotes = query.trim() === '' 
+    ? notes 
+    : searchResults.length > 0 
+      ? searchResults 
+      : notes.filter((note) =>
+          note.title.toLowerCase().includes(query.toLowerCase()) ||
+          (note.content?.toLowerCase().includes(query.toLowerCase()) ?? false)
+        );
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.authPrompt}>
+          <Text style={[styles.authPromptText, { color: colors.textMuted }]}>
+            Please log in to search your notes
+          </Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, { backgroundColor: colors.primary }]}
+            onPress={() => router.push('/login')}
+          >
+            <Text style={styles.loginButtonText}>Log In</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -65,18 +95,18 @@ export default function Search(): React.JSX.Element {
           },
         ]}
         value={query}
-        onChangeText={setQuery}
+        onChangeText={handleSearch}
         onSubmitEditing={Keyboard.dismiss}
       />
 
-      {filteredNotes.length === 0 ? (
+      {displayNotes.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-          No matching notes found.
+          {query.trim() === '' ? 'Start typing to search your notes...' : 'No matching notes found.'}
         </Text>
       ) : (
         <FlatList
-          data={filteredNotes}
-          keyExtractor={(item) => item.id}
+          data={displayNotes}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
@@ -92,11 +122,11 @@ export default function Search(): React.JSX.Element {
                 {item.title}
               </Text>
               <Text style={[styles.noteDate, { color: colors.textMuted }]}>
-                {new Date(item.createdAt).toLocaleDateString()}
+                {new Date(item.timeCreated).toLocaleDateString()}
               </Text>
               <Text style={[styles.noteSnippet, { color: colors.textSecondary }]}>
-                {item.content.slice(0, 60)}
-                {item.content.length > 60 ? '...' : ''}
+                {(item.content || '').slice(0, 60)}
+                {(item.content || '').length > 60 ? '...' : ''}
               </Text>
             </TouchableOpacity>
           )}
@@ -145,5 +175,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     marginTop: 40,
+  },
+  authPrompt: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  authPromptText: {
+    fontSize: Typography.fontSize.lg,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  loginButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: 8,
+  },
+  loginButtonText: {
+    color: '#ffffff',
+    fontSize: Typography.fontSize.base,
+    fontWeight: '600',
   },
 });

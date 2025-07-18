@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Keyboard,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -19,82 +19,59 @@ import { Menu, Provider } from 'react-native-paper';
 import { ModernCard } from '../../src/components/ui/ModernCard';
 import { ModernInput } from '../../src/components/ui/ModernInput';
 import { useAuth } from '../../src/context/AuthContext';
+import { useNotes } from '../../src/context/NotesContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../src/styles/tokens';
-
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  parentId?: string | null;
-}
+import { Note } from '../../src/types/api';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { theme, colors } = useTheme();
-  const { isAuthenticated, user, refreshUserData } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { notes, loading, createNote, deleteNote, refreshNotes } = useNotes();
 
-  const [userData, setUserData] = useState({ fullName: '', email: '' });
-  const [notes, setNotes] = useState<Note[]>([]);
   const [noteInput, setNoteInput] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = useCallback(async () => {
-    try {
-      if (isAuthenticated) await refreshUserData();
-      const userString = await AsyncStorage.getItem('user');
-      const savedNotesString = await AsyncStorage.getItem('notes');
-
-      if (user) {
-        setUserData({ fullName: user.fullName || '', email: user.email });
-      } else if (userString) {
-        const storedUser = JSON.parse(userString);
-        setUserData({ fullName: storedUser.fullName || '', email: storedUser.email });
-      }
-
-      if (savedNotesString) {
-        setNotes(JSON.parse(savedNotesString));
-      } else {
-        await AsyncStorage.setItem('notes', JSON.stringify([]));
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      setNotes([]);
-    }
-  }, [isAuthenticated, user]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Reload notes when screen is focused (e.g., returning from create screen)
+  // Reload notes when screen is focused
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [loadData])
+      if (isAuthenticated) {
+        refreshNotes();
+      }
+    }, [isAuthenticated, refreshNotes])
   );
 
-  const saveNotes = async (newNotes: Note[]) => {
-    setNotes(newNotes);
-    await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
-  };
+  const onRefresh = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    setRefreshing(true);
+    try {
+      await refreshNotes();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [isAuthenticated, refreshNotes]);
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
     if (noteInput.trim() === '') return;
-    const newNote = {
-      id: generateId(),
-      title: noteInput,
-      content: '# New Note\nStart writing...',
-      createdAt: new Date().toISOString(),
-      parentId: null,
-    };
-    const updatedNotes = [newNote, ...notes];
-    saveNotes(updatedNotes);
-    setNoteInput('');
-    Keyboard.dismiss();
+    
+    try {
+      await createNote({
+        title: noteInput.trim(),
+        content: '# New Note\nStart writing...'
+      });
+      setNoteInput('');
+      Keyboard.dismiss();
+    } catch (error) {
+      console.error('Failed to create note:', error);
+    }
   };
 
   const handleEditNote = (note: Note) => {
@@ -113,7 +90,7 @@ export default function HomeScreen() {
                   📝 <Text style={{ color: colors.primary }}>PrismaNote</Text>
                 </Text>
                 <Text style={[styles.subText, { color: colors.textSecondary }]}>
-                  Welcome back, {user?.fullName || userData.fullName || 'User'}!
+                  Welcome back, {user?.fullName || 'User'}!
                 </Text>
               </View>
               <Menu
@@ -205,6 +182,14 @@ export default function HomeScreen() {
                 style={styles.notesList}
                 contentContainerStyle={{ paddingBottom: 100 }}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
+                  />
+                }
               >
                 {notes.map((note) => (
                   <ModernCard
@@ -216,7 +201,7 @@ export default function HomeScreen() {
                       {note.title}
                     </Text>
                     <Text style={[styles.noteTimestamp, { color: colors.textMuted }]}>
-                      {new Date(note.createdAt).toLocaleDateString()}
+                      {new Date(note.timeCreated).toLocaleDateString()}
                     </Text>
                     <View style={styles.notePreview}>
                       <Markdown 

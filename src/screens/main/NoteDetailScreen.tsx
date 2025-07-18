@@ -1,33 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import debounce from 'lodash.debounce';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernDialog } from '../../components/ui/ModernDialog';
+import { useAuth } from '../../context/AuthContext';
+import { useNotes } from '../../context/NotesContext';
 import { useTheme } from '../../context/ThemeContext';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-}
+import { Note } from '../../types/api';
 
 export default function NoteDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { theme } = useTheme();
+  const { getNoteById, updateNote, deleteNote, loading, error } = useNotes();
+  const { isAuthenticated } = useAuth();
   const isDark = theme === 'dark';
 
   const [note, setNote] = useState<Note | null>(null);
@@ -37,64 +34,78 @@ export default function NoteDetailScreen() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadNote = async () => {
+      if (!isAuthenticated) {
+        router.push('/login');
+        return;
+      }
+
+      if (!id) {
+        // New note
+        setNote(null);
+        setTitle('');
+        setContent('');
+        return;
+      }
+
       try {
-        const savedNotes = await AsyncStorage.getItem('notes');
-        if (savedNotes) {
-          const notes: Note[] = JSON.parse(savedNotes);
-          const selectedNote = notes.find((n) => n.id === id);
-          if (selectedNote) {
-            setNote(selectedNote);
-            setTitle(selectedNote.title);
-            setContent(selectedNote.content || '');
-          } else {
-            // New note: clear title/content
-            setNote(null);
-            setTitle('');
-            setContent('');
-          }
-        } else {
-          // No notes found: new note
-          setNote(null);
-          setTitle('');
-          setContent('');
+        const noteId = parseInt(id as string);
+        if (isNaN(noteId)) {
+          setMessage('Invalid note ID');
+          setMessageType('error');
+          return;
         }
-      } catch (error) {
-        setMessage('Failed to load note.');
+
+        const loadedNote = await getNoteById(noteId);
+        setNote(loadedNote);
+        setTitle(loadedNote.title);
+        setContent(loadedNote.content || '');
+      } catch (error: any) {
+        setMessage(error.message || 'Failed to load note.');
         setMessageType('error');
       }
     };
+    
     loadNote();
-  }, [id]);
+  }, [id, isAuthenticated, getNoteById, router]);
 
   const debouncedSave = useCallback(
     debounce(async (newTitle: string, newContent: string) => {
+      if (!note || !isAuthenticated) return;
+      
       try {
-        const savedNotes = await AsyncStorage.getItem('notes');
-        if (savedNotes) {
-          const notes: Note[] = JSON.parse(savedNotes);
-          const updatedNotes = notes.map((n) =>
-            n.id === id ? { ...n, title: newTitle, content: newContent } : n
-          );
-          await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
-        }
-      } catch (error) {
+        setSaving(true);
+        const updatedNote = await updateNote(note.id, {
+          title: newTitle,
+          content: newContent
+        });
+        setNote(updatedNote);
+      } catch (error: any) {
         console.error('Auto-save failed:', error);
+        setMessage('Auto-save failed');
+        setMessageType('error');
+      } finally {
+        setSaving(false);
       }
-    }, 700),
-    [id]
+    }, 1000),
+    [note, updateNote, isAuthenticated]
   );
 
   const handleTitleChange = (text: string) => {
     setTitle(text);
-    debouncedSave(text, content);
+    if (note) {
+      debouncedSave(text, content);
+    }
   };
 
   const handleContentChange = (text: string) => {
     setContent(text);
-    debouncedSave(title, text);
+    if (note) {
+      debouncedSave(title, text);
+    }
   };
 
   const handleBack = () => {
@@ -103,27 +114,28 @@ export default function NoteDetailScreen() {
   };
 
   const handleDelete = () => {
+    if (!note) {
+      router.back();
+      return;
+    }
     setShowDeleteDialog(true);
   };
 
   const confirmDelete = async () => {
+    if (!note) return;
+    
     try {
-      const savedNotes = await AsyncStorage.getItem('notes');
-      if (savedNotes) {
-        const notes: Note[] = JSON.parse(savedNotes);
-        const updatedNotes = notes.filter((n) => n.id !== id);
-        await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
-        setShowDeleteDialog(false);
-        router.back();
-      }
-    } catch (err) {
-      setMessage('Failed to delete note.');
+      await deleteNote(note.id);
+      setShowDeleteDialog(false);
+      router.back();
+    } catch (err: any) {
+      setMessage(err.message || 'Failed to delete note.');
       setMessageType('error');
     }
   };
 
-  // Show loading if note is not loaded and not a new note
-  if (!note && id) {
+  // Show loading if note is being loaded
+  if (loading && id) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
         <Text style={[styles.message, { color: isDark ? '#aaa' : '#444' }]}>Loading note...</Text>

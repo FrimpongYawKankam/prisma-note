@@ -9,7 +9,16 @@
       "usesAppleSignIn": true
     },
     "android": {
-      "package": "com.frimpongyawkankam03.prisma-note"
+      "package": "com.frimpongyawkankam03.prisma-note",
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": {
+        "domain-config": [
+          {
+            "domain": "10.40.32.231",
+            "cleartextTrafficPermitted": true
+          }
+        ]
+      }
     },
     "plugins": [
       "expo-router",

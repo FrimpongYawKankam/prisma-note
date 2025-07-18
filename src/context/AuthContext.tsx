@@ -79,8 +79,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        // Then try to refresh from API
-        await refreshUserData();
+        // Only refresh from API if user data is missing or incomplete
+        if (!userString) {
+          await refreshUserData();
+        }
       } catch (error) {
         console.error('Auth check failed:', error);
       } finally {
@@ -143,15 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Store minimal user info
         await AsyncStorage.setItem('user', JSON.stringify(defaultUser));
       }
-      
-      // Try to refresh user data once more to ensure we have the latest
-      setTimeout(async () => {
-        try {
-          await refreshUserData();
-        } catch (refreshError) {
-          console.error('Failed to refresh user data after login:', refreshError);
-        }
-      }, 500);
       
       return response;
     } catch (error) {
