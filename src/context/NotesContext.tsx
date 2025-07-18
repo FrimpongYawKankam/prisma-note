@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import * as noteService from '../services/noteService';
-import { Note, CreateNoteRequest, UpdateNoteRequest } from '../types/api';
+import { createNoteService } from '../mockFunctionality';
+import { CreateNoteRequest, Note, UpdateNoteRequest } from '../types/api';
 import { useAuth } from './AuthContext';
+
+// Use service factory to get appropriate service
+const noteService = createNoteService();
 
 interface NotesContextType {
   notes: Note[];

@@ -16,6 +16,7 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Markdown from 'react-native-markdown-display';
 import { Menu, Provider } from 'react-native-paper';
+import { MockDebugPanel } from '../../src/components/ui/MockDebugPanel';
 import { ModernCard } from '../../src/components/ui/ModernCard';
 import { ModernInput } from '../../src/components/ui/ModernInput';
 import { useAuth } from '../../src/context/AuthContext';
@@ -83,6 +84,9 @@ export default function HomeScreen() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* Mock Debug Panel */}
+            <MockDebugPanel />
+            
             {/* Header Section */}
             <View style={styles.headerRow}>
               <View>

@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import * as authService from '../services/authService';
+import { createAuthService } from '../mockFunctionality';
+
+// Use service factory to get appropriate service
+const authService = createAuthService();
 
 interface User {
   id?: string;
