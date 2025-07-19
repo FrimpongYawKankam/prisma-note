@@ -43,7 +43,7 @@ export default function HomeScreen() {
         refreshEvents();
         refreshTasks();
       }
-    }, [isAuthenticated, refreshEvents, refreshTasks])
+    }, [isAuthenticated])
   );
 
   const onRefresh = useCallback(async () => {
@@ -55,7 +55,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [isAuthenticated, refreshEvents, refreshTasks]);
+  }, [isAuthenticated]);
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDateString = () => {

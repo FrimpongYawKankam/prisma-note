@@ -26,7 +26,7 @@ export default function EventScreen() {
   useEffect(() => {
     // Update context when local selected date changes
     filterEventsByDate(new Date(localSelectedDate));
-  }, [localSelectedDate, filterEventsByDate]);
+  }, [localSelectedDate]);
 
   const formatTime = (date: Date) => {
     return formatEventTime(date);

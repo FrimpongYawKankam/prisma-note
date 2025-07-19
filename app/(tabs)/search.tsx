@@ -38,7 +38,7 @@ export default function NotesScreen(): React.JSX.Element {
       if (isAuthenticated) {
         refreshNotes();
       }
-    }, [isAuthenticated, refreshNotes])
+    }, [isAuthenticated])
   );
 
   const onRefresh = useCallback(async () => {
@@ -50,7 +50,7 @@ export default function NotesScreen(): React.JSX.Element {
     } finally {
       setRefreshing(false);
     }
-  }, [isAuthenticated, refreshNotes]);
+  }, [isAuthenticated]);
 
   // Filter notes based on search query
   const filteredNotes = useMemo(() => {

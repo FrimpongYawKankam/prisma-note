@@ -133,10 +133,10 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTasksError(null);
   };
 
-  // Load tasks on mount
+  // Load tasks on mount - only once
   useEffect(() => {
     loadTodayTasks();
-  }, [loadTodayTasks]);
+  }, []); // Empty dependency array to run only once
 
   const value: TasksContextType = {
     todayTasks,
