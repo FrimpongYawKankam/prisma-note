@@ -41,10 +41,10 @@ export default function Tablayout() {
         }}
       />
       <Tabs.Screen
-        name="trash"
+        name="calculator"
         options={{
-          title: 'Trash',
-          tabBarIcon: ({ color, size }) => <Ionicons name="trash-outline" color={color} size={size} />,
+          title: 'Calculator',
+          tabBarIcon: ({ color, size }) => <Ionicons name="calculator-outline" color={color} size={size} />,
         }}
       />
     </Tabs>

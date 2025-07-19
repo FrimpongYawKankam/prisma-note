@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useTheme } from '../../src/context/ThemeContext'; // adjust path as needed
+import { useTheme } from '../src/context/ThemeContext'; // adjust path as needed
 
 const TrashScreen = () => {
   const { theme } = useTheme(); // theme is either 'light' or 'dark'
