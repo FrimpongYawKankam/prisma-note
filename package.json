@@ -41,6 +41,7 @@
     "firebase": "^11.8.1",
     "lottie-react-native": "^7.2.4",
     "marked": "^15.0.12",
+    "mathjs": "^14.5.3",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.4",
