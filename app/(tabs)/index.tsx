@@ -126,6 +126,11 @@ export default function HomeScreen() {
                   title="About" 
                   titleStyle={{ color: colors.text }}
                 />
+                <Menu.Item
+                onPress={() => { setMenuVisible(false); router.push('/trash'); }} 
+                  title="Trash" 
+                  titleStyle={{ color: colors.text }}
+                />
               </Menu>
             </View>
 
