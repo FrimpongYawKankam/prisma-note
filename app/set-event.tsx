@@ -17,16 +17,16 @@ import {
 } from 'react-native';
 import { ModernButton } from '../src/components/ui/ModernButton';
 import { useAuth } from '../src/context/AuthContext';
+import { useEvents } from '../src/context/EventsContext';
 import { useTheme } from '../src/context/ThemeContext';
-import axiosInstance from '../src/utils/axiosInstance';
-
-type TagType = 'NONE' | 'LOW' | 'MEDIUM' | 'HIGH';
+import { EventTag } from '../src/types/api';
 
 export default function SetEventScreen() {
   const { date, updatedDescription } = useLocalSearchParams();
   const router = useRouter();
   const { theme } = useTheme();
   const { user } = useAuth();
+  const { createEvent } = useEvents();
   const isDark = theme === 'dark';
 
   const [title, setTitle] = useState('');
@@ -36,7 +36,7 @@ export default function SetEventScreen() {
   const [endDate, setEndDate] = useState(new Date(date as string || new Date()));
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date(Date.now() + 60 * 60 * 1000)); // 1 hour later
-  const [tag, setTag] = useState<TagType>('NONE');
+  const [tag, setTag] = useState<EventTag>(EventTag.NONE);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
@@ -66,7 +66,7 @@ export default function SetEventScreen() {
     });
   };
 
-  const getTagColor = (tagType: TagType) => {
+  const getTagColor = (tagType: EventTag) => {
     switch (tagType) {
       case 'HIGH': return '#ff4757';
       case 'MEDIUM': return '#ffa502';
@@ -113,15 +113,14 @@ export default function SetEventScreen() {
 
       const eventData = {
         title: title.trim(),
-        description: description.trim() || null,
+        description: description.trim() || undefined,
         startDateTime: startDateTime.toISOString(),
         endDateTime: endDateTime.toISOString(),
-        userId: user.id,
         tag,
         allDay,
       };
 
-      await axiosInstance.post('/api/events', eventData);
+      await createEvent(eventData);
       
       Alert.alert('Success', 'Event created successfully!', [
         { text: 'OK', onPress: () => router.back() }
@@ -248,7 +247,7 @@ export default function SetEventScreen() {
         </View>
 
         <View style={[styles.tagContainer, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-          {(['NONE', 'LOW', 'MEDIUM', 'HIGH'] as TagType[]).map((tagOption) => (
+          {([EventTag.NONE, EventTag.LOW, EventTag.MEDIUM, EventTag.HIGH]).map((tagOption) => (
             <TouchableOpacity
               key={tagOption}
               style={[

@@ -15,7 +15,7 @@ interface NoteCardProps {
   note: Note;
   onPress: () => void;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onMoveToTrash?: () => void;
   showActions?: boolean;
 }
 
@@ -23,7 +23,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
   note,
   onPress,
   onEdit,
-  onDelete,
+  onMoveToTrash,
   showActions = true,
 }) => {
   const { colors } = useTheme();
@@ -105,10 +105,10 @@ export const NoteCard: React.FC<NoteCardProps> = ({
                 <Ionicons name="pencil" size={18} color={colors.primary} />
               </TouchableOpacity>
             )}
-            {onDelete && (
+            {onMoveToTrash && (
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={onDelete}
+                onPress={onMoveToTrash}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Ionicons name="trash" size={18} color={colors.error} />

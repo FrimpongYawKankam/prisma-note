@@ -29,7 +29,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { theme, colors } = useTheme();
   const { isAuthenticated, user } = useAuth();
-  const { notes, loading, createNote, deleteNote, refreshNotes } = useNotes();
+  const { notes, notesLoading, createNote, moveToTrash, refreshNotes } = useNotes();
 
   const [noteInput, setNoteInput] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);

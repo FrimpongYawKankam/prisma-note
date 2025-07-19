@@ -4,49 +4,33 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useTheme } from '../../src/context/ThemeContext';
-import axiosInstance from '../../src/utils/axiosInstance';
-
-type Event = {
-  id: number;
-  title: string;
-  description?: string;
-  startDateTime: string;
-  endDateTime: string;
-  tag: 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
-  allDay: boolean;
-  userId: number;
-};
+import { useEvents } from '../../src/context/EventsContext';
+import { Event, EventTag } from '../../src/types/api';
+import { getTagColor, formatEventTime } from '../../src/services/eventService';
 
 export default function EventScreen() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const { 
+    events, 
+    eventsLoading, 
+    eventsError, 
+    filteredEvents, 
+    selectedDate, 
+    filterEventsByDate,
+    refreshEvents 
+  } = useEvents();
+  
+  const [localSelectedDate, setLocalSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const router = useRouter();
 
-  const fetchEvents = useCallback(async () => {
-    try {
-      const response = await axiosInstance.get('/api/events');
-      setEvents(response.data);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    // Update context when local selected date changes
+    filterEventsByDate(new Date(localSelectedDate));
+  }, [localSelectedDate, filterEventsByDate]);
 
-  const filteredEvents = events.filter((event) => 
-    event.startDateTime.startsWith(selectedDate)
-  );
-
-  const formatTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+  const formatTime = (date: Date) => {
+    return formatEventTime(date);
   };
 
   const formatDate = (dateString: string) => {
@@ -57,17 +41,18 @@ export default function EventScreen() {
     });
   };
 
-  const getTagColor = (tag: string) => {
-    switch (tag) {
-      case 'HIGH': return '#ff4757';
-      case 'MEDIUM': return '#ffa502';
-      case 'LOW': return '#2ed573';
-      default: return '#70a1ff';
-    }
+  const getEventsForSelectedDate = () => {
+    const selectedDateObj = new Date(localSelectedDate);
+    const targetDateString = selectedDateObj.toISOString().split('T')[0];
+    
+    return events.filter(event => {
+      const eventDateString = event.startDateTime.toISOString().split('T')[0];
+      return eventDateString === targetDateString;
+    });
   };
 
   const markedDates = events.reduce((acc: any, event) => {
-    const date = event.startDateTime.split('T')[0];
+    const date = event.startDateTime.toISOString().split('T')[0];
     acc[date] = {
       marked: true,
       dotColor: getTagColor(event.tag),
@@ -76,11 +61,13 @@ export default function EventScreen() {
   }, {});
 
   // Add selection to marked dates
-  markedDates[selectedDate] = {
-    ...markedDates[selectedDate],
+  markedDates[localSelectedDate] = {
+    ...markedDates[localSelectedDate],
     selected: true,
-    selectedColor: isDark ? '#333' : '#007bff',
+    selectedColor: isDark ? '#4a5568' : '#e2e8f0',
   };
+
+  const displayedEvents = getEventsForSelectedDate();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
@@ -101,7 +88,7 @@ export default function EventScreen() {
 
       {/* Calendar */}
       <Calendar
-        onDayPress={(day) => setSelectedDate(day.dateString)}
+        onDayPress={(day) => setLocalSelectedDate(day.dateString)}
         markedDates={markedDates}
         theme={{
           backgroundColor: isDark ? '#000' : '#fff',
@@ -128,15 +115,16 @@ export default function EventScreen() {
 
       {/* Events List */}
       <ScrollView style={styles.eventsContainer} showsVerticalScrollIndicator={false}>
-        {filteredEvents.length === 0 ? (
+        {displayedEvents.length === 0 ? (
           <Text style={[styles.noEventsText, { color: isDark ? '#666' : '#999' }]}>
             No events for this date
           </Text>
         ) : (
-          filteredEvents.map((event) => (
+          displayedEvents.map((event) => (
             <TouchableOpacity
               key={event.id}
               style={[styles.eventItem, { borderLeftColor: getTagColor(event.tag) }]}
+              onPress={() => router.push(`/event-detail?id=${event.id}`)}
             >
               <Text style={[styles.eventTime, { color: isDark ? '#ccc' : '#666' }]}>
                 {event.allDay ? 'All day' : formatTime(event.startDateTime)}
@@ -166,12 +154,12 @@ export default function EventScreen() {
           onPress={() => router.push(`/set-event?date=${selectedDate}`)}
         >
           <Text style={[styles.addEventText, { color: isDark ? '#ccc' : '#666' }]}>
-            Add event on {formatDate(selectedDate)}
+            Add event on {formatDate(localSelectedDate)}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.fabButton, { backgroundColor: isDark ? '#2a2a2a' : '#007bff' }]}
-          onPress={() => router.push(`/set-event?date=${selectedDate}`)}
+          onPress={() => router.push(`/set-event?date=${localSelectedDate}`)}
         >
           <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>

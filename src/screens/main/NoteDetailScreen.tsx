@@ -23,7 +23,7 @@ export default function NoteDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { theme } = useTheme();
-  const { getNoteById, updateNote, deleteNote, loading, error } = useNotes();
+  const { getNoteById, updateNote, moveToTrash, notesLoading, notesError } = useNotes();
   const { isAuthenticated } = useAuth();
   const isDark = theme === 'dark';
 
@@ -125,7 +125,7 @@ export default function NoteDetailScreen() {
     if (!note) return;
     
     try {
-      await deleteNote(note.id);
+      await moveToTrash(note.id);
       setShowDeleteDialog(false);
       router.back();
     } catch (err: any) {
@@ -135,7 +135,7 @@ export default function NoteDetailScreen() {
   };
 
   // Show loading if note is being loaded
-  if (loading && id) {
+  if (notesLoading && id) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
         <Text style={[styles.message, { color: isDark ? '#aaa' : '#444' }]}>Loading note...</Text>

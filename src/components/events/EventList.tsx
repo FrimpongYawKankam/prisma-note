@@ -6,33 +6,33 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Note } from '../../types/api';
+import { Event } from '../../types/api';
 import { useTheme } from '../../context/ThemeContext';
 import { Typography, Spacing } from '../../styles/tokens';
-import NoteCard from './NoteCard';
+import EventCard from './EventCard';
 
-interface NoteListProps {
-  notes: Note[];
+interface EventListProps {
+  events: Event[];
   loading?: boolean;
   onRefresh?: () => void;
-  onNotePress: (note: Note) => void;
-  onNoteEdit?: (note: Note) => void;
-  onNoteMoveToTrash?: (note: Note) => void;
+  onEventPress: (event: Event) => void;
+  onEventEdit?: (event: Event) => void;
+  onEventDelete?: (event: Event) => void;
   showActions?: boolean;
   emptyMessage?: string;
   ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
   ListFooterComponent?: React.ComponentType<any> | React.ReactElement | null;
 }
 
-export const NoteList: React.FC<NoteListProps> = ({
-  notes,
+export const EventList: React.FC<EventListProps> = ({
+  events,
   loading = false,
   onRefresh,
-  onNotePress,
-  onNoteEdit,
-  onNoteMoveToTrash,
+  onEventPress,
+  onEventEdit,
+  onEventDelete,
   showActions = true,
-  emptyMessage = 'No notes found',
+  emptyMessage = 'No events found',
   ListHeaderComponent,
   ListFooterComponent,
 }) => {
@@ -62,12 +62,12 @@ export const NoteList: React.FC<NoteListProps> = ({
     },
   });
 
-  const renderNoteItem = ({ item: note }: { item: Note }) => (
-    <NoteCard
-      note={note}
-      onPress={() => onNotePress(note)}
-      onEdit={onNoteEdit ? () => onNoteEdit(note) : undefined}
-      onMoveToTrash={onNoteMoveToTrash ? () => onNoteMoveToTrash(note) : undefined}
+  const renderEventItem = ({ item: event }: { item: Event }) => (
+    <EventCard
+      event={event}
+      onPress={() => onEventPress(event)}
+      onEdit={onEventEdit ? () => onEventEdit(event) : undefined}
+      onDelete={onEventDelete ? () => onEventDelete(event) : undefined}
       showActions={showActions}
     />
   );
@@ -78,19 +78,19 @@ export const NoteList: React.FC<NoteListProps> = ({
     </View>
   );
 
-  const keyExtractor = (item: Note) => item.id.toString();
+  const keyExtractor = (item: Event) => item.id.toString();
 
   const ItemSeparatorComponent = () => <View style={styles.separator} />;
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={notes}
-        renderItem={renderNoteItem}
+        data={events}
+        renderItem={renderEventItem}
         keyExtractor={keyExtractor}
         contentContainerStyle={[
           styles.contentContainer,
-          notes.length === 0 && { flex: 1 }
+          events.length === 0 && { flex: 1 }
         ]}
         refreshControl={
           onRefresh ? (
@@ -110,16 +110,17 @@ export const NoteList: React.FC<NoteListProps> = ({
         bounces={true}
         removeClippedSubviews={true}
         getItemLayout={(data, index) => ({
-          length: 120, // Approximate height of a note card
-          offset: 120 * index,
+          length: 140, // Approximate height of an event card
+          offset: 140 * index,
           index,
         })}
         initialNumToRender={10}
         maxToRenderPerBatch={10}
-        windowSize={10}
+        windowSize={21}
+        updateCellsBatchingPeriod={50}
       />
     </View>
   );
 };
 
-export default NoteList;
+export default EventList;

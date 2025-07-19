@@ -118,6 +118,64 @@ export interface NotesListResponse {
   total: number;
 }
 
+// ============================================
+// EVENT TYPES
+// ============================================
+
+export enum EventTag {
+  NONE = 'NONE',
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH'
+}
+
+export interface EventRequest {
+  title: string;
+  description?: string;
+  startDateTime: string; // ISO string format
+  endDateTime: string;   // ISO string format
+  tag: EventTag;
+  allDay: boolean;
+}
+
+export interface CreateEventRequest extends EventRequest {}
+
+export interface UpdateEventRequest extends Partial<EventRequest> {}
+
+export interface EventResponse {
+  id: number;
+  title: string;
+  description?: string;
+  startDateTime: string; // ISO string from backend
+  endDateTime: string;   // ISO string from backend
+  userId: number;
+  createdAt: string;     // ISO string from backend
+  updatedAt: string;     // ISO string from backend
+  tag: EventTag;
+  allDay: boolean;
+}
+
+export interface Event {
+  id: number;
+  title: string;
+  description?: string;
+  startDateTime: Date;   // Converted to Date object for frontend use
+  endDateTime: Date;     // Converted to Date object for frontend use
+  userId: number;
+  createdAt: Date;       // Converted to Date object for frontend use
+  updatedAt: Date;       // Converted to Date object for frontend use
+  tag: EventTag;
+  allDay: boolean;
+}
+
+// Search and filter parameters for events
+export interface EventSearchParams {
+  userId?: number;
+  from?: string;         // ISO date string
+  to?: string;           // ISO date string
+  tag?: EventTag;
+}
+
 // Common response types
 export type MessageResponse = {
   message: string;

@@ -189,6 +189,151 @@ export const getUserNotesCount = async (): Promise<number> => {
 };
 
 // ============================================
+// TRASH MANAGEMENT OPERATIONS
+// ============================================
+
+/**
+ * Gets all trashed notes for the authenticated user
+ */
+export const getTrashedNotes = async (): Promise<Note[]> => {
+  try {
+    const response = await axiosInstance.get<NoteResponse[]>('/api/notes/trash');
+    console.log('Get trashed notes response:', response.data);
+    return response.data.map(convertNoteResponse);
+  } catch (error: any) {
+    console.error('Get trashed notes error:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Authentication required. Please log in.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error('Failed to fetch trashed notes. Please try again.');
+    }
+  }
+};
+
+/**
+ * Restores a note from trash
+ */
+export const restoreNote = async (noteId: number): Promise<void> => {
+  try {
+    await axiosInstance.patch(`/api/notes/${noteId}/restore`);
+    console.log('Note restored successfully:', noteId);
+  } catch (error: any) {
+    console.error('Restore note error:', error);
+    
+    if (error.response?.status === 404) {
+      throw new Error('Note not found in trash.');
+    } else if (error.response?.status === 401) {
+      throw new Error('Authentication required. Please log in.');
+    } else if (error.response?.status === 403) {
+      throw new Error('You do not have permission to restore this note.');
+    } else if (error.response?.status === 400) {
+      throw new Error('Note is not in trash or cannot be restored.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error('Failed to restore note. Please try again.');
+    }
+  }
+};
+
+/**
+ * Permanently deletes a note (only works on trashed notes)
+ */
+export const permanentlyDeleteNote = async (noteId: number): Promise<void> => {
+  try {
+    await axiosInstance.delete(`/api/notes/${noteId}/permanent`);
+    console.log('Note permanently deleted:', noteId);
+  } catch (error: any) {
+    console.error('Permanently delete note error:', error);
+    
+    if (error.response?.status === 404) {
+      throw new Error('Note not found in trash.');
+    } else if (error.response?.status === 401) {
+      throw new Error('Authentication required. Please log in.');
+    } else if (error.response?.status === 403) {
+      throw new Error('You do not have permission to delete this note.');
+    } else if (error.response?.status === 400) {
+      throw new Error('Note must be in trash before permanent deletion.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error('Failed to permanently delete note. Please try again.');
+    }
+  }
+};
+
+/**
+ * Empties the entire trash (permanently deletes all trashed notes)
+ */
+export const emptyTrash = async (): Promise<void> => {
+  try {
+    await axiosInstance.delete('/api/notes/trash/empty');
+    console.log('Trash emptied successfully');
+  } catch (error: any) {
+    console.error('Empty trash error:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Authentication required. Please log in.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error('Failed to empty trash. Please try again.');
+    }
+  }
+};
+
+/**
+ * Searches through trashed notes
+ */
+export const searchTrashedNotes = async (keyword: string): Promise<Note[]> => {
+  try {
+    if (!keyword.trim()) {
+      return [];
+    }
+    
+    const response = await axiosInstance.get<NoteResponse[]>('/api/notes/trash/search', {
+      params: { keyword: keyword.trim() }
+    });
+    console.log('Search trashed notes response:', response.data);
+    return response.data.map(convertNoteResponse);
+  } catch (error: any) {
+    console.error('Search trashed notes error:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Authentication required. Please log in.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error('Failed to search trashed notes. Please try again.');
+    }
+  }
+};
+
+/**
+ * Gets the count of trashed notes
+ */
+export const getTrashedNotesCount = async (): Promise<number> => {
+  try {
+    const response = await axiosInstance.get<number>('/api/notes/trash/count');
+    console.log('Trashed notes count:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Get trashed notes count error:', error);
+    
+    if (error.response?.status === 401) {
+      throw new Error('Authentication required. Please log in.');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else {
+      throw new Error('Failed to get trashed notes count. Please try again.');
+    }
+  }
+};
+
+// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 
@@ -250,6 +395,12 @@ export default {
   deleteNote,
   searchNotes,
   getUserNotesCount,
+  getTrashedNotes,
+  restoreNote,
+  permanentlyDeleteNote,
+  emptyTrash,
+  searchTrashedNotes,
+  getTrashedNotesCount,
   isNoteOwner,
   formatNoteDate,
   getNotePreview,
