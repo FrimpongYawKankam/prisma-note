@@ -77,12 +77,17 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const refreshNotes = useCallback(async (force = false) => {
-    if (!isAuthenticated || notesLoading) return;
+    if (!isAuthenticated) return;
     
     // Debounce: Don't refresh if we've refreshed in the last 10 seconds unless forced
     const now = Date.now();
     if (!force && isDataLoaded && (now - lastRefreshTime < 10000)) {
       console.log('Skipping notes refresh - too recent');
+      return;
+    }
+
+    if (notesLoading) {
+      console.log('Skipping notes refresh - already loading');
       return;
     }
     
@@ -100,21 +105,27 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setNotesLoading(false);
     }
-  }, [isAuthenticated, notesLoading]); // Removed changing dependencies
+  }, [isAuthenticated]); // Only depend on isAuthenticated
 
   const loadTrashedNotesCount = useCallback(async (force = false) => {
-    if (!isAuthenticated || trashLoading) return;
+    if (!isAuthenticated) return;
     
     // Only load trash count if we don't have it or if forced
     if (!force && trashedNotesCount > 0) return;
+
+    if (trashLoading) {
+      console.log('Skipping trash count load - already loading');
+      return;
+    }
     
     try {
       const count = await noteService.getTrashedNotesCount();
+      console.log('Trashed notes count:', count);
       setTrashedNotesCount(count);
     } catch (err: any) {
       console.error('Failed to load trashed notes count:', err);
     }
-  }, [isAuthenticated, trashLoading]); // Removed trashedNotesCount dependency
+  }, [isAuthenticated]); // Only depend on isAuthenticated
 
   const createNote = async (noteData: CreateNoteRequest): Promise<Note> => {
     try {
@@ -399,12 +410,34 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (isAuthenticated && !isInitialLoading && !isDataLoaded) {
       setIsInitialLoading(true);
-      Promise.all([
-        refreshNotes(true), // Force initial load
-        loadTrashedNotesCount(true) // Force initial load
-      ]).finally(() => {
-        setIsInitialLoading(false);
-      });
+      
+      // Load initial data directly without dependency issues
+      const loadInitialData = async () => {
+        try {
+          // Load notes
+          setNotesLoading(true);
+          setNotesError(null);
+          const now = Date.now();
+          setLastRefreshTime(now);
+          const userNotes = await noteService.getUserNotes();
+          setNotes(userNotes);
+          setNotesCount(userNotes.length);
+          setIsDataLoaded(true);
+          
+          // Load trash count
+          const count = await noteService.getTrashedNotesCount();
+          console.log('Trashed notes count:', count);
+          setTrashedNotesCount(count);
+        } catch (err: any) {
+          console.error('Failed to load initial data:', err);
+          setNotesError(err.message || 'Failed to load notes');
+        } finally {
+          setNotesLoading(false);
+          setIsInitialLoading(false);
+        }
+      };
+      
+      loadInitialData();
     } else if (!isAuthenticated) {
       // Clear notes when user logs out
       setNotes([]);
@@ -416,7 +449,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsInitialLoading(false);
       setIsDataLoaded(false);
     }
-  }, [isAuthenticated, isInitialLoading, isDataLoaded]); // Removed function dependencies to prevent infinite loops
+  }, [isAuthenticated]); // Only depend on isAuthenticated
 
   return (
     <NotesContext.Provider value={value}>

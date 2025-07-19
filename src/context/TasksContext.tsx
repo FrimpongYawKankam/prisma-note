@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { CreateTaskRequest, DailyTask, UpdateTaskRequest } from '../types/task';
+import taskService from '../services/taskService';
 
 interface TasksContextType {
   // State
@@ -10,8 +10,9 @@ interface TasksContextType {
 
   // Operations
   createTask: (taskData: CreateTaskRequest) => Promise<DailyTask>;
-  updateTask: (taskId: string, taskData: UpdateTaskRequest) => Promise<DailyTask>;
-  deleteTask: (taskId: string) => Promise<void>;
+  updateTask: (taskId: number, taskData: UpdateTaskRequest) => Promise<DailyTask>;
+  toggleTaskCompletion: (taskId: number) => Promise<DailyTask>;
+  deleteTask: (taskId: number) => Promise<void>;
   clearAllTasks: () => Promise<void>;
   refreshTasks: () => Promise<void>;
   clearError: () => void;
@@ -24,28 +25,13 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
 
-  const getTodayDateString = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0]; // YYYY-MM-DD format
-  };
-
-  const getStorageKey = (date: string) => `daily_tasks_${date}`;
-
   const loadTodayTasks = useCallback(async () => {
     try {
       setTasksLoading(true);
       setTasksError(null);
       
-      const today = getTodayDateString();
-      const storageKey = getStorageKey(today);
-      const tasksJson = await AsyncStorage.getItem(storageKey);
-      
-      if (tasksJson) {
-        const tasks: DailyTask[] = JSON.parse(tasksJson);
-        setTodayTasks(tasks);
-      } else {
-        setTodayTasks([]);
-      }
+      const tasks = await taskService.getTodayTasks();
+      setTodayTasks(tasks);
     } catch (error: any) {
       console.error('Failed to load today tasks:', error);
       setTasksError(error.message || 'Failed to load tasks');
@@ -55,35 +41,12 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const saveTasks = useCallback(async (tasks: DailyTask[], date: string) => {
-    try {
-      const storageKey = getStorageKey(date);
-      await AsyncStorage.setItem(storageKey, JSON.stringify(tasks));
-    } catch (error) {
-      console.error('Failed to save tasks:', error);
-      throw error;
-    }
-  }, []);
-
   const createTask = async (taskData: CreateTaskRequest): Promise<DailyTask> => {
     try {
       setTasksError(null);
       
-      const today = getTodayDateString();
-      const now = new Date().toISOString();
-      
-      const newTask: DailyTask = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        text: taskData.text.trim(),
-        date: today,
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      const updatedTasks = [...todayTasks, newTask];
-      await saveTasks(updatedTasks, today);
-      setTodayTasks(updatedTasks);
+      const newTask = await taskService.createTask(taskData);
+      setTodayTasks(prevTasks => [...prevTasks, newTask]);
       
       return newTask;
     } catch (error: any) {
@@ -93,31 +56,17 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const updateTask = async (taskId: string, taskData: UpdateTaskRequest): Promise<DailyTask> => {
+  const updateTask = async (taskId: number, taskData: UpdateTaskRequest): Promise<DailyTask> => {
     try {
       setTasksError(null);
       
-      const today = getTodayDateString();
-      const now = new Date().toISOString();
+      const updatedTask = await taskService.updateTask(taskId, taskData);
       
-      const updatedTasks = todayTasks.map(task => {
-        if (task.id === taskId) {
-          return {
-            ...task,
-            ...taskData,
-            updatedAt: now,
-          };
-        }
-        return task;
-      });
-
-      const updatedTask = updatedTasks.find(task => task.id === taskId);
-      if (!updatedTask) {
-        throw new Error('Task not found');
-      }
-
-      await saveTasks(updatedTasks, today);
-      setTodayTasks(updatedTasks);
+      setTodayTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? updatedTask : task
+        )
+      );
       
       return updatedTask;
     } catch (error: any) {
@@ -127,15 +76,32 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const deleteTask = async (taskId: string): Promise<void> => {
+  const toggleTaskCompletion = async (taskId: number): Promise<DailyTask> => {
     try {
       setTasksError(null);
       
-      const today = getTodayDateString();
-      const updatedTasks = todayTasks.filter(task => task.id !== taskId);
+      const updatedTask = await taskService.toggleTaskCompletion(taskId);
       
-      await saveTasks(updatedTasks, today);
-      setTodayTasks(updatedTasks);
+      setTodayTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.id === taskId ? updatedTask : task
+        )
+      );
+      
+      return updatedTask;
+    } catch (error: any) {
+      console.error('Failed to toggle task completion:', error);
+      setTasksError(error.message || 'Failed to toggle task');
+      throw error;
+    }
+  };
+
+  const deleteTask = async (taskId: number): Promise<void> => {
+    try {
+      setTasksError(null);
+      
+      await taskService.deleteTask(taskId);
+      setTodayTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
     } catch (error: any) {
       console.error('Failed to delete task:', error);
       setTasksError(error.message || 'Failed to delete task');
@@ -147,8 +113,10 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       setTasksError(null);
       
-      const today = getTodayDateString();
-      await saveTasks([], today);
+      // Delete each task individually since there's no bulk delete endpoint
+      const deletePromises = todayTasks.map(task => taskService.deleteTask(task.id));
+      await Promise.all(deletePromises);
+      
       setTodayTasks([]);
     } catch (error: any) {
       console.error('Failed to clear all tasks:', error);
@@ -176,6 +144,7 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     tasksError,
     createTask,
     updateTask,
+    toggleTaskCompletion,
     deleteTask,
     clearAllTasks,
     refreshTasks,

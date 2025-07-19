@@ -1,10 +1,9 @@
 export interface DailyTask {
-  id: string;
+  id: number; // Backend uses Long/number, not string
   text: string;
-  date: string; // YYYY-MM-DD format
-  completed: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isCompleted: boolean;
+  createdAt: string; // ISO datetime string
+  updatedAt?: string; // Optional, may not be present in response
 }
 
 export interface CreateTaskRequest {
@@ -13,5 +12,17 @@ export interface CreateTaskRequest {
 
 export interface UpdateTaskRequest {
   text?: string;
-  completed?: boolean;
+  isCompleted?: boolean;
+}
+
+export interface TaskCountResponse {
+  count: number;
+  maxDailyTasks: number;
+  remaining: number;
+}
+
+export interface CleanupResponse {
+  message: string;
+  expiredTasksFound: number;
+  tasksDeleted: number;
 }

@@ -71,7 +71,7 @@ export default function HomeScreen() {
 
   const handleTaskToggle = async (task: DailyTask) => {
     try {
-      await updateTask(task.id, { completed: !task.completed });
+      await updateTask(task.id, { isCompleted: !task.isCompleted });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to update task');
     }
@@ -138,23 +138,6 @@ export default function HomeScreen() {
       const note = await createNote({
         title: 'New Note',
         content: '# New Note\nStart writing...'
-      });
-      router.push({ pathname: '/note-detail', params: { id: note.id } });
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create note');
-    }
-  };
-
-  const handleQuickNote = async () => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const note = await createNote({
-        title: `Quick Note - ${new Date().toLocaleDateString()}`,
-        content: '# Quick Note\nJot down your thoughts...'
       });
       router.push({ pathname: '/note-detail', params: { id: note.id } });
     } catch (error: any) {
@@ -304,37 +287,59 @@ export default function HomeScreen() {
               ) : (
                 <View>
                   {todayTasks.map((task) => (
-                    <ModernCard key={task.id} style={styles.taskCard}>
+                    <ModernCard 
+                      key={task.id} 
+                      style={[
+                        styles.taskCard,
+                        {
+                          borderLeftWidth: 4,
+                          borderLeftColor: task.isCompleted ? colors.success : colors.error,
+                        }
+                      ] as any}
+                    >
                       <View style={styles.taskContent}>
                         <TouchableOpacity
                           style={styles.taskCheckbox}
                           onPress={() => handleTaskToggle(task)}
                         >
                           <Ionicons
-                            name={task.completed ? "checkmark-circle" : "ellipse-outline"}
+                            name={task.isCompleted ? "checkmark-circle" : "ellipse-outline"}
                             size={24}
-                            color={task.completed ? colors.success : colors.textMuted}
+                            color={task.isCompleted ? colors.success : colors.error}
                           />
                         </TouchableOpacity>
                         <Text 
                           style={[
                             styles.taskText, 
-                            { color: task.completed ? colors.textMuted : colors.text },
-                            task.completed && styles.taskTextCompleted
+                            { color: task.isCompleted ? colors.textMuted : colors.text },
+                            task.isCompleted && styles.taskTextCompleted
                           ]}
                         >
                           {task.text}
                         </Text>
                         <View style={styles.taskActions}>
                           <TouchableOpacity
+                            style={[styles.taskActionButton, { backgroundColor: task.isCompleted ? colors.success : colors.warning }]}
+                            onPress={() => handleTaskToggle(task)}
+                            accessibilityLabel={task.isCompleted ? "Mark as incomplete" : "Mark as complete"}
+                          >
+                            <Ionicons 
+                              name={task.isCompleted ? "checkmark" : "ellipse-outline"} 
+                              size={14} 
+                              color="#ffffff" 
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
                             style={[styles.taskActionButton, { backgroundColor: colors.primary }]}
                             onPress={() => handleTaskEdit(task)}
+                            accessibilityLabel="Edit task"
                           >
                             <Ionicons name="pencil" size={14} color="#ffffff" />
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.taskActionButton, { backgroundColor: colors.error }]}
                             onPress={() => handleTaskDelete(task)}
+                            accessibilityLabel="Delete task"
                           >
                             <Ionicons name="trash" size={14} color="#ffffff" />
                           </TouchableOpacity>
@@ -363,12 +368,6 @@ export default function HomeScreen() {
                     <ModernButton
                       title="New Note"
                       onPress={handleCreateNote}
-                      style={styles.noteButton}
-                    />
-                    <ModernButton
-                      title="Quick Note"
-                      onPress={handleQuickNote}
-                      variant="secondary"
                       style={styles.noteButton}
                     />
                   </View>

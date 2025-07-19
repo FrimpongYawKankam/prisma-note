@@ -23,7 +23,7 @@ import { BorderRadius, Shadows, Spacing, Typography } from '../../styles/tokens'
 const AddTaskScreen = () => {
   const { colors } = useTheme();
   const { editTaskId, editTaskText } = useLocalSearchParams<{
-    editTaskId?: string;
+    editTaskId?: string; // Still string from URL params, will convert to number
     editTaskText?: string;
   }>();
   
@@ -63,7 +63,8 @@ const AddTaskScreen = () => {
       setMessage('');
       
       if (isEditing && editTaskId) {
-        await updateTask(editTaskId, { text: taskText.trim() });
+        const taskId = parseInt(editTaskId, 10);
+        await updateTask(taskId, { text: taskText.trim() });
         setMessage('Task updated successfully!');
         setMessageType('success');
       } else {
@@ -216,7 +217,7 @@ const AddTaskScreen = () => {
             title="Cancel"
             onPress={handleCancel}
             variant="outline"
-            size="lg"
+            size="md"
             disabled={loading}
             style={styles.footerButton}
             enableHaptics={true}
@@ -225,7 +226,7 @@ const AddTaskScreen = () => {
             title={isEditing ? 'Update Task' : 'Create Task'}
             onPress={handleSave}
             variant="primary"
-            size="lg"
+            size="md"
             loading={loading}
             disabled={loading || !taskText.trim()}
             style={styles.footerButton}

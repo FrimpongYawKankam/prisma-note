@@ -258,7 +258,7 @@ export default function NotesScreen(): React.JSX.Element {
               colors={[colors.primary]}
             />
           }
-          stickySectionHeadersEnabled={true}
+          stickySectionHeadersEnabled={false}
         />
       )}
     </SafeAreaView>
