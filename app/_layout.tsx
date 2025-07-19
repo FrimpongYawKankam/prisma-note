@@ -2,8 +2,9 @@
 import { Slot } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '../src/context/AuthContext';
-import { NotesProvider } from '../src/context/NotesContext';
 import { EventsProvider } from '../src/context/EventsContext';
+import { NotesProvider } from '../src/context/NotesContext';
+import { TasksProvider } from '../src/context/TasksContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
 
 export default function RootLayout() {
@@ -13,8 +14,10 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <NotesProvider>
             <EventsProvider>
-              {/* This is where the app's main content will be rendered */}
-              <Slot />
+              <TasksProvider>
+                {/* This is where the app's main content will be rendered */}
+                <Slot />
+              </TasksProvider>
             </EventsProvider>
           </NotesProvider>
         </SafeAreaProvider>

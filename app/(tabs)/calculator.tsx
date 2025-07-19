@@ -1,24 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
 const scientificButtons = [
-  ['(', ')', 'mc', 'm+', 'm-', 'mr'],
-  ['2ⁿᵈ', 'x²', 'x³', 'xʸ', 'eˣ', '10ˣ'],
-  ['1/x', '²√x', '³√x', 'ʸ√x', 'ln', 'log₁₀'],
-  ['x!', 'sin', 'cos', 'tan', 'e', 'EE'],
-  ['Rand', 'sinh', 'cosh', 'tanh', 'π', 'Rad'],
+  ['(', ')', 'ans', 'π', 'e', 'C'],
+  ['x²', '√', 'ln', 'log₁₀', '^', '!'],
+  ['sin', 'cos', 'tan', 'deg', 'rad', '1/x'],
+  ['exp', 'mod', 'abs', 'rand', 'EE', 'mc'],
 ];
 
 const basicButtons = [
@@ -30,14 +30,51 @@ const basicButtons = [
 ];
 
 export default function CalculatorScreen() {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const [expression, setExpression] = useState('');
   const [result, setResult] = useState('');
   const [history, setHistory] = useState<string[]>([]);
   const [isScientific, setIsScientific] = useState(false);
-  const [ans, setAns] = useState('');
+  const [ans, setAns] = useState('0');
+  const [memory, setMemory] = useState('0');
 
   const animation = useRef(new Animated.Value(0)).current;
+
+  // Live calculation preview
+  useEffect(() => {
+    if (expression && expression !== '' && !expression.endsWith('=')) {
+      try {
+        let evalExpression = expression
+          .replace(/÷/g, '/')
+          .replace(/×/g, '*')
+          .replace(/−/g, '-')
+          .replace(/π/g, Math.PI.toString())
+          .replace(/e(?![0-9])/g, Math.E.toString())
+          .replace(/√\(([^)]+)\)/g, 'Math.sqrt($1)')
+          .replace(/sin\(([^)]+)\)/g, 'Math.sin($1)')
+          .replace(/cos\(([^)]+)\)/g, 'Math.cos($1)')
+          .replace(/tan\(([^)]+)\)/g, 'Math.tan($1)')
+          .replace(/ln\(([^)]+)\)/g, 'Math.log($1)')
+          .replace(/log\(([^)]+)\)/g, 'Math.log10($1)')
+          .replace(/([^)]+)²/g, 'Math.pow($1, 2)');
+        
+        // Only evaluate if expression seems complete
+        if (!/[+\-×÷]$/.test(expression)) {
+          const evaluated = eval(evalExpression);
+          if (isFinite(evaluated)) {
+            const roundedResult = Math.round(evaluated * 1000000000) / 1000000000;
+            setResult(roundedResult.toString());
+          }
+        } else {
+          setResult('');
+        }
+      } catch {
+        setResult('');
+      }
+    } else {
+      setResult('');
+    }
+  }, [expression]);
 
   useEffect(() => {
     Animated.timing(animation, {
@@ -57,19 +94,63 @@ export default function CalculatorScreen() {
       }
     } else if (val === '=') {
       try {
-        const evaluated = eval(expression.replace(/÷/g, '/').replace(/×/g, '*'));
-        setResult(String(evaluated));
-        setAns(String(evaluated));
-        setHistory(prev => [`${expression} = ${evaluated}`, ...prev]);
+        let evalExpression = expression
+          .replace(/÷/g, '/')
+          .replace(/×/g, '*')
+          .replace(/−/g, '-')
+          .replace(/π/g, Math.PI.toString())
+          .replace(/e/g, Math.E.toString());
+        
+        const evaluated = eval(evalExpression);
+        const roundedResult = Math.round(evaluated * 1000000000) / 1000000000; // Round to 9 decimal places
+        setResult(String(roundedResult));
+        setAns(String(roundedResult));
+        setHistory(prev => [`${expression} = ${roundedResult}`, ...prev.slice(0, 9)]); // Keep only last 10 entries
       } catch {
-        Alert.alert('Invalid Expression');
+        Alert.alert('Error', 'Invalid Expression');
+        setResult('Error');
       }
-    } else if (val === '🔁') {
+    } else if (val === 'ans') {
       setExpression(prev => prev + ans);
     } else if (val === '±') {
-      setExpression(prev => (prev.startsWith('-') ? prev.slice(1) : '-' + prev));
+      if (expression) {
+        if (expression.startsWith('-')) {
+          setExpression(prev => prev.slice(1));
+        } else {
+          setExpression(prev => '-' + prev);
+        }
+      }
     } else if (val === 'SCI') {
       setIsScientific(prev => !prev);
+    } else if (val === '%') {
+      if (expression) {
+        try {
+          const evaluated = eval(expression.replace(/÷/g, '/').replace(/×/g, '*').replace(/−/g, '-'));
+          setExpression((evaluated / 100).toString());
+        } catch {
+          Alert.alert('Error', 'Invalid Expression');
+        }
+      }
+    } else if (val === 'x²') {
+      if (expression) {
+        setExpression(prev => `(${prev})²`);
+      }
+    } else if (val === '√') {
+      setExpression(prev => `√(${prev})`);
+    } else if (val === 'sin') {
+      setExpression(prev => `sin(${prev})`);
+    } else if (val === 'cos') {
+      setExpression(prev => `cos(${prev})`);
+    } else if (val === 'tan') {
+      setExpression(prev => `tan(${prev})`);
+    } else if (val === 'ln') {
+      setExpression(prev => `ln(${prev})`);
+    } else if (val === 'log₁₀') {
+      setExpression(prev => `log(${prev})`);
+    } else if (val === 'π') {
+      setExpression(prev => prev + 'π');
+    } else if (val === 'e') {
+      setExpression(prev => prev + 'e');
     } else {
       setExpression(prev => prev + val);
     }
@@ -84,16 +165,39 @@ export default function CalculatorScreen() {
     setHistory([]);
   };
 
-  const renderButton = (label: string) => (
-    <TouchableOpacity
-      key={label}
-      style={[styles.button, styles.tinyButton, label === '=' ? styles.equals : /[÷×−+]/.test(label) ? styles.operator : {}]}
-      onPress={() => handlePress(label)}
-      onLongPress={(label === 'AC' || label === '⌫') ? handleLongPressDelete : undefined}
-    >
-      <Text style={[styles.buttonText, styles.tinyButtonText]}>{label}</Text>
-    </TouchableOpacity>
-  );
+  const renderButton = (label: string) => {
+    const isOperator = /[÷×−+]/.test(label);
+    const isEquals = label === '=';
+    const isSpecial = ['AC', '⌫', '±', '%'].includes(label);
+    const isScientificFunc = ['sin', 'cos', 'tan', 'ln', 'log₁₀', 'x²', 'x³', '√', 'π', 'e'].includes(label);
+    
+    return (
+      <TouchableOpacity
+        key={label}
+        style={[
+          styles.button, 
+          styles.tinyButton,
+          isEquals && [styles.equals, { backgroundColor: colors.primary }],
+          isOperator && [styles.operator, { backgroundColor: colors.primary }],
+          isSpecial && [styles.special, { backgroundColor: theme === 'dark' ? '#404040' : '#d4d4d2' }],
+          isScientificFunc && [styles.scientific, { backgroundColor: theme === 'dark' ? '#505050' : '#e0e0e0' }],
+          !isOperator && !isEquals && !isSpecial && !isScientificFunc && [styles.number, { backgroundColor: theme === 'dark' ? '#333' : '#f0f0f0' }]
+        ]}
+        onPress={() => handlePress(label)}
+        onLongPress={(label === 'AC' || label === '⌫') ? handleLongPressDelete : undefined}
+      >
+        <Text style={[
+          styles.buttonText, 
+          styles.tinyButtonText,
+          isSpecial && { color: theme === 'dark' ? '#fff' : '#000' },
+          isScientificFunc && { color: theme === 'dark' ? '#fff' : '#333' },
+          !isOperator && !isEquals && !isSpecial && !isScientificFunc && { color: theme === 'dark' ? '#fff' : '#000' }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const scientificTranslate = animation.interpolate({
     inputRange: [0, 1],
@@ -105,52 +209,62 @@ export default function CalculatorScreen() {
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: theme === 'dark' ? '#000' : '#fff' }]}>
-      <View style={styles.displayContainer}>
-        <Text style={[styles.expression, { color: theme === 'dark' ? '#fff' : '#000' }]}>{expression || '0'}</Text>
-        <Text style={[styles.result, { color: theme === 'dark' ? '#999' : '#444' }]}>{result}</Text>
-      </View>
-
-      {/** Animated Scientific Container */}
-      <Animated.View
-        style={{
-          opacity: scientificOpacity,
-          transform: [{ translateY: scientificTranslate }],
+    <SafeAreaView style={[styles.container, { backgroundColor: theme === 'dark' ? '#000' : '#fff' }]}>
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={{ 
+          flexGrow: 1, 
+          paddingBottom: 100,
+          justifyContent: 'flex-end'
         }}
+        showsVerticalScrollIndicator={false}
       >
-        {isScientific && (
-          <View style={styles.scientificContainer}>
-            {scientificButtons.map((row, idx) => (
-              <View key={idx} style={styles.row}>
-                {row.map(label => renderButton(label))}
-              </View>
-            ))}
-          </View>
-        )}
-      </Animated.View>
-
-      {basicButtons.map((row, idx) => (
-        <View key={idx} style={styles.row}>
-          {row.map(label => {
-            let actualLabel = label;
-            if (label === 'AC' && expression.length > 0) actualLabel = '⌫';
-            return renderButton(actualLabel);
-          })}
+        <View style={styles.displayContainer}>
+          <Text style={[styles.expression, { color: theme === 'dark' ? '#fff' : '#000' }]}>{expression || '0'}</Text>
+          <Text style={[styles.result, { color: theme === 'dark' ? '#999' : '#444' }]}>{result}</Text>
         </View>
-      ))}
 
-      <View style={styles.historySection}>
-        <Text style={styles.historyTitle}>History</Text>
-        <ScrollView style={styles.historyScroll}>
-          {history.map((entry, idx) => (
-            <Text key={idx} style={styles.historyText}>{entry}</Text>
-          ))}
-        </ScrollView>
-        <TouchableOpacity onPress={clearHistory} style={styles.clearHistoryButton}>
-          <Text style={styles.clearHistoryText}>Clear History</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+        {/** Animated Scientific Container */}
+        <Animated.View
+          style={{
+            opacity: scientificOpacity,
+            transform: [{ translateY: scientificTranslate }],
+          }}
+        >
+          {isScientific && (
+            <View style={styles.scientificContainer}>
+              {scientificButtons.map((row, idx) => (
+                <View key={idx} style={styles.row}>
+                  {row.map(label => renderButton(label))}
+                </View>
+              ))}
+            </View>
+          )}
+        </Animated.View>
+
+        {basicButtons.map((row, idx) => (
+          <View key={idx} style={styles.row}>
+            {row.map(label => {
+              let actualLabel = label;
+              if (label === 'AC' && expression.length > 0) actualLabel = '⌫';
+              return renderButton(actualLabel);
+            })}
+          </View>
+        ))}
+
+        <View style={styles.historySection}>
+          <Text style={[styles.historyTitle, { color: theme === 'dark' ? '#fff' : '#000' }]}>History</Text>
+          <ScrollView style={styles.historyScroll}>
+            {history.map((entry, idx) => (
+              <Text key={idx} style={[styles.historyText, { color: theme === 'dark' ? '#999' : '#666' }]}>{entry}</Text>
+            ))}
+          </ScrollView>
+          <TouchableOpacity onPress={clearHistory} style={styles.clearHistoryButton}>
+            <Text style={styles.clearHistoryText}>Clear History</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -163,13 +277,16 @@ const styles = StyleSheet.create({
   displayContainer: {
     padding: 20,
     alignItems: 'flex-end',
+    minHeight: 120,
   },
   expression: {
     fontSize: 36,
+    fontWeight: '300',
   },
   result: {
     fontSize: 24,
     marginTop: 4,
+    fontWeight: '200',
   },
   scientificContainer: {
     paddingHorizontal: 10,
@@ -181,11 +298,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   button: {
-    backgroundColor: '#333',
     flex: 1,
     marginHorizontal: 2,
     borderRadius: 30,
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   tinyButton: {
     paddingVertical: height * 0.014,
@@ -194,37 +315,58 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     color: '#fff',
+    fontWeight: '500',
   },
   tinyButtonText: {
     fontSize: 16,
   },
   operator: {
-    backgroundColor: '#f90',
+    // Background color applied dynamically
   },
   equals: {
-    backgroundColor: '#f90',
+    // Background color applied dynamically
+  },
+  special: {
+    // Dynamic background color applied inline
+  },
+  scientific: {
+    // Dynamic background color applied inline
+  },
+  number: {
+    // Dynamic background color applied inline
   },
   historySection: {
-    marginTop: 10,
+    marginTop: 20,
     paddingHorizontal: 20,
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    borderRadius: 15,
+    marginHorizontal: 10,
+    padding: 15,
   },
   historyTitle: {
     fontWeight: 'bold',
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 10,
   },
   historyScroll: {
-    maxHeight: 100,
+    maxHeight: 120,
   },
   historyText: {
-    color: '#999',
+    marginVertical: 2,
+    fontSize: 14,
+    fontFamily: 'monospace',
   },
   clearHistoryButton: {
-    marginTop: 5,
+    marginTop: 10,
     alignSelf: 'flex-end',
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
   },
   clearHistoryText: {
-    color: '#f00',
+    color: '#ff3b30',
     fontSize: 14,
+    fontWeight: '600',
   },
 });

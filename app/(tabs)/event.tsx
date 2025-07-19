@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { useTheme } from '../../src/context/ThemeContext';
 import { useEvents } from '../../src/context/EventsContext';
-import { Event, EventTag } from '../../src/types/api';
-import { getTagColor, formatEventTime } from '../../src/services/eventService';
+import { useTheme } from '../../src/context/ThemeContext';
+import { formatEventTime, getTagColor } from '../../src/services/eventService';
 
 export default function EventScreen() {
   const { 
@@ -114,7 +113,11 @@ export default function EventScreen() {
       </View>
 
       {/* Events List */}
-      <ScrollView style={styles.eventsContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.eventsContainer} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {displayedEvents.length === 0 ? (
           <Text style={[styles.noEventsText, { color: isDark ? '#666' : '#999' }]}>
             No events for this date

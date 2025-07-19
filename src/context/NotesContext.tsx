@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import noteService from '../services/noteService';
 import { CreateNoteRequest, Note, UpdateNoteRequest } from '../types/api';
 import { useAuth } from './AuthContext';
@@ -28,7 +28,7 @@ interface NotesContextType {
   moveToTrash: (noteId: number) => Promise<void>;
   getNoteById: (noteId: number) => Promise<Note>;
   searchNotes: (keyword: string) => Promise<Note[]>;
-  refreshNotes: () => Promise<void>;
+  refreshNotes: (force?: boolean) => Promise<void>;
   clearError: () => void;
   setSearchKeyword: (keyword: string) => void;
   clearSearch: () => void;
@@ -71,38 +71,17 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   const { isAuthenticated } = useAuth();
 
-  // Add a flag to prevent multiple simultaneous loads
+  // Add a flag to prevent multiple simultaneous loads and better caching
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(0);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // Load notes when user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && !isInitialLoading) {
-      setIsInitialLoading(true);
-      Promise.all([
-        refreshNotes(),
-        loadTrashedNotesCount()
-      ]).finally(() => {
-        setIsInitialLoading(false);
-      });
-    } else if (!isAuthenticated) {
-      // Clear notes when user logs out
-      setNotes([]);
-      setNotesCount(0);
-      setTrashedNotes([]);
-      setTrashedNotesCount(0);
-      clearSearch();
-      clearTrashSearch();
-      setIsInitialLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  const refreshNotes = async () => {
+  const refreshNotes = useCallback(async (force = false) => {
     if (!isAuthenticated || notesLoading) return;
     
-    // Debounce: Don't refresh if we've refreshed in the last 5 seconds
+    // Debounce: Don't refresh if we've refreshed in the last 10 seconds unless forced
     const now = Date.now();
-    if (now - lastRefreshTime < 5000) {
+    if (!force && isDataLoaded && (now - lastRefreshTime < 10000)) {
       console.log('Skipping notes refresh - too recent');
       return;
     }
@@ -113,17 +92,21 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setLastRefreshTime(now);
       const userNotes = await noteService.getUserNotes();
       setNotes(userNotes);
-      setNotesCount(userNotes.length); // Calculate count from response instead of separate API call
+      setNotesCount(userNotes.length);
+      setIsDataLoaded(true);
     } catch (err: any) {
       console.error('Failed to refresh notes:', err);
       setNotesError(err.message || 'Failed to load notes');
     } finally {
       setNotesLoading(false);
     }
-  };
+  }, [isAuthenticated, notesLoading]); // Removed changing dependencies
 
-  const loadTrashedNotesCount = async () => {
+  const loadTrashedNotesCount = useCallback(async (force = false) => {
     if (!isAuthenticated || trashLoading) return;
+    
+    // Only load trash count if we don't have it or if forced
+    if (!force && trashedNotesCount > 0) return;
     
     try {
       const count = await noteService.getTrashedNotesCount();
@@ -131,7 +114,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err: any) {
       console.error('Failed to load trashed notes count:', err);
     }
-  };
+  }, [isAuthenticated, trashLoading]); // Removed trashedNotesCount dependency
 
   const createNote = async (noteData: CreateNoteRequest): Promise<Note> => {
     try {
@@ -274,8 +257,8 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Update active notes count
       setNotesCount(prevCount => prevCount + 1);
       
-      // Refresh active notes to include restored note
-      await refreshNotes();
+      // Only refresh if we need the restored note immediately visible
+      // Don't auto-refresh to avoid constant API calls
     } catch (err: any) {
       console.error('Failed to restore note:', err);
       setTrashError(err.message || 'Failed to restore note');
@@ -343,17 +326,17 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Utility functions
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchResults([]);
     setSearchKeyword('');
     setIsSearching(false);
-  };
+  }, []);
 
-  const clearTrashSearch = () => {
+  const clearTrashSearch = useCallback(() => {
     setTrashSearchResults([]);
     setTrashSearchKeyword('');
     setIsSearchingTrash(false);
-  };
+  }, []);
 
   const clearError = () => {
     setNotesError(null);
@@ -411,6 +394,29 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTrashSearchKeyword: setTrashSearchKeywordFunction,
     clearTrashSearch,
   };
+
+  // Load notes when user is authenticated - only once
+  useEffect(() => {
+    if (isAuthenticated && !isInitialLoading && !isDataLoaded) {
+      setIsInitialLoading(true);
+      Promise.all([
+        refreshNotes(true), // Force initial load
+        loadTrashedNotesCount(true) // Force initial load
+      ]).finally(() => {
+        setIsInitialLoading(false);
+      });
+    } else if (!isAuthenticated) {
+      // Clear notes when user logs out
+      setNotes([]);
+      setNotesCount(0);
+      setTrashedNotes([]);
+      setTrashedNotesCount(0);
+      clearSearch();
+      clearTrashSearch();
+      setIsInitialLoading(false);
+      setIsDataLoaded(false);
+    }
+  }, [isAuthenticated, isInitialLoading, isDataLoaded]); // Removed function dependencies to prevent infinite loops
 
   return (
     <NotesContext.Provider value={value}>

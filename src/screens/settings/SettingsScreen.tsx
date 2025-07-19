@@ -21,7 +21,7 @@ export default function SettingsScreen() {
       <Text style={[styles.header, theme === 'dark' ? styles.darkText : styles.lightText]}>
         Settings
       </Text>
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Profile Shortcut */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.row} onPress={() => router.push('/profile')}>
