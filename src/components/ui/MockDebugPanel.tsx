@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { getServiceMode, isUsingMockServices, mockDataUtils } from '../../mockFunctionality';
 import { MOCK_CONFIG } from '../../mockFunctionality/utils/constants';
+import { ModernDialog } from './ModernDialog';
 
 interface MockDebugPanelProps {
   visible?: boolean;
@@ -11,6 +12,12 @@ interface MockDebugPanelProps {
 export const MockDebugPanel: React.FC<MockDebugPanelProps> = ({ visible = __DEV__ }) => {
   const { colors } = useTheme();
   const [mockStatus, setMockStatus] = useState<any>(null);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+  });
   
   useEffect(() => {
     if (visible && isUsingMockServices()) {
@@ -23,19 +30,27 @@ export const MockDebugPanel: React.FC<MockDebugPanelProps> = ({ visible = __DEV_
     setMockStatus(status);
   };
   
+  const showDialog = (title: string, message: string, buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
+    setDialogConfig({ title, message, buttons });
+    setDialogVisible(true);
+  };
+  
   const handleResetData = () => {
-    Alert.alert(
+    showDialog(
       'Reset Mock Data',
       'This will reset all mock data to initial state. Continue?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel', onPress: () => setDialogVisible(false), style: 'cancel' },
         {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
+            setDialogVisible(false);
             await mockDataUtils.resetMockData();
             await loadMockStatus();
-            Alert.alert('Success', 'Mock data has been reset');
+            showDialog('Success', 'Mock data has been reset', [
+              { text: 'OK', onPress: () => setDialogVisible(false) }
+            ]);
           }
         }
       ]
@@ -43,18 +58,21 @@ export const MockDebugPanel: React.FC<MockDebugPanelProps> = ({ visible = __DEV_
   };
   
   const handleClearData = () => {
-    Alert.alert(
+    showDialog(
       'Clear Mock Data',
       'This will clear ALL mock data. Continue?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel', onPress: () => setDialogVisible(false), style: 'cancel' },
         {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
+            setDialogVisible(false);
             await mockDataUtils.clearMockData();
             await loadMockStatus();
-            Alert.alert('Success', 'Mock data has been cleared');
+            showDialog('Success', 'Mock data has been cleared', [
+              { text: 'OK', onPress: () => setDialogVisible(false) }
+            ]);
           }
         }
       ]
@@ -117,6 +135,15 @@ export const MockDebugPanel: React.FC<MockDebugPanelProps> = ({ visible = __DEV_
           <Text style={styles.buttonText}>Clear All</Text>
         </TouchableOpacity>
       </View>
+      
+      {/* Dialog for confirmations and messages */}
+      <ModernDialog
+        visible={dialogVisible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        buttons={dialogConfig.buttons}
+        onClose={() => setDialogVisible(false)}
+      />
     </View>
   );
 };

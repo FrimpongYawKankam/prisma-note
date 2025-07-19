@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  ScrollView,
-  Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { Typography, Spacing } from '../../styles/tokens';
-import { ModernButton } from '../ui/ModernButton';
-import { ModernInput } from '../ui/ModernInput';
-import { CreateNoteRequest, UpdateNoteRequest, Note } from '../../types/api';
 import { validateNoteData } from '../../services/noteService';
+import { Spacing, Typography } from '../../styles/tokens';
+import { CreateNoteRequest, Note, UpdateNoteRequest } from '../../types/api';
+import { ModernButton } from '../ui/ModernButton';
+import { ModernDialog } from '../ui/ModernDialog';
+import { ModernInput } from '../ui/ModernInput';
 
 interface NoteFormProps {
   initialNote?: Note;
@@ -33,6 +33,8 @@ export const NoteForm: React.FC<NoteFormProps> = ({
   const [title, setTitle] = useState(initialNote?.title || '');
   const [content, setContent] = useState(initialNote?.content || '');
   const [errors, setErrors] = useState<string[]>([]);
+  const [errorDialog, setErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (initialNote) {
@@ -123,11 +125,8 @@ export const NoteForm: React.FC<NoteFormProps> = ({
 
       await onSubmit(noteData);
     } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error.message || 'Failed to save note. Please try again.',
-        [{ text: 'OK' }]
-      );
+      setErrorMessage(error.message || 'Failed to save note. Please try again.');
+      setErrorDialog(true);
     }
   };
 
@@ -215,6 +214,20 @@ export const NoteForm: React.FC<NoteFormProps> = ({
           />
         </View>
       </ScrollView>
+      
+      {/* Error Dialog */}
+      <ModernDialog
+        visible={errorDialog}
+        title="Error"
+        message={errorMessage}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setErrorDialog(false),
+          },
+        ]}
+        onClose={() => setErrorDialog(false)}
+      />
     </View>
   );
 };

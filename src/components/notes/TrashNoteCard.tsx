@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Note } from '../../types/api';
+import React, { useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNotes } from '../../context/NotesContext';
+import { Note } from '../../types/api';
+import { ModernDialog } from '../ui/ModernDialog';
 
 interface TrashNoteCardProps {
   note: Note;
@@ -17,6 +18,9 @@ export const TrashNoteCard: React.FC<TrashNoteCardProps> = ({
 }) => {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [errorDialog, setErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [deleteDialog, setDeleteDialog] = useState(false);
   const { restoreNote, permanentlyDeleteNote } = useNotes();
 
   const formatDate = (date: Date) => {
@@ -44,7 +48,8 @@ export const TrashNoteCard: React.FC<TrashNoteCardProps> = ({
       onRestore?.(note.id);
     } catch (error) {
       console.error('Failed to restore note:', error);
-      Alert.alert('Error', 'Failed to restore note. Please try again.');
+      setErrorMessage('Failed to restore note. Please try again.');
+      setErrorDialog(true);
     } finally {
       setIsRestoring(false);
     }
@@ -52,33 +57,22 @@ export const TrashNoteCard: React.FC<TrashNoteCardProps> = ({
 
   const handlePermanentDelete = () => {
     if (isRestoring || isDeleting) return;
+    setDeleteDialog(true);
+  };
 
-    Alert.alert(
-      'Permanently Delete Note',
-      'This action cannot be undone. Are you sure you want to permanently delete this note?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsDeleting(true);
-              await permanentlyDeleteNote(note.id);
-              onPermanentDelete?.(note.id);
-            } catch (error) {
-              console.error('Failed to permanently delete note:', error);
-              Alert.alert('Error', 'Failed to delete note. Please try again.');
-            } finally {
-              setIsDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+  const confirmPermanentDelete = async () => {
+    try {
+      setIsDeleting(true);
+      setDeleteDialog(false);
+      await permanentlyDeleteNote(note.id);
+      onPermanentDelete?.(note.id);
+    } catch (error) {
+      console.error('Failed to permanently delete note:', error);
+      setErrorMessage('Failed to delete note. Please try again.');
+      setErrorDialog(true);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const truncateText = (text: string, maxLength: number) => {
@@ -137,6 +131,40 @@ export const TrashNoteCard: React.FC<TrashNoteCardProps> = ({
           </Text>
         </TouchableOpacity>
       </View>
+      
+      {/* Error Dialog */}
+      <ModernDialog
+        visible={errorDialog}
+        title="Error"
+        message={errorMessage}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setErrorDialog(false),
+          },
+        ]}
+        onClose={() => setErrorDialog(false)}
+      />
+      
+      {/* Delete Confirmation Dialog */}
+      <ModernDialog
+        visible={deleteDialog}
+        title="Permanently Delete Note"
+        message="This action cannot be undone. Are you sure you want to permanently delete this note?"
+        buttons={[
+          {
+            text: 'Cancel',
+            onPress: () => setDeleteDialog(false),
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            onPress: confirmPermanentDelete,
+            style: 'destructive',
+          },
+        ]}
+        onClose={() => setDeleteDialog(false)}
+      />
     </View>
   );
 };

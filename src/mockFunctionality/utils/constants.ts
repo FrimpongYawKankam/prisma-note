@@ -2,7 +2,7 @@
 
 export const MOCK_CONFIG = {
   // Enable/disable mock mode - set to true for mock mode
-  USE_MOCK: true, // Change this to false to use real backend
+  USE_MOCK: false, // Change this to false to use real backend
   
   // Network simulation delays (in milliseconds)
   DELAYS: {

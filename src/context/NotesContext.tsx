@@ -71,13 +71,21 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   const { isAuthenticated } = useAuth();
 
+  // Add a flag to prevent multiple simultaneous loads
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
+
   // Load notes when user is authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      refreshNotes();
-      loadNotesCount();
-      loadTrashedNotesCount();
-    } else {
+    if (isAuthenticated && !isInitialLoading) {
+      setIsInitialLoading(true);
+      Promise.all([
+        refreshNotes(),
+        loadTrashedNotesCount()
+      ]).finally(() => {
+        setIsInitialLoading(false);
+      });
+    } else if (!isAuthenticated) {
       // Clear notes when user logs out
       setNotes([]);
       setNotesCount(0);
@@ -85,17 +93,27 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setTrashedNotesCount(0);
       clearSearch();
       clearTrashSearch();
+      setIsInitialLoading(false);
     }
   }, [isAuthenticated]);
 
   const refreshNotes = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || notesLoading) return;
+    
+    // Debounce: Don't refresh if we've refreshed in the last 5 seconds
+    const now = Date.now();
+    if (now - lastRefreshTime < 5000) {
+      console.log('Skipping notes refresh - too recent');
+      return;
+    }
     
     try {
       setNotesLoading(true);
       setNotesError(null);
+      setLastRefreshTime(now);
       const userNotes = await noteService.getUserNotes();
       setNotes(userNotes);
+      setNotesCount(userNotes.length); // Calculate count from response instead of separate API call
     } catch (err: any) {
       console.error('Failed to refresh notes:', err);
       setNotesError(err.message || 'Failed to load notes');
@@ -104,19 +122,8 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const loadNotesCount = async () => {
-    if (!isAuthenticated) return;
-    
-    try {
-      const count = await noteService.getUserNotesCount();
-      setNotesCount(count);
-    } catch (err: any) {
-      console.error('Failed to load notes count:', err);
-    }
-  };
-
   const loadTrashedNotesCount = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || trashLoading) return;
     
     try {
       const count = await noteService.getTrashedNotesCount();

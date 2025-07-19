@@ -3,7 +3,6 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -16,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import { ModernButton } from '../src/components/ui/ModernButton';
+import { ModernDialog } from '../src/components/ui/ModernDialog';
 import { useAuth } from '../src/context/AuthContext';
 import { useEvents } from '../src/context/EventsContext';
 import { useTheme } from '../src/context/ThemeContext';
@@ -42,6 +42,12 @@ export default function SetEventScreen() {
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+  });
 
   // Update description when returning from description screen
   useEffect(() => {
@@ -49,6 +55,11 @@ export default function SetEventScreen() {
       setDescription(updatedDescription as string);
     }
   }, [updatedDescription]);
+
+  const showDialog = (title: string, message: string, buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
+    setDialogConfig({ title, message, buttons });
+    setDialogVisible(true);
+  };
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -90,12 +101,16 @@ export default function SetEventScreen() {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a title for the event');
+      showDialog('Error', 'Please enter a title for the event', [
+        { text: 'OK', onPress: () => setDialogVisible(false) }
+      ]);
       return;
     }
 
     if (!user?.id) {
-      Alert.alert('Error', 'User not found. Please login again.');
+      showDialog('Error', 'User not found. Please login again.', [
+        { text: 'OK', onPress: () => setDialogVisible(false) }
+      ]);
       return;
     }
 
@@ -106,7 +121,9 @@ export default function SetEventScreen() {
       const endDateTime = allDay ? endDate : createDateTime(endDate, endTime);
 
       if (endDateTime <= startDateTime) {
-        Alert.alert('Error', 'End time must be after start time');
+        showDialog('Error', 'End time must be after start time', [
+          { text: 'OK', onPress: () => setDialogVisible(false) }
+        ]);
         setIsLoading(false);
         return;
       }
@@ -122,12 +139,14 @@ export default function SetEventScreen() {
 
       await createEvent(eventData);
       
-      Alert.alert('Success', 'Event created successfully!', [
-        { text: 'OK', onPress: () => router.back() }
+      showDialog('Success', 'Event created successfully!', [
+        { text: 'OK', onPress: () => { setDialogVisible(false); router.back(); } }
       ]);
     } catch (error) {
       console.error('Error creating event:', error);
-      Alert.alert('Error', 'Failed to create event. Please try again.');
+      showDialog('Error', 'Failed to create event. Please try again.', [
+        { text: 'OK', onPress: () => setDialogVisible(false) }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -357,6 +376,15 @@ export default function SetEventScreen() {
           }}
         />
       )}
+      
+      {/* Dialog for confirmations and messages */}
+      <ModernDialog
+        visible={dialogVisible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        buttons={dialogConfig.buttons}
+        onClose={() => setDialogVisible(false)}
+      />
     </SafeAreaView>
   );
 }

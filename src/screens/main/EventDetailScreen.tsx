@@ -1,26 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernDialog } from '../../components/ui/ModernDialog';
-import { ModernButton } from '../../components/ui/ModernButton';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
 import { useTheme } from '../../context/ThemeContext';
-import { Event, EventTag } from '../../types/api';
 import { formatEventDateTime, formatEventTime, getTagColor } from '../../services/eventService';
+import { Event, EventTag } from '../../types/api';
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -44,6 +42,7 @@ export default function EventDetailScreen() {
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [discardDialog, setDiscardDialog] = useState(false);
   
   // Date/time picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -197,14 +196,7 @@ export default function EventDetailScreen() {
 
   const handleBack = () => {
     if (isEditing) {
-      Alert.alert(
-        'Discard Changes?',
-        'You have unsaved changes. Are you sure you want to go back?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => router.back() }
-        ]
-      );
+      setDiscardDialog(true);
     } else {
       router.back();
     }
@@ -534,6 +526,29 @@ export default function EventDetailScreen() {
           },
         ]}
         onClose={() => setShowDeleteDialog(false)}
+      />
+      
+      {/* Discard Changes Dialog */}
+      <ModernDialog
+        visible={discardDialog}
+        title="Discard Changes?"
+        message="You have unsaved changes. Are you sure you want to go back?"
+        buttons={[
+          {
+            text: 'Cancel',
+            onPress: () => setDiscardDialog(false),
+            style: 'cancel',
+          },
+          {
+            text: 'Discard',
+            onPress: () => {
+              setDiscardDialog(false);
+              router.back();
+            },
+            style: 'destructive',
+          },
+        ]}
+        onClose={() => setDiscardDialog(false)}
       />
     </SafeAreaView>
   );

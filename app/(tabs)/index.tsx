@@ -3,15 +3,15 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
-  Keyboard,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    Keyboard,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Markdown from 'react-native-markdown-display';
@@ -35,13 +35,17 @@ export default function HomeScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Reload notes when screen is focused
+  // Reload notes when screen is focused (but only if we don't have data or haven't loaded recently)
   useFocusEffect(
     useCallback(() => {
-      if (isAuthenticated) {
-        refreshNotes();
+      // Only refresh if authenticated and either no notes or haven't refreshed in last 30 seconds
+      if (isAuthenticated && (notes.length === 0 || !notesLoading)) {
+        const shouldRefresh = notes.length === 0; // Only auto-refresh if no notes loaded
+        if (shouldRefresh) {
+          refreshNotes();
+        }
       }
-    }, [isAuthenticated, refreshNotes])
+    }, [isAuthenticated, notes.length, notesLoading, refreshNotes])
   );
 
   const onRefresh = useCallback(async () => {

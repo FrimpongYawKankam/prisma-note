@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ModernDialog } from '../../components/ui/ModernDialog';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function ChangePasswordScreen() {
@@ -12,19 +13,36 @@ export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState({
+    title: '',
+    message: '',
+    isSuccess: false
+  });
+
+  const showDialog = (title: string, message: string, isSuccess: boolean = false) => {
+    setDialogConfig({ title, message, isSuccess });
+    setDialogVisible(true);
+  };
 
   const handleChangePassword = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      showDialog('Error', 'Please fill in all fields.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match.');
+      showDialog('Error', 'New passwords do not match.');
       return;
     }
     // TODO: Add your password change logic here (API call, etc.)
-    Alert.alert('Success', 'Password changed successfully!');
-    router.back();
+    showDialog('Success', 'Password changed successfully!', true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogVisible(false);
+    if (dialogConfig.isSuccess) {
+      router.back();
+    }
   };
 
   return (
@@ -63,6 +81,20 @@ export default function ChangePasswordScreen() {
           <Text style={styles.changeBtnText}>Change Password</Text>
         </TouchableOpacity>
       </View>
+      {/* Dialog for error/success messages */}
+      <ModernDialog
+        visible={dialogVisible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: handleDialogClose,
+            style: dialogConfig.isSuccess ? 'default' : 'default'
+          }
+        ]}
+        onClose={handleDialogClose}
+      />
     </SafeAreaView>
   );
 }

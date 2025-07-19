@@ -1,22 +1,22 @@
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
-import { ModernButton } from '../ui/ModernButton';
-import { ModernInput } from '../ui/ModernInput';
 import { useTheme } from '../../context/ThemeContext';
-import { CreateEventRequest, UpdateEventRequest, Event, EventTag } from '../../types/api';
-import { validateEventData, getTagColor } from '../../services/eventService';
-import { Typography, Spacing } from '../../styles/tokens';
+import { getTagColor, validateEventData } from '../../services/eventService';
+import { Spacing, Typography } from '../../styles/tokens';
+import { CreateEventRequest, Event, EventTag, UpdateEventRequest } from '../../types/api';
+import { ModernButton } from '../ui/ModernButton';
+import { ModernDialog } from '../ui/ModernDialog';
+import { ModernInput } from '../ui/ModernInput';
 
 interface EventFormProps {
   mode: 'create' | 'edit';
@@ -44,6 +44,8 @@ export const EventForm: React.FC<EventFormProps> = ({
   const [endTime, setEndTime] = useState(new Date(Date.now() + 60 * 60 * 1000)); // 1 hour later
   const [tag, setTag] = useState<EventTag>(EventTag.NONE);
   const [errors, setErrors] = useState<string[]>([]);
+  const [errorDialog, setErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Date/time picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -211,11 +213,8 @@ export const EventForm: React.FC<EventFormProps> = ({
 
       await onSubmit(eventData);
     } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error.message || 'Failed to save event. Please try again.',
-        [{ text: 'OK' }]
-      );
+      setErrorMessage(error.message || 'Failed to save event. Please try again.');
+      setErrorDialog(true);
     }
   };
 
@@ -454,6 +453,20 @@ export const EventForm: React.FC<EventFormProps> = ({
           }}
         />
       )}
+      
+      {/* Error Dialog */}
+      <ModernDialog
+        visible={errorDialog}
+        title="Error"
+        message={errorMessage}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setErrorDialog(false),
+          },
+        ]}
+        onClose={() => setErrorDialog(false)}
+      />
     </View>
   );
 };

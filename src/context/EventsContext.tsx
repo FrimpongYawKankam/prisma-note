@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import eventService from '../services/eventService';
-import { CreateEventRequest, UpdateEventRequest, Event, EventTag, EventSearchParams } from '../types/api';
+import { CreateEventRequest, Event, EventTag, UpdateEventRequest } from '../types/api';
 import { useAuth } from './AuthContext';
 
 interface EventsContextType {
@@ -51,15 +51,23 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const { isAuthenticated } = useAuth();
 
+  // Add a flag to prevent multiple simultaneous loads
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
+
   // Load events when user is authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      refreshEvents();
-    } else {
+    if (isAuthenticated && !isInitialLoading) {
+      setIsInitialLoading(true);
+      refreshEvents().finally(() => {
+        setIsInitialLoading(false);
+      });
+    } else if (!isAuthenticated) {
       // Clear events when user logs out
       setEvents([]);
       setEventsCount(0);
       setFilteredEvents([]);
+      setIsInitialLoading(false);
     }
   }, [isAuthenticated]);
 
@@ -69,11 +77,19 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [events, selectedDate, selectedTag]);
 
   const refreshEvents = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || eventsLoading) return;
+    
+    // Debounce: Don't refresh if we've refreshed in the last 5 seconds
+    const now = Date.now();
+    if (now - lastRefreshTime < 5000) {
+      console.log('Skipping events refresh - too recent');
+      return;
+    }
     
     try {
       setEventsLoading(true);
       setEventsError(null);
+      setLastRefreshTime(now);
       const userEvents = await eventService.getUserEvents();
       setEvents(userEvents);
       setEventsCount(userEvents.length);

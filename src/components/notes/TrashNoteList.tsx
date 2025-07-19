@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Alert 
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Note } from '../../types/api';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import { useNotes } from '../../context/NotesContext';
-import TrashNoteCard from './TrashNoteCard';
 import { useTheme } from '../../context/ThemeContext';
+import { Note } from '../../types/api';
+import { ModernDialog } from '../ui/ModernDialog';
+import TrashNoteCard from './TrashNoteCard';
 
 interface TrashNoteListProps {
   searchKeyword?: string;
@@ -33,6 +33,12 @@ export const TrashNoteList: React.FC<TrashNoteListProps> = ({ searchKeyword }) =
   } = useNotes();
 
   const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+  });
 
   useEffect(() => {
     fetchTrashedNotes();
@@ -44,18 +50,26 @@ export const TrashNoteList: React.FC<TrashNoteListProps> = ({ searchKeyword }) =
 
   const isLoading = trashLoading || isSearchingTrash;
 
+  const showDialog = (title: string, message: string, buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
+    setDialogConfig({ title, message, buttons });
+    setDialogVisible(true);
+  };
+
   const handleEmptyTrash = () => {
     if (trashedNotesCount === 0) {
-      Alert.alert('Empty Trash', 'Trash is already empty.');
+      showDialog('Empty Trash', 'Trash is already empty.', [
+        { text: 'OK', onPress: () => setDialogVisible(false) }
+      ]);
       return;
     }
 
-    Alert.alert(
+    showDialog(
       'Empty Trash',
       `This will permanently delete all ${trashedNotesCount} notes in trash. This action cannot be undone.`,
       [
         {
           text: 'Cancel',
+          onPress: () => setDialogVisible(false),
           style: 'cancel',
         },
         {
@@ -63,12 +77,17 @@ export const TrashNoteList: React.FC<TrashNoteListProps> = ({ searchKeyword }) =
           style: 'destructive',
           onPress: async () => {
             try {
+              setDialogVisible(false);
               setIsEmptyingTrash(true);
               await emptyTrash();
-              Alert.alert('Success', 'Trash has been emptied.');
+              showDialog('Success', 'Trash has been emptied.', [
+                { text: 'OK', onPress: () => setDialogVisible(false) }
+              ]);
             } catch (error) {
               console.error('Failed to empty trash:', error);
-              Alert.alert('Error', 'Failed to empty trash. Please try again.');
+              showDialog('Error', 'Failed to empty trash. Please try again.', [
+                { text: 'OK', onPress: () => setDialogVisible(false) }
+              ]);
             } finally {
               setIsEmptyingTrash(false);
             }
@@ -192,6 +211,15 @@ export const TrashNoteList: React.FC<TrashNoteListProps> = ({ searchKeyword }) =
         showsVerticalScrollIndicator={false}
         refreshing={isLoading}
         onRefresh={handleRefresh}
+      />
+      
+      {/* Dialog for confirmations and messages */}
+      <ModernDialog
+        visible={dialogVisible}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        buttons={dialogConfig.buttons}
+        onClose={() => setDialogVisible(false)}
       />
     </View>
   );
