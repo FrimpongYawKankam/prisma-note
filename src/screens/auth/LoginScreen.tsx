@@ -33,10 +33,19 @@ export default function LoginScreen() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordWarning, setPasswordWarning] = useState('');
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('error');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Password validation individual checks
+  const passwordChecks = {
+    minLength: password.length >= 6,
+    hasNumber: /[0-9]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasSpecialChar: /[@#$%^&+=!]/.test(password),
+  };
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: '105342935662-ej0kqvn1h6hsm7lifo1jlflh2ud1basj.apps.googleusercontent.com',
@@ -55,9 +64,34 @@ export default function LoginScreen() {
   }, [response]);
 
   const validatePassword = (pwd: string) => {
-    const regex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{6,}$/;
-    return regex.test(pwd);
+    const checks = {
+      minLength: pwd.length >= 6,
+      hasNumber: /[0-9]/.test(pwd),
+      hasLowercase: /[a-z]/.test(pwd),
+      hasUppercase: /[A-Z]/.test(pwd),
+      hasSpecialChar: /[@#$%^&+=!]/.test(pwd),
+    };
+    return Object.values(checks).every(Boolean);
   };
+
+  const renderPasswordRequirement = (text: string, isValid: boolean) => (
+    <View key={text} style={styles.requirementRow}>
+      <Ionicons 
+        name={isValid ? "checkmark-circle" : "radio-button-off"} 
+        size={16} 
+        color={isValid ? colors.primary : colors.textMuted} 
+      />
+      <Text style={[
+        styles.requirementText, 
+        { 
+          color: isValid ? colors.primary : colors.textMuted,
+          textDecorationLine: isValid ? 'line-through' : 'none'
+        }
+      ]}>
+        {text}
+      </Text>
+    </View>
+  );
   const { login } = useAuth();
   
   const handleLogin = async () => {
@@ -170,19 +204,15 @@ export default function LoginScreen() {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
+                setShowPasswordRequirements(text.length > 0);
                 if (text.length > 0 && !validatePassword(text)) {
-                  setPasswordWarning(
-                    "Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)"
-                  );
-                  setErrorMessage('Your password does not meet the requirements');
+                  setErrorMessage('');
                   setMessageType('info');
                 } else {
-                  setPasswordWarning('');
                   setErrorMessage('');
                 }
               }}
               secureTextEntry={!showPassword}
-              error={passwordWarning}
               rightIcon={
                 <TouchableOpacity
                   onPress={() => setShowPassword((prev) => !prev)}
@@ -197,6 +227,20 @@ export default function LoginScreen() {
               }
               style={{ marginBottom: Spacing.sm }}
             />
+
+            {/* Password Requirements */}
+            {showPasswordRequirements && (
+              <View style={styles.passwordRequirements}>
+                <Text style={[styles.requirementsTitle, { color: colors.text }]}>
+                  Password Requirements:
+                </Text>
+                {renderPasswordRequirement("At least 6 characters", passwordChecks.minLength)}
+                {renderPasswordRequirement("One number", passwordChecks.hasNumber)}
+                {renderPasswordRequirement("One lowercase letter", passwordChecks.hasLowercase)}
+                {renderPasswordRequirement("One uppercase letter", passwordChecks.hasUppercase)}
+                {renderPasswordRequirement("One special character (@#$%^&+=!)", passwordChecks.hasSpecialChar)}
+              </View>
+            )}
 
             <TouchableOpacity style={styles.forgotPasswordContainer} onPress={handleForgotPassword}>
               <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
@@ -380,5 +424,26 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     textDecorationLine: 'underline',
     marginHorizontal: Spacing.sm,
+  },
+  passwordRequirements: {
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    borderRadius: 12,
+    padding: Spacing.base,
+    marginBottom: Spacing.sm,
+  },
+  requirementsTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semiBold as any,
+    marginBottom: Spacing.xs,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 2,
+  },
+  requirementText: {
+    fontSize: Typography.fontSize.sm,
+    marginLeft: Spacing.xs,
+    flex: 1,
   },
 });

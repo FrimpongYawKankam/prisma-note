@@ -29,17 +29,50 @@ export default function SignupScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [passwordWarning, setPasswordWarning] = useState('');
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('error');
   const [isLoading, setIsLoading] = useState(false);
 
-  const validatePassword = (text: string) => {
-    const pattern =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!]).{6,}$/;
-    return pattern.test(text);
+  // Password validation individual checks
+  const passwordChecks = {
+    minLength: password.length >= 6,
+    hasNumber: /[0-9]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasSpecialChar: /[@#$%^&+=!]/.test(password),
   };
+
+  const validatePassword = (text: string) => {
+    const checks = {
+      minLength: text.length >= 6,
+      hasNumber: /[0-9]/.test(text),
+      hasLowercase: /[a-z]/.test(text),
+      hasUppercase: /[A-Z]/.test(text),
+      hasSpecialChar: /[@#$%^&+=!]/.test(text),
+    };
+    return Object.values(checks).every(Boolean);
+  };
+
+  const renderPasswordRequirement = (text: string, isValid: boolean) => (
+    <View key={text} style={styles.requirementRow}>
+      <Ionicons 
+        name={isValid ? "checkmark-circle" : "radio-button-off"} 
+        size={16} 
+        color={isValid ? colors.primary : colors.textMuted} 
+      />
+      <Text style={[
+        styles.requirementText, 
+        { 
+          color: isValid ? colors.primary : colors.textMuted,
+          textDecorationLine: isValid ? 'line-through' : 'none'
+        }
+      ]}>
+        {text}
+      </Text>
+    </View>
+  );
   const { register } = useAuth();
   
   const handleSignup = async () => {
@@ -158,19 +191,15 @@ export default function SignupScreen() {
               value={password}
               onChangeText={(text: string) => {
                 setPassword(text);
+                setShowPasswordRequirements(text.length > 0);
                 if (text.length > 0 && !validatePassword(text)) {
-                  setPasswordWarning(
-                    'Password must be at least 6 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character (@#$%^&+=!)'
-                  );
-                  setErrorMessage('Your password does not meet the requirements');
+                  setErrorMessage('');
                   setMessageType('info');
                 } else {
-                  setPasswordWarning('');
                   setErrorMessage('');
                 }
               }}
               secureTextEntry={!showPassword}
-              error={passwordWarning}
               rightIcon={
                 <TouchableOpacity
                   onPress={() => setShowPassword((prev) => !prev)}
@@ -185,6 +214,20 @@ export default function SignupScreen() {
               }
               style={{ marginBottom: Spacing.sm }}
             />
+
+            {/* Password Requirements */}
+            {showPasswordRequirements && (
+              <View style={styles.passwordRequirements}>
+                <Text style={[styles.requirementsTitle, { color: colors.text }]}>
+                  Password Requirements:
+                </Text>
+                {renderPasswordRequirement("At least 6 characters", passwordChecks.minLength)}
+                {renderPasswordRequirement("One number", passwordChecks.hasNumber)}
+                {renderPasswordRequirement("One lowercase letter", passwordChecks.hasLowercase)}
+                {renderPasswordRequirement("One uppercase letter", passwordChecks.hasUppercase)}
+                {renderPasswordRequirement("One special character (@#$%^&+=!)", passwordChecks.hasSpecialChar)}
+              </View>
+            )}
 
             {/* Sign Up Button */}
             <ModernButton
@@ -293,5 +336,26 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
     marginBottom: Spacing.sm,
     textAlign: 'center',
+  },
+  passwordRequirements: {
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    borderRadius: 12,
+    padding: Spacing.base,
+    marginBottom: Spacing.sm,
+  },
+  requirementsTitle: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semiBold as any,
+    marginBottom: Spacing.xs,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 2,
+  },
+  requirementText: {
+    fontSize: Typography.fontSize.sm,
+    marginLeft: Spacing.xs,
+    flex: 1,
   },
 });
