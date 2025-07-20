@@ -439,6 +439,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'flex-start',
     marginBottom: Spacing.xl,
+    paddingTop: Spacing.sm,
   },
   headerText: { 
     fontSize: Typography.fontSize['2xl'],

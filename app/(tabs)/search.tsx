@@ -277,6 +277,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.xs,
+    paddingTop: Spacing.sm,
   },
   headerIcon: {
     marginRight: Spacing.sm,

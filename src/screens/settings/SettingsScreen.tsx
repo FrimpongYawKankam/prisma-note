@@ -27,9 +27,6 @@ export default function SettingsScreen() {
             Back
           </Text>
         </TouchableOpacity>
-        <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>
-          Settings
-        </Text>
       </View>
       
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
