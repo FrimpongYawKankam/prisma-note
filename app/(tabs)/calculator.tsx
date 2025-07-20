@@ -37,6 +37,7 @@ export default function CalculatorScreen() {
   const [isScientific, setIsScientific] = useState(false);
   const [ans, setAns] = useState('0');
   const [memory, setMemory] = useState('0');
+  const [showCursor, setShowCursor] = useState(true);
   const [dialog, setDialog] = useState<{
     visible: boolean;
     title: string;
@@ -48,6 +49,8 @@ export default function CalculatorScreen() {
   });
 
   const animation = useRef(new Animated.Value(0)).current;
+  const buttonAnimations = useRef<{ [key: string]: Animated.Value }>({}).current;
+  const cursorAnimation = useRef(new Animated.Value(1)).current;
 
   const showDialog = (title: string, message: string) => {
     setDialog({
@@ -59,6 +62,45 @@ export default function CalculatorScreen() {
 
   const hideDialog = () => {
     setDialog(prev => ({ ...prev, visible: false }));
+  };
+
+  // Cursor blinking animation
+  useEffect(() => {
+    const blinkCursor = () => {
+      Animated.sequence([
+        Animated.timing(cursorAnimation, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cursorAnimation, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => blinkCursor());
+    };
+    blinkCursor();
+  }, []);
+
+  // Button press animation
+  const animateButtonPress = (buttonKey: string) => {
+    if (!buttonAnimations[buttonKey]) {
+      buttonAnimations[buttonKey] = new Animated.Value(0);
+    }
+    
+    Animated.sequence([
+      Animated.timing(buttonAnimations[buttonKey], {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: false,
+      }),
+      Animated.timing(buttonAnimations[buttonKey], {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
   };
 
   // Live calculation preview
@@ -106,6 +148,9 @@ export default function CalculatorScreen() {
   }, [isScientific]);
 
   const handlePress = (val: string) => {
+    // Trigger button animation
+    animateButtonPress(val);
+    
     if (val === 'AC' || val === '⌫') {
       if (expression.length > 0) {
         setExpression(prev => prev.slice(0, -1));
@@ -186,37 +231,68 @@ export default function CalculatorScreen() {
     setHistory([]);
   };
 
-  const renderButton = (label: string) => {
+  const renderButton = (label: string, isScientificMode = false) => {
     const isOperator = /[÷×−+]/.test(label);
     const isEquals = label === '=';
     const isSpecial = ['AC', '⌫', '±', '%'].includes(label);
-    const isScientificFunc = ['sin', 'cos', 'tan', 'ln', 'log₁₀', 'x²', 'x³', '√', 'π', 'e'].includes(label);
+    const isScientificFunc = ['sin', 'cos', 'tan', 'ln', 'log₁₀', 'x²', 'x³', '√', 'π', 'e', '(', ')', 'ans', 'C', '^', '!', 'deg', 'rad', '1/x', 'exp', 'mod', 'abs', 'rand', 'EE', 'mc'].includes(label);
+    
+    // Initialize animation value if it doesn't exist
+    if (!buttonAnimations[label]) {
+      buttonAnimations[label] = new Animated.Value(0);
+    }
+    
+    const buttonStyle = isScientificMode ? {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+    } : {};
     
     return (
-      <TouchableOpacity
+      <Animated.View
         key={label}
         style={[
-          styles.button, 
-          styles.tinyButton,
-          isEquals && [styles.equals, { backgroundColor: colors.primary }],
-          isOperator && [styles.operator, { backgroundColor: colors.primary }],
-          isSpecial && [styles.special, { backgroundColor: theme === 'dark' ? '#404040' : '#d4d4d2' }],
-          isScientificFunc && [styles.scientific, { backgroundColor: theme === 'dark' ? '#505050' : '#e0e0e0' }],
-          !isOperator && !isEquals && !isSpecial && !isScientificFunc && [styles.number, { backgroundColor: theme === 'dark' ? '#333' : '#f0f0f0' }]
+          {
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: buttonAnimations[label].interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.4],
+            }),
+            shadowRadius: buttonAnimations[label].interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 10],
+            }),
+            elevation: buttonAnimations[label].interpolate({
+              inputRange: [0, 1],
+              outputRange: [3, 8],
+            }),
+          }
         ]}
-        onPress={() => handlePress(label)}
-        onLongPress={(label === 'AC' || label === '⌫') ? handleLongPressDelete : undefined}
       >
-        <Text style={[
-          styles.buttonText, 
-          styles.tinyButtonText,
-          isSpecial && { color: theme === 'dark' ? '#fff' : '#000' },
-          isScientificFunc && { color: theme === 'dark' ? '#fff' : '#333' },
-          !isOperator && !isEquals && !isSpecial && !isScientificFunc && { color: theme === 'dark' ? '#fff' : '#000' }
-        ]}>
-          {label}
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            buttonStyle,
+            isEquals && { backgroundColor: colors.primary },
+            isOperator && { backgroundColor: colors.primary },
+            isSpecial && { backgroundColor: theme === 'dark' ? '#505050' : '#a6a6a6' },
+            isScientificFunc && { backgroundColor: theme === 'dark' ? '#404040' : '#d4d4d2' },
+            !isOperator && !isEquals && !isSpecial && !isScientificFunc && { backgroundColor: theme === 'dark' ? '#333333' : '#e0e0e0' }
+          ]}
+          onPress={() => handlePress(label)}
+          onLongPress={(label === 'AC' || label === '⌫') ? handleLongPressDelete : undefined}
+        >
+          <Text style={[
+            styles.buttonText,
+            isScientificMode && { fontSize: 14 },
+            (isSpecial || (isScientificFunc && !isOperator && !isEquals)) && { color: theme === 'dark' ? '#fff' : '#000' },
+            !isOperator && !isEquals && !isSpecial && !isScientificFunc && { color: theme === 'dark' ? '#fff' : '#000' }
+          ]}>
+            {label}
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -241,7 +317,18 @@ export default function CalculatorScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.displayContainer}>
-          <Text style={[styles.expression, { color: theme === 'dark' ? '#fff' : '#000' }]}>{expression || '0'}</Text>
+          <View style={styles.expressionContainer}>
+            <Text style={[styles.expression, { color: theme === 'dark' ? '#fff' : '#000' }]}>
+              {expression || '0'}
+            </Text>
+            <Animated.View style={[
+              styles.cursor,
+              { 
+                opacity: cursorAnimation,
+                backgroundColor: colors.primary 
+              }
+            ]} />
+          </View>
           <Text style={[styles.result, { color: theme === 'dark' ? '#999' : '#444' }]}>{result}</Text>
         </View>
 
@@ -256,7 +343,7 @@ export default function CalculatorScreen() {
             <View style={styles.scientificContainer}>
               {scientificButtons.map((row, idx) => (
                 <View key={idx} style={styles.row}>
-                  {row.map(label => renderButton(label))}
+                  {row.map(label => renderButton(label, true))}
                 </View>
               ))}
             </View>
@@ -308,9 +395,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     minHeight: 120,
   },
+  expressionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   expression: {
     fontSize: 36,
     fontWeight: '300',
+  },
+  cursor: {
+    width: 2,
+    height: 36,
+    marginLeft: 2,
+    marginBottom: 2,
   },
   result: {
     fontSize: 24,
@@ -318,33 +415,34 @@ const styles = StyleSheet.create({
     fontWeight: '200',
   },
   scientificContainer: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 4,
-    paddingHorizontal: 10,
+    justifyContent: 'space-evenly',
+    marginVertical: 8,
+    paddingHorizontal: 20,
   },
   button: {
-    flex: 1,
-    marginHorizontal: 2,
-    borderRadius: 30,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     alignItems: 'center',
-    elevation: 2,
+    justifyContent: 'center',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
   },
   tinyButton: {
-    paddingVertical: height * 0.014,
-    borderRadius: 25,
+    // Remove override styling for scientific mode
   },
   buttonText: {
-    fontSize: 20,
+    fontSize: 24,
     color: '#fff',
-    fontWeight: '500',
+    fontWeight: '400',
   },
   tinyButtonText: {
     fontSize: 16,
