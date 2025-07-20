@@ -1,7 +1,7 @@
 // Test script for mock functionality
-const { mockAuthService } = require('./src/mockFunctionality/mockServices/mockAuthService');
-const { mockNoteService } = require('./src/mockFunctionality/mockServices/mockNoteService');
-const { MOCK_CONFIG } = require('./src/mockFunctionality/utils/constants');
+const { mockAuthService } = require('../src/mockFunctionality/mockServices/mockAuthService');
+const { mockNoteService } = require('../src/mockFunctionality/mockServices/mockNoteService');
+const { MOCK_CONFIG } = require('../src/mockFunctionality/utils/constants');
 
 const testMockFunctionality = async () => {
   try {
