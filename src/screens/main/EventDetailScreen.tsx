@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -14,98 +15,129 @@ import {
 } from 'react-native';
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernDialog } from '../../components/ui/ModernDialog';
-import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
 import { useTheme } from '../../context/ThemeContext';
-import { formatEventDateTime, formatEventTime, getTagColor } from '../../services/eventService';
-import { Event, EventTag } from '../../types/api';
+import { EventTag } from '../../types/api';
 
 export default function EventDetailScreen() {
-  const { id } = useLocalSearchParams();
-  const router = useRouter();
-  const { theme } = useTheme();
-  const { getEventById, updateEvent, deleteEvent, eventsLoading } = useEvents();
-  const { isAuthenticated } = useAuth();
+  const { theme, colors } = useTheme();
   const isDark = theme === 'dark';
+  const { events, updateEvent, deleteEvent, eventsLoading } = useEvents();
+  const { id } = useLocalSearchParams();
 
-  const [event, setEvent] = useState<Event | null>(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [allDay, setAllDay] = useState(false);
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
-  const [tag, setTag] = useState<EventTag>(EventTag.NONE);
+  // Find the event
+  const event = events.find(e => e.id === Number(id));
+
+  // Form state
+  const [title, setTitle] = useState(event?.title || '');
+  const [description, setDescription] = useState(event?.description || '');
+  const [allDay, setAllDay] = useState(event?.allDay || false);
+  const [startDate, setStartDate] = useState<string>(
+    typeof event?.startDateTime === 'string' ? event.startDateTime : event?.startDateTime?.toISOString() || new Date().toISOString()
+  );
+  const [endDate, setEndDate] = useState<string>(
+    typeof event?.endDateTime === 'string' ? event.endDateTime : event?.endDateTime?.toISOString() || new Date().toISOString()
+  );
+  const [startTime, setStartTime] = useState<string>(
+    typeof event?.startDateTime === 'string' ? event.startDateTime : event?.startDateTime?.toISOString() || new Date().toISOString()
+  );
+  const [endTime, setEndTime] = useState<string>(
+    typeof event?.endDateTime === 'string' ? event.endDateTime : event?.endDateTime?.toISOString() || new Date().toISOString()
+  );
+  const [tag, setTag] = useState<EventTag>((event?.tag as EventTag) || EventTag.NONE);
+
+  // UI state
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showBackDialog, setShowBackDialog] = useState(false);
-  const [saving, setSaving] = useState(false);
-  
-  // Date/time picker states
+  const [messageTimeoutId, setMessageTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+  // Date/Time picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
   useEffect(() => {
-    const loadEvent = async () => {
-      if (!isAuthenticated) {
-        router.push('/login');
-        return;
-      }
+    if (event) {
+      setTitle(event.title);
+      setDescription(event.description || '');
+      setAllDay(event.allDay);
+      setStartDate(typeof event.startDateTime === 'string' ? event.startDateTime : event.startDateTime.toISOString());
+      setEndDate(typeof event.endDateTime === 'string' ? event.endDateTime : event.endDateTime.toISOString());
+      setStartTime(typeof event.startDateTime === 'string' ? event.startDateTime : event.startDateTime.toISOString());
+      setEndTime(typeof event.endDateTime === 'string' ? event.endDateTime : event.endDateTime.toISOString());
+      setTag(event.tag as EventTag);
+    }
+  }, [event]);
 
-      if (!id) {
-        setMessage('No event ID provided');
-        setMessageType('error');
-        return;
-      }
-
-      try {
-        const eventId = parseInt(id as string);
-        if (isNaN(eventId)) {
-          setMessage('Invalid event ID');
-          setMessageType('error');
-          return;
-        }
-
-        const loadedEvent = await getEventById(eventId);
-        setEvent(loadedEvent);
-        setTitle(loadedEvent.title);
-        setDescription(loadedEvent.description || '');
-        setAllDay(loadedEvent.allDay);
-        setStartDate(loadedEvent.startDateTime);
-        setEndDate(loadedEvent.endDateTime);
-        setStartTime(loadedEvent.startDateTime);
-        setEndTime(loadedEvent.endDateTime);
-        setTag(loadedEvent.tag);
-      } catch (error: any) {
-        setMessage(error.message || 'Failed to load event.');
-        setMessageType('error');
+  // Clear message timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutId) {
+        clearTimeout(messageTimeoutId);
       }
     };
-    
-    loadEvent();
-  }, [id, isAuthenticated, router]);
+  }, [messageTimeoutId]);
 
-  const createDateTime = (date: Date, time: Date) => {
-    const combined = new Date(date);
-    combined.setHours(time.getHours(), time.getMinutes(), 0, 0);
-    return combined;
+  const showMessage = (text: string, type: 'success' | 'error', duration: number = 3000) => {
+    // Clear any existing timeout
+    if (messageTimeoutId) {
+      clearTimeout(messageTimeoutId);
+    }
+    
+    setMessage(text);
+    setMessageType(type);
+    
+    const timeoutId = setTimeout(() => {
+      setMessage('');
+      setMessageTimeoutId(null);
+    }, duration);
+    
+    setMessageTimeoutId(timeoutId);
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
+  const getTagColor = (tag: EventTag) => {
+    const tagColors: { [key in EventTag]: string } = {
+      [EventTag.NONE]: '#9E9E9E',
+      [EventTag.LOW]: '#4CAF50',
+      [EventTag.MEDIUM]: '#FF9800',
+      [EventTag.HIGH]: '#F44336',
+    };
+    return tagColors[tag] || '#9E9E9E';
+  };
+
+  const getTagLabel = (tag: EventTag) => {
+    const tagLabels: { [key in EventTag]: string } = {
+      [EventTag.NONE]: 'None',
+      [EventTag.LOW]: 'Low Priority',
+      [EventTag.MEDIUM]: 'Medium Priority',
+      [EventTag.HIGH]: 'High Priority',
+    };
+    return tagLabels[tag] || 'None';
+  };
+
+  const createDateTime = (dateString: string, timeString: string) => {
+    const date = new Date(dateString);
+    const time = new Date(timeString);
+    date.setHours(time.getHours(), time.getMinutes(), 0, 0);
+    return date;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'short',
-      day: 'numeric',
+      year: 'numeric',
       month: 'short',
+      day: 'numeric',
     });
   };
 
-  const formatTime = (time: Date) => {
-    return time.toLocaleTimeString('en-US', {
+  const formatTime = (timeString: string) => {
+    return new Date(timeString).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -116,8 +148,7 @@ export default function EventDetailScreen() {
     if (!event) return;
 
     if (!title.trim()) {
-      setMessage('Please enter a title for the event');
-      setMessageType('error');
+      showMessage('Please enter a title for the event', 'error');
       return;
     }
 
@@ -125,12 +156,11 @@ export default function EventDetailScreen() {
       setSaving(true);
       setMessage('');
 
-      const startDateTime = allDay ? startDate : createDateTime(startDate, startTime);
-      const endDateTime = allDay ? endDate : createDateTime(endDate, endTime);
+      const startDateTime = allDay ? new Date(startDate) : createDateTime(startDate, startTime);
+      const endDateTime = allDay ? new Date(endDate) : createDateTime(endDate, endTime);
 
       if (endDateTime <= startDateTime) {
-        setMessage('End time must be after start time');
-        setMessageType('error');
+        showMessage('End time must be after start time', 'error');
         setSaving(false);
         return;
       }
@@ -144,15 +174,12 @@ export default function EventDetailScreen() {
         allDay,
       };
 
-      const updatedEvent = await updateEvent(event.id, eventData);
-      setEvent(updatedEvent);
+      await updateEvent(event.id, eventData);
       setIsEditing(false);
-      setMessage('Event updated successfully!');
-      setMessageType('success');
+      showMessage('Event updated successfully!', 'success');
     } catch (error: any) {
       console.error('Failed to update event:', error);
-      setMessage(error.message || 'Failed to update event.');
-      setMessageType('error');
+      showMessage(error.message || 'Failed to update event.', 'error');
     } finally {
       setSaving(false);
     }
@@ -165,11 +192,11 @@ export default function EventDetailScreen() {
     setTitle(event.title);
     setDescription(event.description || '');
     setAllDay(event.allDay);
-    setStartDate(event.startDateTime);
-    setEndDate(event.endDateTime);
-    setStartTime(event.startDateTime);
-    setEndTime(event.endDateTime);
-    setTag(event.tag);
+    setStartDate(typeof event.startDateTime === 'string' ? event.startDateTime : event.startDateTime.toISOString());
+    setEndDate(typeof event.endDateTime === 'string' ? event.endDateTime : event.endDateTime.toISOString());
+    setStartTime(typeof event.startDateTime === 'string' ? event.startDateTime : event.startDateTime.toISOString());
+    setEndTime(typeof event.endDateTime === 'string' ? event.endDateTime : event.endDateTime.toISOString());
+    setTag(event.tag as EventTag);
     setIsEditing(false);
   };
 
@@ -189,8 +216,7 @@ export default function EventDetailScreen() {
       setShowDeleteDialog(false);
       router.back();
     } catch (err: any) {
-      setMessage(err.message || 'Failed to delete event.');
-      setMessageType('error');
+      showMessage(err.message || 'Failed to delete event.', 'error');
     }
   };
 
@@ -202,353 +228,494 @@ export default function EventDetailScreen() {
     }
   };
 
+  const onStartDateChange = (event: any, selectedDate?: Date) => {
+    setShowStartDatePicker(false);
+    if (selectedDate) {
+      setStartDate(selectedDate.toISOString());
+    }
+  };
+
+  const onEndDateChange = (event: any, selectedDate?: Date) => {
+    setShowEndDatePicker(false);
+    if (selectedDate) {
+      setEndDate(selectedDate.toISOString());
+    }
+  };
+
+  const onStartTimeChange = (event: any, selectedTime?: Date) => {
+    setShowStartTimePicker(false);
+    if (selectedTime) {
+      setStartTime(selectedTime.toISOString());
+    }
+  };
+
+  const onEndTimeChange = (event: any, selectedTime?: Date) => {
+    setShowEndTimePicker(false);
+    if (selectedTime) {
+      setEndTime(selectedTime.toISOString());
+    }
+  };
+
   // Show loading if event is being loaded
   if (eventsLoading && id) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <Text style={[styles.message, { color: isDark ? '#aaa' : '#444' }]}>Loading event...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+        <Text style={[styles.message, { color: isDark ? '#aaa' : '#666' }]}>Loading event...</Text>
       </SafeAreaView>
     );
   }
 
   if (!event) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <Text style={[styles.message, { color: isDark ? '#aaa' : '#444' }]}>Event not found.</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+        <Text style={[styles.message, { color: isDark ? '#aaa' : '#666' }]}>Event not found.</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
-          <Ionicons name="arrow-back" size={24} color={isDark ? '#64ffda' : '#00796b'} />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <View style={[styles.tagIndicator, { backgroundColor: getTagColor(tag) }]} />
-          <Text style={[styles.headerTitle, { color: isDark ? '#fff' : '#000' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+              Back
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>
             {isEditing ? 'Edit Event' : 'Event Details'}
           </Text>
         </View>
 
-        <View style={styles.headerActions}>
-          {isEditing ? (
-            <>
-              <TouchableOpacity onPress={handleCancel} style={styles.iconButton}>
-                <Ionicons name="close" size={24} color={isDark ? '#ccc' : '#666'} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleSave} style={styles.iconButton} disabled={saving}>
-                <Ionicons name="checkmark" size={24} color={saving ? (isDark ? '#555' : '#ccc') : '#4CAF50'} />
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.iconButton}>
-                <Ionicons name="create-outline" size={24} color={isDark ? '#64ffda' : '#00796b'} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-                <Ionicons name="trash-outline" size={24} color="#ff5252" />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {isEditing ? (
-          <>
-            {/* Title Input */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Title</Text>
-              <TextInput
-                value={title}
-                onChangeText={setTitle}
-                style={[styles.titleInput, { 
-                  color: isDark ? '#fff' : '#000',
-                  borderBottomColor: isDark ? '#333' : '#ddd',
-                }]}
-                placeholder="Event title"
-                placeholderTextColor={isDark ? '#666' : '#999'}
-              />
+        {/* Status and Actions */}
+        <View style={styles.section}>
+          <View style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
             </View>
+            <View style={styles.statusContent}>
+              {saving && (
+                <Text style={[styles.statusText, { color: colors.primary }]}>
+                  Saving...
+                </Text>
+              )}
+              {isEditing && !saving && (
+                <Text style={[styles.statusText, { color: isDark ? '#ff9800' : '#f57c00' }]}>
+                  Editing mode
+                </Text>
+              )}
+              {!isEditing && !saving && (
+                <Text style={[styles.statusText, { color: isDark ? '#4caf50' : '#2e7d32' }]}>
+                  Saved
+                </Text>
+              )}
+            </View>
+            <View style={styles.actionButtons}>
+              {isEditing ? (
+                <>
+                  <TouchableOpacity 
+                    onPress={handleCancel} 
+                    style={[styles.actionButton, { backgroundColor: isDark ? '#666' : '#999' }]}
+                  >
+                    <Ionicons name="close-outline" size={18} color="#fff" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={handleSave} 
+                    style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                    disabled={saving}
+                  >
+                    <Ionicons name="checkmark-outline" size={18} color="#fff" />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity 
+                    onPress={() => setIsEditing(true)} 
+                    style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                  >
+                    <Ionicons name="create-outline" size={18} color="#fff" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={handleDelete} 
+                    style={[styles.actionButton, { backgroundColor: '#e53935' }]}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#fff" />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
 
-            {/* All Day Toggle */}
-            <View style={styles.section}>
-              <View style={[styles.row, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-                <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>All day</Text>
-                <Switch
-                  value={allDay}
-                  onValueChange={setAllDay}
-                  trackColor={{ false: isDark ? '#666' : '#ccc', true: '#007bff' }}
-                  thumbColor="#fff"
+        {/* Event Details Form */}
+        <View style={styles.section}>
+          <View style={[styles.card, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <Text style={[styles.sectionTitle, { color: isDark ? '#ccc' : '#666' }]}>
+              Event Details
+            </Text>
+
+            {/* Title Field */}
+            <View style={styles.fieldContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  Title
+                </Text>
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: isDark ? '#262626' : '#fff',
+                    color: isDark ? '#fff' : '#000',
+                    borderColor: isDark ? '#333' : '#e0e0e0'
+                  }]}
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="Event title"
+                  placeholderTextColor={isDark ? '#666' : '#999'}
+                  editable={isEditing}
                 />
               </View>
             </View>
 
-            {/* Date Selection */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Date</Text>
-              <View style={[styles.dateTimeContainer, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-                <TouchableOpacity
-                  style={styles.dateTimeRow}
-                  onPress={() => setShowStartDatePicker(true)}
-                >
-                  <Text style={[styles.dateTimeText, { color: isDark ? '#fff' : '#000' }]}>
-                    {formatDate(startDate)}
-                  </Text>
-                </TouchableOpacity>
-                
-                <Ionicons name="arrow-forward" size={16} color={isDark ? '#666' : '#999'} />
-                
-                <TouchableOpacity
-                  style={styles.dateTimeRow}
-                  onPress={() => setShowEndDatePicker(true)}
-                >
-                  <Text style={[styles.dateTimeText, { color: isDark ? '#fff' : '#000' }]}>
-                    {formatDate(endDate)}
-                  </Text>
-                </TouchableOpacity>
+            {/* Description Field */}
+            <View style={styles.fieldContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="reader-outline" size={20} color={colors.primary} />
               </View>
-            </View>
-
-            {/* Time Selection (if not all day) */}
-            {!allDay && (
-              <View style={styles.section}>
-                <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Time</Text>
-                <View style={[styles.timeContainer, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-                  <TouchableOpacity
-                    style={styles.timeRow}
-                    onPress={() => setShowStartTimePicker(true)}
-                  >
-                    <Text style={[styles.timeText, { color: isDark ? '#fff' : '#000' }]}>
-                      {formatTime(startTime)}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <Ionicons name="arrow-forward" size={16} color={isDark ? '#666' : '#999'} />
-
-                  <TouchableOpacity
-                    style={styles.timeRow}
-                    onPress={() => setShowEndTimePicker(true)}
-                  >
-                    <Text style={[styles.timeText, { color: isDark ? '#fff' : '#000' }]}>
-                      {formatTime(endTime)}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {/* Priority/Tag Selection */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Priority</Text>
-              <View style={[styles.tagContainer, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-                {([EventTag.NONE, EventTag.LOW, EventTag.MEDIUM, EventTag.HIGH]).map((tagOption) => (
-                  <TouchableOpacity
-                    key={tagOption}
-                    style={[
-                      styles.tagButton,
-                      { 
-                        backgroundColor: tag === tagOption ? getTagColor(tagOption) : 'transparent',
-                        borderColor: getTagColor(tagOption),
-                      }
-                    ]}
-                    onPress={() => setTag(tagOption)}
-                  >
-                    <Text style={[
-                      styles.tagButtonText,
-                      { color: tag === tagOption ? '#fff' : getTagColor(tagOption) }
-                    ]}>
-                      {tagOption}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Description Input */}
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Description</Text>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                style={[styles.descriptionInput, { 
-                  color: isDark ? '#fff' : '#000',
-                  backgroundColor: isDark ? '#111' : '#f9f9f9',
-                  borderColor: isDark ? '#333' : '#ddd',
-                }]}
-                placeholder="Add event description..."
-                placeholderTextColor={isDark ? '#666' : '#999'}
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
-          </>
-        ) : (
-          /* View Mode */
-          <>
-            {/* Title */}
-            <View style={styles.section}>
-              <Text style={[styles.eventTitle, { color: isDark ? '#fff' : '#000' }]}>
-                {event.title}
-              </Text>
-            </View>
-
-            {/* Date and Time Info */}
-            <View style={styles.section}>
-              <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={20} color={isDark ? '#64ffda' : '#00796b'} />
-                <Text style={[styles.infoText, { color: isDark ? '#ccc' : '#666' }]}>
-                  {event.allDay ? 'All day' : formatEventTime(event.startDateTime)} - {formatEventTime(event.endDateTime)}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="time-outline" size={20} color={isDark ? '#64ffda' : '#00796b'} />
-                <Text style={[styles.infoText, { color: isDark ? '#ccc' : '#666' }]}>
-                  {formatEventDateTime(event.startDateTime)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Priority */}
-            <View style={styles.section}>
-              <View style={styles.infoRow}>
-                <Ionicons name="flag-outline" size={20} color={getTagColor(event.tag)} />
-                <Text style={[styles.infoText, { color: isDark ? '#ccc' : '#666' }]}>
-                  Priority: {event.tag}
-                </Text>
-                <View style={[styles.priorityDot, { backgroundColor: getTagColor(event.tag) }]} />
-              </View>
-            </View>
-
-            {/* Description */}
-            {event.description && (
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: isDark ? '#64ffda' : '#00796b' }]}>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
                   Description
                 </Text>
-                <Text style={[styles.descriptionText, { color: isDark ? '#ccc' : '#666' }]}>
-                  {event.description}
-                </Text>
-              </View>
-            )}
-
-            {/* Event Metadata */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: isDark ? '#64ffda' : '#00796b' }]}>
-                Event Details
-              </Text>
-              <View style={styles.metadataContainer}>
-                <Text style={[styles.metadataText, { color: isDark ? '#888' : '#999' }]}>
-                  Created: {formatEventDateTime(event.createdAt)}
-                </Text>
-                <Text style={[styles.metadataText, { color: isDark ? '#888' : '#999' }]}>
-                  Last modified: {formatEventDateTime(event.updatedAt)}
-                </Text>
+                <TextInput
+                  style={[styles.input, styles.textArea, { 
+                    backgroundColor: isDark ? '#262626' : '#fff',
+                    color: isDark ? '#fff' : '#000',
+                    borderColor: isDark ? '#333' : '#e0e0e0',
+                    maxWidth: 320,
+                  }]}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Event description"
+                  placeholderTextColor={isDark ? '#666' : '#999'}
+                  multiline
+                  editable={isEditing}
+                />
               </View>
             </View>
-          </>
+
+            {/* All Day Toggle */}
+            <View style={styles.fieldContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="time-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  All Day Event
+                </Text>
+                <View style={[styles.toggleContainer, { 
+                  backgroundColor: isDark ? '#262626' : '#fff',
+                  borderColor: isDark ? '#333' : '#e0e0e0'
+                }]}>
+                  <Text style={[styles.toggleText, { color: isDark ? '#fff' : '#000' }]}>
+                    All Day
+                  </Text>
+                  <Switch
+                    value={allDay}
+                    onValueChange={setAllDay}
+                    disabled={!isEditing}
+                    trackColor={{ false: '#767577', true: colors.primary }}
+                    thumbColor={allDay ? '#fff' : '#f4f3f4'}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Start Date Field */}
+            <View style={styles.fieldContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  Start {allDay ? 'Date' : 'Date & Time'}
+                </Text>
+                <View style={styles.dateTimeRow}>
+                  <TouchableOpacity
+                    style={[styles.dateTimeInput, { 
+                      backgroundColor: isDark ? '#262626' : '#fff',
+                      borderColor: isDark ? '#333' : '#e0e0e0',
+                      flex: allDay ? 1 : 0.6
+                    }]}
+                    onPress={() => isEditing && setShowStartDatePicker(true)}
+                    disabled={!isEditing}
+                  >
+                    <Text style={[styles.inputText, { color: isDark ? '#fff' : '#000' }]}>
+                      {formatDate(startDate)}
+                    </Text>
+                  </TouchableOpacity>
+                  {!allDay && (
+                    <TouchableOpacity
+                      style={[styles.dateTimeInput, { 
+                        backgroundColor: isDark ? '#262626' : '#fff',
+                        borderColor: isDark ? '#333' : '#e0e0e0',
+                        flex: 0.35,
+                        marginLeft: 8
+                      }]}
+                      onPress={() => isEditing && setShowStartTimePicker(true)}
+                      disabled={!isEditing}
+                    >
+                      <Text style={[styles.inputText, { color: isDark ? '#fff' : '#000' }]}>
+                        {formatTime(startTime)}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* End Date Field */}
+            <View style={styles.fieldContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="calendar-clear-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  End {allDay ? 'Date' : 'Date & Time'}
+                </Text>
+                <View style={styles.dateTimeRow}>
+                  <TouchableOpacity
+                    style={[styles.dateTimeInput, { 
+                      backgroundColor: isDark ? '#262626' : '#fff',
+                      borderColor: isDark ? '#333' : '#e0e0e0',
+                      flex: allDay ? 1 : 0.6
+                    }]}
+                    onPress={() => isEditing && setShowEndDatePicker(true)}
+                    disabled={!isEditing}
+                  >
+                    <Text style={[styles.inputText, { color: isDark ? '#fff' : '#000' }]}>
+                      {formatDate(endDate)}
+                    </Text>
+                  </TouchableOpacity>
+                  {!allDay && (
+                    <TouchableOpacity
+                      style={[styles.dateTimeInput, { 
+                        backgroundColor: isDark ? '#262626' : '#fff',
+                        borderColor: isDark ? '#333' : '#e0e0e0',
+                        flex: 0.35,
+                        marginLeft: 8
+                      }]}
+                      onPress={() => isEditing && setShowEndTimePicker(true)}
+                      disabled={!isEditing}
+                    >
+                      <Text style={[styles.inputText, { color: isDark ? '#fff' : '#000' }]}>
+                        {formatTime(endTime)}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            {/* Tag Field */}
+            <View style={styles.fieldContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="pricetag-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.fieldContent}>
+                <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  Priority Tag
+                </Text>
+                
+                {/* Current Tag Display */}
+                <View style={[styles.currentTagDisplay, { 
+                  backgroundColor: getTagColor(tag),
+                  borderWidth: 0,
+                  shadowColor: getTagColor(tag),
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }]}>
+                  <View style={[styles.tagIndicator, { backgroundColor: '#fff' }]} />
+                  <Text style={[styles.currentTagText, { color: '#fff' }]}>
+                    {getTagLabel(tag)}
+                  </Text>
+                  {!isEditing && (
+                    <View style={[styles.readOnlyBadge, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                      <Text style={[styles.readOnlyText, { color: '#fff' }]}>
+                        Current
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                
+                {/* Tag Options when editing */}
+                {isEditing && (
+                  <View style={styles.tagOptionsContainer}>
+                    <Text style={[styles.tagOptionsLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                      Select Priority:
+                    </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagScroll}>
+                      {Object.values(EventTag).map((tagOption) => (
+                        <TouchableOpacity
+                          key={tagOption}
+                          style={[
+                            styles.tagOption,
+                            {
+                              backgroundColor: tag === tagOption ? getTagColor(tagOption) : 'rgba(255, 255, 255, 0.1)',
+                              borderColor: getTagColor(tagOption),
+                              borderWidth: tag === tagOption ? 0 : 2,
+                              shadowColor: tag === tagOption ? getTagColor(tagOption) : 'transparent',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: tag === tagOption ? 0.3 : 0,
+                              shadowRadius: 4,
+                              elevation: tag === tagOption ? 4 : 0,
+                            }
+                          ]}
+                          onPress={() => {
+                            const previousTag = tag;
+                            setTag(tagOption);
+                            // Show brief feedback for tag change
+                            if (tagOption !== previousTag) {
+                              showMessage(`Priority changed to ${getTagLabel(tagOption)}`, 'success', 2000);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[styles.tagOptionIndicator, { 
+                            backgroundColor: tag === tagOption ? '#fff' : getTagColor(tagOption) 
+                          }]} />
+                          <Text style={[
+                            styles.tagOptionText,
+                            {
+                              color: tag === tagOption ? '#fff' : getTagColor(tagOption),
+                              fontWeight: tag === tagOption ? '700' : '500',
+                            }
+                          ]}>
+                            {getTagLabel(tagOption)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Date Picker Modals */}
+        {showStartDatePicker && (
+          <DateTimePicker
+            value={new Date(startDate)}
+            mode="date"
+            display="default"
+            onChange={onStartDateChange}
+          />
+        )}
+
+        {showEndDatePicker && (
+          <DateTimePicker
+            value={new Date(endDate)}
+            mode="date"
+            display="default"
+            onChange={onEndDateChange}
+          />
+        )}
+
+        {showStartTimePicker && (
+          <DateTimePicker
+            value={new Date(startTime)}
+            mode="time"
+            display="default"
+            onChange={onStartTimeChange}
+          />
+        )}
+
+        {showEndTimePicker && (
+          <DateTimePicker
+            value={new Date(endTime)}
+            mode="time"
+            display="default"
+            onChange={onEndTimeChange}
+          />
         )}
       </ScrollView>
 
-      {/* Date/Time Pickers */}
-      {showStartDatePicker && (
-        <DateTimePicker
-          value={startDate}
-          mode="date"
-          display="default"
-          onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
-            setShowStartDatePicker(false);
-            if (selectedDate) setStartDate(selectedDate);
-          }}
-        />
+      {/* Message Box */}
+      {message && (
+        <View style={styles.messageContainer}>
+          <MessageBox
+            message={message}
+            type={messageType}
+            duration={3000}
+          />
+        </View>
       )}
 
-      {showEndDatePicker && (
-        <DateTimePicker
-          value={endDate}
-          mode="date"
-          display="default"
-          onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
-            setShowEndDatePicker(false);
-            if (selectedDate) setEndDate(selectedDate);
-          }}
-        />
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <Pressable style={styles.dialogOverlay} onPress={() => setShowDeleteDialog(false)}>
+          <Pressable style={[styles.dialogContainer, { backgroundColor: isDark ? '#1a1a1a' : '#fff' }]} onPress={(e) => e.stopPropagation()}>
+            <ModernDialog
+              visible={showDeleteDialog}
+              title="Delete Event?"
+              message="This action cannot be undone. Are you sure you want to delete this event?"
+              buttons={[
+                {
+                  text: 'Cancel',
+                  onPress: () => setShowDeleteDialog(false),
+                  style: 'cancel'
+                },
+                {
+                  text: 'Delete',
+                  onPress: confirmDelete,
+                  style: 'destructive'
+                }
+              ]}
+              onClose={() => setShowDeleteDialog(false)}
+            />
+          </Pressable>
+        </Pressable>
       )}
 
-      {showStartTimePicker && (
-        <DateTimePicker
-          value={startTime}
-          mode="time"
-          display="default"
-          onChange={(event: DateTimePickerEvent, selectedTime?: Date) => {
-            setShowStartTimePicker(false);
-            if (selectedTime) setStartTime(selectedTime);
-          }}
-        />
+      {/* Back Confirmation Dialog */}
+      {showBackDialog && (
+        <Pressable style={styles.dialogOverlay} onPress={() => setShowBackDialog(false)}>
+          <Pressable style={[styles.dialogContainer, { backgroundColor: isDark ? '#1a1a1a' : '#fff' }]} onPress={(e) => e.stopPropagation()}>
+            <ModernDialog
+              visible={showBackDialog}
+              title="Discard Changes?"
+              message="You have unsaved changes. Are you sure you want to go back?"
+              buttons={[
+                {
+                  text: 'Cancel',
+                  onPress: () => setShowBackDialog(false),
+                  style: 'cancel'
+                },
+                {
+                  text: 'Discard',
+                  onPress: () => {
+                    setShowBackDialog(false);
+                    handleCancel();
+                    router.back();
+                  },
+                  style: 'destructive'
+                }
+              ]}
+              onClose={() => setShowBackDialog(false)}
+            />
+          </Pressable>
+        </Pressable>
       )}
-
-      {showEndTimePicker && (
-        <DateTimePicker
-          value={endTime}
-          mode="time"
-          display="default"
-          onChange={(event: DateTimePickerEvent, selectedTime?: Date) => {
-            setShowEndTimePicker(false);
-            if (selectedTime) setEndTime(selectedTime);
-          }}
-        />
-      )}
-
-      <MessageBox
-        message={message}
-        type={messageType}
-        duration={3000}
-      />
-
-      <ModernDialog
-        visible={showDeleteDialog}
-        title="Delete Event?"
-        message="This will permanently delete this event."
-        buttons={[
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => setShowDeleteDialog(false),
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: confirmDelete,
-          },
-        ]}
-        onClose={() => setShowDeleteDialog(false)}
-      />
-
-      <ModernDialog
-        visible={showBackDialog}
-        title="Discard Changes?"
-        message="You have unsaved changes. Are you sure you want to go back?"
-        buttons={[
-          {
-            text: 'Cancel',
-            style: 'cancel',
-            onPress: () => setShowBackDialog(false),
-          },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => {
-              setShowBackDialog(false);
-              router.back();
-            },
-          },
-        ]}
-        onClose={() => setShowBackDialog(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -557,157 +724,240 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  headerContainer: {
+    marginBottom: 20,
+  },
+  backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    marginBottom: 10,
+    marginTop: 15
   },
-  headerCenter: {
-    flex: 1,
+  backText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  row: {
     flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    marginRight: 12,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  statusContent: {
+    flex: 1,
   },
-  headerActions: {
+  statusText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  actionButtons: {
     flexDirection: 'row',
-    gap: 15,
+    gap: 8,
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  fieldContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  fieldContent: {
+    flex: 1,
+    paddingLeft: 4,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  input: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  inputText: {
+    fontSize: 16,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    maxWidth: 280,
+    alignSelf: 'flex-start',
+  },
+  toggleText: {
+    fontSize: 16,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    maxWidth: 280,
+  },
+  dateTimeInput: {
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  tagSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingLeft: 12,
   },
   tagIndicator: {
     width: 12,
     height: 12,
     borderRadius: 6,
+    marginRight: 8,
   },
-  iconButton: {
-    padding: 8,
+  currentTagDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: 'transparent',
+    alignSelf: 'flex-start',
+    maxWidth: 280,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  section: {
-    marginVertical: 15,
-  },
-  label: {
+  currentTagText: {
     fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-  },
-  titleInput: {
-    fontSize: 20,
-    fontWeight: '500',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-  },
-  eventTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    gap: 20,
-  },
-  dateTimeRow: {
     flex: 1,
-    alignItems: 'center',
   },
-  dateTimeText: {
-    fontSize: 16,
+  readOnlyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  readOnlyText: {
+    fontSize: 12,
     fontWeight: '500',
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    gap: 20,
+  tagOptionsContainer: {
+    marginTop: 8,
+    maxWidth: 320,
   },
-  timeRow: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  timeText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    flexWrap: 'wrap',
-  },
-  tagButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  tagButtonText: {
+  tagOptionsLabel: {
     fontSize: 14,
     fontWeight: '500',
+    marginBottom: 12,
   },
-  descriptionInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    lineHeight: 24,
-    minHeight: 120,
+  tagScroll: {
+    marginTop: 4,
   },
-  infoRow: {
+  tagOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginRight: 12,
+    minWidth: 120,
+    justifyContent: 'center',
   },
-  infoText: {
-    fontSize: 16,
-    flex: 1,
-  },
-  priorityDot: {
+  tagOptionIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
+    marginRight: 8,
   },
-  descriptionText: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  metadataContainer: {
-    marginTop: 10,
-  },
-  metadataText: {
+  tagOptionText: {
     fontSize: 14,
-    marginBottom: 5,
+    fontWeight: '500',
   },
   message: {
     textAlign: 'center',
     marginTop: 50,
     fontSize: 16,
+  },
+  messageContainer: {
+    position: 'absolute',
+    top: 80,
+    left: 20,
+    right: 20,
+    zIndex: 1000,
+    backgroundColor: 'transparent',
+  },
+  dialogOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2000,
+  },
+  dialogContainer: {
+    margin: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });
