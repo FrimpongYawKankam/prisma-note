@@ -11,12 +11,29 @@ export default function Tablayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: { 
-          backgroundColor: isDark ? '#000000' : '#ffffff',
-          borderTopColor: isDark ? '#333333' : '#e0e0e0',
-          borderTopWidth: 1,
+          backgroundColor: isDark ? '#0d0d0d' : '#fefefe',
+          borderTopWidth: 0,
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: {
+            width: 0,
+            height: -2,
+          },
+          shadowOpacity: isDark ? 0.3 : 0.1,
+          shadowRadius: 8,
+          paddingTop: 5,
+          paddingBottom: 5,
         },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: isDark ? '#808080' : '#666666',
+        tabBarInactiveTintColor: isDark ? '#666666' : '#999999',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+          marginTop: 1,
+        },
+        tabBarIconStyle: {
+          marginTop: 1,
+        },
       }}
     >
       <Tabs.Screen

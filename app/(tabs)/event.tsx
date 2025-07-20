@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { useTheme } from '../../src/context/ThemeContext';
 import { useEvents } from '../../src/context/EventsContext';
-import { Event, EventTag } from '../../src/types/api';
-import { getTagColor, formatEventTime } from '../../src/services/eventService';
+import { useTheme } from '../../src/context/ThemeContext';
+import { formatEventTime, getTagColor } from '../../src/services/eventService';
 
 export default function EventScreen() {
   const { 
@@ -73,12 +72,9 @@ export default function EventScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Ionicons name="menu" size={24} color={isDark ? '#fff' : '#000'} />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Ionicons name="search" size={24} color={isDark ? '#fff' : '#000'} />
-        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: isDark ? '#fff' : '#000' }]}>
+          Events
+        </Text>
         <View style={styles.dateIndicator}>
           <Text style={[styles.dateText, { color: isDark ? '#fff' : '#000' }]}>
             {new Date().getDate()}
@@ -180,6 +176,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 25,
     paddingBottom: 15,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '700',
+    flex: 1,
   },
   dateIndicator: {
     width: 32,
