@@ -12,20 +12,17 @@ export default function HelpScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
-      {/* Header with Back Button and Title */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
-          <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
-          <Text style={[styles.backText, { color: colors.primary }]}>
-            Back
-          </Text>
-        </TouchableOpacity>
-        <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>
-          Help & Support
-        </Text>
-      </View>
-      
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Header with Back Button and Title */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+              Back
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
         {/* Getting Started Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.primary }]}>

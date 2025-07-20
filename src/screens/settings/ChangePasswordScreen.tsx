@@ -116,15 +116,20 @@ export default function ChangePasswordScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-        <Ionicons name="arrow-back-outline" size={22} color={isDark ? '#aaa' : '#555'} />
-        <Text style={[styles.backText, { color: isDark ? '#aaa' : '#555' }]}>Back</Text>
-      </TouchableOpacity>
-      <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>Change Password</Text>
-      <Text style={[styles.securityNote, { color: isDark ? colors.primary : '#666' }]}>
-        Enter your current password to verify your identity before setting a new password.
-      </Text>
       <View style={styles.form}>
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+              Back
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={[styles.securityNote, { color: isDark ? colors.primary : '#666' }]}>
+          Enter your current password to verify your identity before setting a new password.
+        </Text>
         {/* Current Password Input */}
         <Animated.View style={[
           styles.inputContainer,
@@ -404,21 +409,33 @@ export default function ChangePasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 30,
+    marginBottom: 10,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
   },
   backText: {
-    marginLeft: 8,
     fontSize: 16,
+    marginLeft: 6,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontSize: 26,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'right',
+    lineHeight: 30,
   },
   securityNote: {
     fontSize: 14,
