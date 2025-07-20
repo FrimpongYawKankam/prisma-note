@@ -235,7 +235,7 @@ export default function LoginScreen() {
             />
 
             {/* Inspirational Quote */}
-            <View style={styles.quoteContainer}>
+            <View style={[styles.quoteContainer, { borderLeftColor: colors.primary }] as any}>
               <View style={styles.quoteIconContainer}>
                 <Ionicons name="bulb-outline" size={20} color={colors.primary} />
               </View>
