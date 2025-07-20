@@ -3,8 +3,6 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -12,7 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { ModernButton } from '../src/components/ui/ModernButton';
 import { ModernDialog } from '../src/components/ui/ModernDialog';
@@ -24,7 +22,7 @@ import { EventTag } from '../src/types/api';
 export default function SetEventScreen() {
   const { date, updatedDescription } = useLocalSearchParams();
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const { user } = useAuth();
   const { createEvent } = useEvents();
   const isDark = theme === 'dark';
@@ -153,180 +151,197 @@ export default function SetEventScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.cancelButton, { color: isDark ? '#ccc' : '#666' }]}>
-              Cancel
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+              Back
             </Text>
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <TouchableOpacity>
-              <Ionicons name="happy-outline" size={24} color={isDark ? '#ccc' : '#666'} />
-            </TouchableOpacity>
-            <View style={[styles.tagIndicator, { backgroundColor: getTagColor(tag) }]} />
-          </View>
         </View>
-
-        {/* Scrollable Content */}
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
         {/* Title */}
-        <TextInput
-          placeholder="Title"
-          value={title}
-          onChangeText={setTitle}
-          style={[styles.titleInput, { 
-            color: isDark ? '#fff' : '#000',
-            backgroundColor: 'transparent',
-            borderBottomWidth: 1,
-            borderBottomColor: isDark ? '#333' : '#ddd',
-            borderRadius: 0,
-          }]}
-          placeholderTextColor={isDark ? '#666' : '#999'}
-        />
-
-        {/* All Day Toggle */}
-        <View style={[styles.row, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="time-outline" size={20} color={isDark ? '#ccc' : '#666'} />
-          </View>
-          <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>All day</Text>
-          <Switch
-            value={allDay}
-            onValueChange={setAllDay}
-            trackColor={{ false: isDark ? '#666' : '#ccc', true: '#007bff' }}
-            thumbColor="#fff"
+        <View style={[styles.inputContainer, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <TextInput
+            placeholder="Event Title"
+            value={title}
+            onChangeText={setTitle}
+            style={[styles.titleInput, { 
+              color: isDark ? '#fff' : '#000',
+            }]}
+            placeholderTextColor={isDark ? '#aaa' : '#888'}
           />
         </View>
 
+        {/* All Day Toggle */}
+        <View style={[styles.section]}>
+          <View style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="time-outline" size={20} color={colors.primary} />
+            </View>
+            <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>All day</Text>
+            <Switch
+              value={allDay}
+              onValueChange={setAllDay}
+              trackColor={{ false: isDark ? '#666' : '#ccc', true: colors.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+
         {/* Start Date and Time */}
-        <View style={[styles.dateTimeContainer, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
+        <View style={[styles.section]}>
           <TouchableOpacity
-            style={styles.dateTimeRow}
+            style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
             onPress={() => setShowStartDatePicker(true)}
           >
-            <Text style={[styles.dateTimeText, { color: isDark ? '#fff' : '#000' }]}>
-              {formatDate(startDate)}
-            </Text>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.dateTimeContent}>
+              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Start</Text>
+              <Text style={[styles.dateTimeText, { color: colors.primary }]}>
+                {formatDate(startDate)}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
           </TouchableOpacity>
+        </View>
 
-          <Ionicons name="arrow-forward" size={16} color={isDark ? '#666' : '#999'} />
-
+        <View style={[styles.section]}>
           <TouchableOpacity
-            style={styles.dateTimeRow}
+            style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
             onPress={() => setShowEndDatePicker(true)}
           >
-            <Text style={[styles.dateTimeText, { color: isDark ? '#fff' : '#000' }]}>
-              {formatDate(endDate)}
-            </Text>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.dateTimeContent}>
+              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>End</Text>
+              <Text style={[styles.dateTimeText, { color: colors.primary }]}>
+                {formatDate(endDate)}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
           </TouchableOpacity>
         </View>
 
         {!allDay && (
-          <View style={[styles.timeContainer, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-            <TouchableOpacity
-              style={styles.timeRow}
-              onPress={() => setShowStartTimePicker(true)}
-            >
-              <Text style={[styles.timeText, { color: isDark ? '#fff' : '#000' }]}>
-                {formatTime(startTime)}
-              </Text>
-            </TouchableOpacity>
+          <>
+            <View style={[styles.section]}>
+              <TouchableOpacity
+                style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
+                onPress={() => setShowStartTimePicker(true)}
+              >
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="time-outline" size={20} color={colors.primary} />
+                </View>
+                <View style={styles.dateTimeContent}>
+                  <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Start Time</Text>
+                  <Text style={[styles.dateTimeText, { color: colors.primary }]}>
+                    {formatTime(startTime)}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
+              </TouchableOpacity>
+            </View>
 
-            <Ionicons name="arrow-forward" size={16} color={isDark ? '#666' : '#999'} />
-
-            <TouchableOpacity
-              style={styles.timeRow}
-              onPress={() => setShowEndTimePicker(true)}
-            >
-              <Text style={[styles.timeText, { color: isDark ? '#fff' : '#000' }]}>
-                {formatTime(endTime)}
-              </Text>
-            </TouchableOpacity>
-          </View>
+            <View style={[styles.section]}>
+              <TouchableOpacity
+                style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
+                onPress={() => setShowEndTimePicker(true)}
+              >
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="time-outline" size={20} color={colors.primary} />
+                </View>
+                <View style={styles.dateTimeContent}>
+                  <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>End Time</Text>
+                  <Text style={[styles.dateTimeText, { color: colors.primary }]}>
+                    {formatTime(endTime)}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
+              </TouchableOpacity>
+            </View>
+          </>
         )}
 
         {/* Priority/Tag Selection */}
-        <View style={[styles.row, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="flag-outline" size={20} color={isDark ? '#ccc' : '#666'} />
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+            Priority
+          </Text>
+          <View style={[styles.tagContainer]}>
+            {([EventTag.NONE, EventTag.LOW, EventTag.MEDIUM, EventTag.HIGH]).map((tagOption) => (
+              <TouchableOpacity
+                key={tagOption}
+                style={[
+                  styles.tagButton,
+                  { 
+                    backgroundColor: tag === tagOption ? getTagColor(tagOption) : 'transparent',
+                    borderColor: getTagColor(tagOption),
+                  }
+                ]}
+                onPress={() => setTag(tagOption)}
+              >
+                <Text style={[
+                  styles.tagButtonText,
+                  { color: tag === tagOption ? '#fff' : getTagColor(tagOption) }
+                ]}>
+                  {tagOption}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-          <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Priority</Text>
-        </View>
-
-        <View style={[styles.tagContainer, { borderBottomColor: isDark ? '#333' : '#ddd' }]}>
-          {([EventTag.NONE, EventTag.LOW, EventTag.MEDIUM, EventTag.HIGH]).map((tagOption) => (
-            <TouchableOpacity
-              key={tagOption}
-              style={[
-                styles.tagButton,
-                { 
-                  backgroundColor: tag === tagOption ? getTagColor(tagOption) : 'transparent',
-                  borderColor: getTagColor(tagOption),
-                }
-              ]}
-              onPress={() => setTag(tagOption)}
-            >
-              <Text style={[
-                styles.tagButtonText,
-                { color: tag === tagOption ? '#fff' : getTagColor(tagOption) }
-              ]}>
-                {tagOption}
-              </Text>
-            </TouchableOpacity>
-          ))}
         </View>
 
         {/* Description */}
-        <TouchableOpacity style={[styles.row, { borderBottomColor: isDark ? '#333' : '#ddd' }]} onPress={handleDescriptionPress}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="document-text-outline" size={20} color={isDark ? '#ccc' : '#666'} />
-          </View>
-          <View style={styles.descriptionContainer}>
-            <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Notes</Text>
-            {description ? (
-              <Text style={[styles.descriptionPreview, { color: isDark ? '#ccc' : '#666' }]} numberOfLines={2}>
-                {description}
-              </Text>
-            ) : (
-              <Text style={[styles.descriptionPlaceholder, { color: isDark ? '#666' : '#999' }]}>
-                Add description...
-              </Text>
-            )}
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={isDark ? '#666' : '#999'} />
-        </TouchableOpacity>
-        </ScrollView>
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]} 
+            onPress={handleDescriptionPress}
+          >
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.descriptionContainer}>
+              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>Notes</Text>
+              {description ? (
+                <Text style={[styles.descriptionPreview, { color: isDark ? '#ccc' : '#666' }]} numberOfLines={2}>
+                  {description}
+                </Text>
+              ) : (
+                <Text style={[styles.descriptionPlaceholder, { color: isDark ? '#666' : '#999' }]}>
+                  Add description...
+                </Text>
+              )}
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
+          </TouchableOpacity>
+        </View>
 
         {/* Bottom Buttons */}
-        <View style={[styles.bottomContainer, { 
-          backgroundColor: isDark ? '#000' : '#fff',
-          borderTopColor: isDark ? '#333' : '#ddd'
-        }]}>
+        <View style={styles.bottomContainer}>
           <ModernButton
             title="Cancel"
             onPress={() => router.back()}
             style={styles.cancelButtonBottom}
           />
           <ModernButton
-            title="Save"
+            title="Save Event"
             onPress={handleSave}
             disabled={isLoading}
             style={styles.saveButton}
           />
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
 
       {/* Date/Time Pickers */}
       {showStartDatePicker && (
@@ -392,94 +407,113 @@ export default function SetEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-  },
-  cancelButton: {
-    fontSize: 16,
-  },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  tagIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 100,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 25,
+    marginBottom: 10,
+  },
+  header: {
+    fontSize: 26,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'right',
+    lineHeight: 30,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  backText: {
+    fontSize: 16,
+    marginLeft: 6,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  section: {
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputContainer: {
+    borderRadius: 12,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   titleInput: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '500',
-    paddingVertical: 15,
-    marginBottom: 20,
+    padding: 15,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   iconContainer: {
-    width: 30,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 12,
   },
   label: {
-    flex: 1,
     fontSize: 16,
-  },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    gap: 20,
-  },
-  dateTimeRow: {
+    fontWeight: '500',
     flex: 1,
-    alignItems: 'center',
+  },
+  dateTimeContent: {
+    flex: 1,
   },
   dateTimeText: {
     fontSize: 16,
     fontWeight: '500',
+    marginTop: 2,
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    gap: 20,
-  },
-  timeRow: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  timeText: {
-    fontSize: 16,
-    fontWeight: '500',
+  arrow: {
+    marginLeft: 'auto',
   },
   tagContainer: {
     flexDirection: 'row',
     gap: 10,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
+    flexWrap: 'wrap',
+    paddingVertical: 10,
   },
   tagButton: {
     paddingHorizontal: 16,
@@ -506,16 +540,15 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 30,
     gap: 15,
-    borderTopWidth: 1,
-    backgroundColor: 'transparent',
+    marginTop: 30,
+    marginBottom: 20,
   },
   cancelButtonBottom: {
     flex: 1,
     backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
   saveButton: {
     flex: 1,
