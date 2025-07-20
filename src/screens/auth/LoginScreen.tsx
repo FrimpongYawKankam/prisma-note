@@ -1,8 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as AuthSession from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
@@ -22,10 +19,9 @@ import { ModernInput } from '../../components/ui/ModernInput';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, Typography } from '../../styles/tokens';
+import productivityQuotes from '../others/productivityQuotes.json';
 
 const { height, width } = Dimensions.get('window');
-
-WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -37,6 +33,7 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('error');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState({ text: '', author: '' });
 
   // Password validation individual checks
   const passwordChecks = {
@@ -47,21 +44,14 @@ export default function LoginScreen() {
     hasSpecialChar: /[@#$%^&+=!]/.test(password),
   };
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: '105342935662-ej0kqvn1h6hsm7lifo1jlflh2ud1basj.apps.googleusercontent.com',
-    redirectUri: AuthSession.makeRedirectUri({
-      scheme: 'prismanote',
-    }),
-  });
-
+  // Get random quote on component mount
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      setErrorMessage('Google Login Success!');
-      setMessageType('success');
-      // router.push('/(tabs)');
-    }
-  }, [response]);
+    const getRandomQuote = () => {
+      const randomIndex = Math.floor(Math.random() * productivityQuotes.quotes.length);
+      setCurrentQuote(productivityQuotes.quotes[randomIndex]);
+    };
+    getRandomQuote();
+  }, []);
 
   const validatePassword = (pwd: string) => {
     const checks = {
@@ -150,20 +140,6 @@ export default function LoginScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGoogleLogin = () => {
-    promptAsync();
-  };
-
-  const handleMicrosoftLogin = () => {
-    setErrorMessage('Microsoft Login functionality coming soon');
-    setMessageType('info');
-  };
-
-  const handleAppleLogin = () => {
-    setErrorMessage('Apple ID Login functionality coming soon');
-    setMessageType('info');
   };
 
   const handleForgotPassword = () => {
@@ -255,42 +231,20 @@ export default function LoginScreen() {
               size="md"
               leftIcon={<Ionicons name="log-in-outline" size={18} color="#fff" />}
               enableHaptics
-              style={{ marginBottom: Spacing.sm }}
+              style={{ marginBottom: Spacing.lg }}
             />
 
-            {/* Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={[styles.dividerText, { color: colors.textMuted }]}>or continue with</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            </View>
-
-            {/* Social Buttons */}
-            <View style={styles.socialRow}>
-              <ModernButton
-                title=""
-                onPress={handleGoogleLogin}
-                variant="outline"
-                size="md"
-                leftIcon={<Ionicons name="logo-google" size={28} color="#DB4437" />}
-                style={styles.socialButton}
-              />
-              <ModernButton
-                title=""
-                onPress={handleAppleLogin}
-                variant="outline"
-                size="md"
-                leftIcon={<Ionicons name="logo-apple" size={28} color={colors.text} />}
-                style={styles.socialButton}
-              />
-              <ModernButton
-                title=""
-                onPress={handleMicrosoftLogin}
-                variant="outline"
-                size="md"
-                leftIcon={<Ionicons name="logo-microsoft" size={28} color="#0078D4" />}
-                style={styles.socialButton}
-              />
+            {/* Inspirational Quote */}
+            <View style={styles.quoteContainer}>
+              <View style={styles.quoteIconContainer}>
+                <Ionicons name="bulb-outline" size={20} color={colors.primary} />
+              </View>
+              <Text style={[styles.quoteText, { color: colors.text }]}>
+                "{currentQuote.text}"
+              </Text>
+              <Text style={[styles.quoteAuthor, { color: colors.textMuted }]}>
+                — {currentQuote.author}
+              </Text>
             </View>
 
             {/* Signup Option */}
@@ -357,44 +311,29 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     textDecorationLine: 'underline',
   },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: Spacing.base,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    marginHorizontal: Spacing.sm,
-    fontSize: Typography.fontSize.sm,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: Spacing.lg,
-    paddingHorizontal: Spacing.sm,
-  },
-  socialButton: {
-    flex: 1,
-    marginHorizontal: Spacing.xs,
-    minWidth: 60,
-    aspectRatio: 1,
-  },
-  socialIconButton: {
-    backgroundColor: '#fff',
+  quoteContainer: {
+    backgroundColor: 'rgba(128, 128, 128, 0.05)',
     borderRadius: 16,
-    width: 80,
-    height: 64,
+    padding: Spacing.lg,
+    marginVertical: Spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: '#64ffda',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: Spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  },
+  quoteIconContainer: {
+    marginBottom: Spacing.sm,
+  },
+  quoteText: {
+    fontSize: Typography.fontSize.base,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: Spacing.sm,
+  },
+  quoteAuthor: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium as any,
+    textAlign: 'center',
   },
   signupContainer: {
     marginTop: Spacing.lg,

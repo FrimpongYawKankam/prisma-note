@@ -1,12 +1,29 @@
 {
   "expo": {
-    "name": "Prisma-Note",
-    "slug": "Prisma-Note",
+    "name": "PrismaNote",
+    "slug": "PrismaNote",
     "scheme": "prisma-note",
     "owner": "frimpongyawkankam03",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/FinalLogo.PNG",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "bundleIdentifier": "com.frimpongyawkankam03.prisma-note",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "splash": {
+        "image": "./assets/images/FinalLogo.PNG",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000",
+        "tabletImage": "./assets/images/FinalLogo.PNG"
+      }
     },
     "android": {
       "package": "com.frimpongyawkankam03.prisma-note",
@@ -18,6 +35,16 @@
             "cleartextTrafficPermitted": true
           }
         ]
+      },
+      "splash": {
+        "image": "./assets/images/FinalLogo.PNG",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000",
+        "mdpi": "./assets/images/FinalLogo.PNG",
+        "hdpi": "./assets/images/FinalLogo.PNG",
+        "xhdpi": "./assets/images/FinalLogo.PNG",
+        "xxhdpi": "./assets/images/FinalLogo.PNG",
+        "xxxhdpi": "./assets/images/FinalLogo.PNG"
       }
     },
     "plugins": [

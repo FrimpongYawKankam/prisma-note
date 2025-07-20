@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   RefreshControl,
   SafeAreaView,
@@ -22,6 +22,7 @@ import { useEvents } from '../../src/context/EventsContext';
 import { useNotes } from '../../src/context/NotesContext';
 import { useTasks } from '../../src/context/TasksContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import productivityQuotes from '../../src/screens/others/productivityQuotes.json';
 import { BorderRadius, Spacing, Typography } from '../../src/styles/tokens';
 import { DailyTask } from '../../src/types/task';
 
@@ -35,6 +36,7 @@ export default function HomeScreen() {
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentQuote, setCurrentQuote] = useState({ text: '', author: '' });
   const [dialog, setDialog] = useState<{
     visible: boolean;
     title: string;
@@ -56,6 +58,15 @@ export default function HomeScreen() {
       }
     }, [isAuthenticated])
   );
+
+  // Get random quote on component mount
+  useEffect(() => {
+    const getRandomQuote = () => {
+      const randomIndex = Math.floor(Math.random() * productivityQuotes.quotes.length);
+      setCurrentQuote(productivityQuotes.quotes[randomIndex]);
+    };
+    getRandomQuote();
+  }, []);
 
   const onRefresh = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -237,6 +248,21 @@ export default function HomeScreen() {
               />
             }
           >
+            {/* Inspirational Quote Section */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                From {currentQuote.author},
+              </Text>
+              <ModernCard style={[styles.quoteCard, { borderLeftColor: colors.primary }] as any}>
+                <View style={styles.quoteIconContainer}>
+                  <Ionicons name="bulb-outline" size={24} color={colors.primary} />
+                </View>
+                <Text style={[styles.quoteText, { color: colors.text }]}>
+                  "{currentQuote.text}"
+                </Text>
+              </ModernCard>
+            </View>
+
             {/* For Today Section */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -579,5 +605,21 @@ const styles = StyleSheet.create({
   viewAllNotesText: {
     fontSize: Typography.fontSize.sm,
     fontWeight: '500' as const,
+  },
+  quoteCard: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: 'rgba(128, 128, 128, 0.05)',
+    borderLeftWidth: 3,
+  },
+  quoteIconContainer: {
+    marginBottom: Spacing.sm,
+  },
+  quoteText: {
+    fontSize: Typography.fontSize.base,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
