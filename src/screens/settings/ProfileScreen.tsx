@@ -3,21 +3,23 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { ModernDialog } from '../../components/ui/ModernDialog';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { safeNavigateBack } from '../../utils/navigation';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState({ fullName: '', email: '' });
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const { logout, user } = useAuth();
   const isDark = theme === 'dark';
 
@@ -60,37 +62,85 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={24} color={isDark ? '#64ffda' : '#00796b'} />
-      </TouchableOpacity>
-
-      <View style={styles.profileContainer}>
-        <View style={[styles.avatarIcon, { backgroundColor: isDark ? '#1a1a1a' : '#eee' }]}>
-          <Ionicons name="person-circle" size={90} color={isDark ? '#64ffda' : '#00796b'} />
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Header with Back Button and Title */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+              Back
+            </Text>
+          </TouchableOpacity>
         </View>
-        <Text style={[styles.name, { color: isDark ? '#fff' : '#000' }]}>
-          {userData.fullName || 'Full Name'}
-        </Text>
-        <Text style={[styles.email, { color: isDark ? '#aaa' : '#555' }]}>
-          {userData.email || 'user@example.com'}
-        </Text>
-      </View>
 
-      <View style={[styles.section, { borderTopColor: isDark ? '#444' : '#ccc' }]}>
-        <Text style={[styles.label, { color: '#2e7d32' }]}>App Version</Text>
-        <Text style={[styles.value, { color: isDark ? '#fff' : '#000' }]}>1.0.0</Text>
-      </View>
+        {/* Profile Info Section */}
+        <View style={styles.section}>
+          <View style={[styles.profileCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.avatarContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="person-circle-outline" size={64} color={colors.primary} />
+            </View>
+            <Text style={[styles.userName, { color: isDark ? '#fff' : '#000' }]}>
+              {userData.fullName || 'Full Name'}
+            </Text>
+            <Text style={[styles.userEmail, { color: isDark ? '#aaa' : '#666' }]}>
+              {userData.email || 'user@example.com'}
+            </Text>
+          </View>
+        </View>
 
-      <View style={[styles.section, { borderTopColor: isDark ? '#444' : '#ccc' }]}>
-        <Text style={[styles.label, { color: '#2e7d32' }]}>Status</Text>
-        <Text style={[styles.value, { color: isDark ? '#fff' : '#000' }]}>Active</Text>
-      </View>
+        {/* Account Details Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+            Account Details
+          </Text>
+          
+          <View style={[styles.infoCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.infoIconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={[styles.infoTitle, { color: isDark ? '#fff' : '#000' }]}>
+                App Version
+              </Text>
+              <Text style={[styles.infoText, { color: isDark ? '#aaa' : '#666' }]}>
+                Version 1.0.0
+              </Text>
+            </View>
+          </View>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={20} color="#fff" />
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
+          <View style={[styles.infoCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.infoIconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={[styles.infoTitle, { color: isDark ? '#fff' : '#000' }]}>
+                Account Status
+              </Text>
+              <Text style={[styles.infoText, { color: isDark ? '#aaa' : '#666' }]}>
+                Active
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Logout Section */}
+        <View style={styles.section}>
+          <TouchableOpacity style={[styles.logoutCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]} onPress={handleLogout}>
+            <View style={[styles.logoutIconContainer, { backgroundColor: '#ff5252' + '20' }]}>
+              <Ionicons name="log-out-outline" size={20} color="#ff5252" />
+            </View>
+            <View style={styles.logoutContent}>
+              <Text style={[styles.logoutTitle, { color: '#ff5252' }]}>
+                Logout
+              </Text>
+              <Text style={[styles.logoutText, { color: isDark ? '#aaa' : '#666' }]}>
+                Sign out of your account
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
       <ModernDialog
         visible={showLogoutDialog}
@@ -120,61 +170,143 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  backButton: {
-    marginBottom: 20,
-  },
-  profileContainer: {
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
-  },
-  avatarIcon: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 20,
     marginBottom: 10,
   },
-  name: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  email: {
-    fontSize: 16,
-  },
-  section: {
-    marginTop: 20,
-    borderTopWidth: 1,
-    paddingTop: 15,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  value: {
-    fontSize: 16,
-  },
-  logoutBtn: {
-    marginTop: 40,
+  backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    alignSelf: 'center',
-    backgroundColor: '#ff5252',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
   },
-  logoutText: {
-    color: '#fff',
+  backText: {
+    fontSize: 16,
+    marginLeft: 6,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  header: {
+    fontSize: 26,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'right',
+    lineHeight: 30,
+  },
+  section: {
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  profileCard: {
+    padding: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+    marginBottom: 8,
+  },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  infoCard: {
+    flexDirection: 'row',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  infoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 8,
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  logoutCard: {
+    flexDirection: 'row',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  logoutIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  logoutContent: {
+    flex: 1,
+  },
+  logoutTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  logoutText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
