@@ -119,14 +119,17 @@ export default function CalculatorScreen() {
           .replace(/tan\(([^)]+)\)/g, 'Math.tan($1)')
           .replace(/ln\(([^)]+)\)/g, 'Math.log($1)')
           .replace(/log\(([^)]+)\)/g, 'Math.log10($1)')
-          .replace(/([^)]+)²/g, 'Math.pow($1, 2)');
+          .replace(/([^)]+)²/g, 'Math.pow($1, 2)')
+          .replace(/--/g, '+'); // Fix double negatives
         
         // Only evaluate if expression seems complete
         if (!/[+\-×÷]$/.test(expression)) {
           const evaluated = eval(evalExpression);
-          if (isFinite(evaluated)) {
+          if (isFinite(evaluated) && !isNaN(evaluated)) {
             const roundedResult = Math.round(evaluated * 1000000000) / 1000000000;
             setResult(roundedResult.toString());
+          } else {
+            setResult(''); // Display nothing for NaN or infinite results
           }
         } else {
           setResult('');
@@ -165,16 +168,26 @@ export default function CalculatorScreen() {
           .replace(/×/g, '*')
           .replace(/−/g, '-')
           .replace(/π/g, Math.PI.toString())
-          .replace(/e/g, Math.E.toString());
+          .replace(/e(?![0-9])/g, Math.E.toString())
+          .replace(/--/g, '+'); // Fix double negatives
         
         const evaluated = eval(evalExpression);
-        const roundedResult = Math.round(evaluated * 1000000000) / 1000000000; // Round to 9 decimal places
-        setResult(String(roundedResult));
-        setAns(String(roundedResult));
-        setHistory(prev => [`${expression} = ${roundedResult}`, ...prev.slice(0, 9)]); // Keep only last 10 entries
+        
+        if (isNaN(evaluated)) {
+          showDialog('Error', 'Result is undefined');
+          setResult('');
+        } else if (!isFinite(evaluated)) {
+          showDialog('Error', 'Result is infinite');
+          setResult('');
+        } else {
+          const roundedResult = Math.round(evaluated * 1000000000) / 1000000000; // Round to 9 decimal places
+          setResult(String(roundedResult));
+          setAns(String(roundedResult));
+          setHistory(prev => [`${expression} = ${roundedResult}`, ...prev.slice(0, 9)]); // Keep only last 10 entries
+        }
       } catch {
         showDialog('Error', 'Invalid Expression');
-        setResult('Error');
+        setResult('');
       }
     } else if (val === 'ans') {
       setExpression(prev => prev + ans);
@@ -191,8 +204,17 @@ export default function CalculatorScreen() {
     } else if (val === '%') {
       if (expression) {
         try {
-          const evaluated = eval(expression.replace(/÷/g, '/').replace(/×/g, '*').replace(/−/g, '-'));
-          setExpression((evaluated / 100).toString());
+          const evaluated = eval(expression
+            .replace(/÷/g, '/')
+            .replace(/×/g, '*')
+            .replace(/−/g, '-')
+            .replace(/--/g, '+')); // Fix double negatives
+          
+          if (isNaN(evaluated) || !isFinite(evaluated)) {
+            showDialog('Error', 'Invalid Expression');
+          } else {
+            setExpression((evaluated / 100).toString());
+          }
         } catch {
           showDialog('Error', 'Invalid Expression');
         }
@@ -397,7 +419,7 @@ const styles = StyleSheet.create({
   },
   expressionContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   expression: {
     fontSize: 36,
