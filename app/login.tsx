@@ -1,5 +1,10 @@
+import { PageTransition } from '../src/components/ui/PageTransition';
 import LoginScreenComponent from '../src/screens/auth/LoginScreen';
 
 export default function LoginScreen() {
-  return <LoginScreenComponent />;
+  return (
+    <PageTransition duration={350}>
+      <LoginScreenComponent />
+    </PageTransition>
+  );
 }
