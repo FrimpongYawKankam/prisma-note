@@ -1,7 +1,7 @@
 // Quick test script to verify events backend integration
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = 'http://10.40.32.231:8080';
 
 const testEvents = async () => {
   try {

@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -16,6 +15,7 @@ import {
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernButton } from '../../components/ui/ModernButton';
 import { ModernCard } from '../../components/ui/ModernCard';
+import { ModernDialog } from '../../components/ui/ModernDialog';
 import { useTasks } from '../../context/TasksContext';
 import { useTheme } from '../../context/ThemeContext';
 import { BorderRadius, Shadows, Spacing, Typography } from '../../styles/tokens';
@@ -23,7 +23,7 @@ import { BorderRadius, Shadows, Spacing, Typography } from '../../styles/tokens'
 const AddTaskScreen = () => {
   const { colors } = useTheme();
   const { editTaskId, editTaskText } = useLocalSearchParams<{
-    editTaskId?: string; // Still string from URL params, will convert to number
+    editTaskId?: string;
     editTaskText?: string;
   }>();
   
@@ -31,9 +31,33 @@ const AddTaskScreen = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
+  const [dialog, setDialog] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: []
+  });
   const { createTask, updateTask } = useTasks();
   
   const isEditing = !!editTaskId;
+
+  const showDialog = (title: string, message: string, buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
+    setDialog({
+      visible: true,
+      title,
+      message,
+      buttons
+    });
+  };
+
+  const hideDialog = () => {
+    setDialog(prev => ({ ...prev, visible: false }));
+  };
 
   useEffect(() => {
     if (isEditing && editTaskText) {
@@ -63,8 +87,7 @@ const AddTaskScreen = () => {
       setMessage('');
       
       if (isEditing && editTaskId) {
-        const taskId = parseInt(editTaskId, 10);
-        await updateTask(taskId, { text: taskText.trim() });
+        await updateTask(parseInt(editTaskId), { text: taskText.trim() });
         setMessage('Task updated successfully!');
         setMessageType('success');
       } else {
@@ -90,12 +113,12 @@ const AddTaskScreen = () => {
     const hasChanges = taskText.trim() !== originalText.trim();
     
     if (hasChanges) {
-      Alert.alert(
+      showDialog(
         `Discard ${isEditing ? 'Changes' : 'Task'}?`,
         `Are you sure you want to discard ${isEditing ? 'your changes' : 'this task'}?`,
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+          { text: 'Cancel', style: 'cancel', onPress: hideDialog },
+          { text: 'Discard', style: 'destructive', onPress: () => { hideDialog(); router.back(); } },
         ]
       );
     } else {
@@ -243,6 +266,14 @@ const AddTaskScreen = () => {
           />
         </View>
       </KeyboardAvoidingView>
+
+      <ModernDialog
+        visible={dialog.visible}
+        title={dialog.title}
+        message={dialog.message}
+        buttons={dialog.buttons}
+        onClose={hideDialog}
+      />
     </SafeAreaView>
   );
 };

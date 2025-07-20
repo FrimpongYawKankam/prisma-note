@@ -3,14 +3,14 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernDialog } from '../../components/ui/ModernDialog';
@@ -41,8 +41,8 @@ export default function EventDetailScreen() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showBackDialog, setShowBackDialog] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [discardDialog, setDiscardDialog] = useState(false);
   
   // Date/time picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
@@ -88,7 +88,7 @@ export default function EventDetailScreen() {
     };
     
     loadEvent();
-  }, [id, isAuthenticated, getEventById, router]);
+  }, [id, isAuthenticated, router]);
 
   const createDateTime = (date: Date, time: Date) => {
     const combined = new Date(date);
@@ -196,7 +196,7 @@ export default function EventDetailScreen() {
 
   const handleBack = () => {
     if (isEditing) {
-      setDiscardDialog(true);
+      setShowBackDialog(true);
     } else {
       router.back();
     }
@@ -527,28 +527,27 @@ export default function EventDetailScreen() {
         ]}
         onClose={() => setShowDeleteDialog(false)}
       />
-      
-      {/* Discard Changes Dialog */}
+
       <ModernDialog
-        visible={discardDialog}
+        visible={showBackDialog}
         title="Discard Changes?"
         message="You have unsaved changes. Are you sure you want to go back?"
         buttons={[
           {
             text: 'Cancel',
-            onPress: () => setDiscardDialog(false),
             style: 'cancel',
+            onPress: () => setShowBackDialog(false),
           },
           {
             text: 'Discard',
+            style: 'destructive',
             onPress: () => {
-              setDiscardDialog(false);
+              setShowBackDialog(false);
               router.back();
             },
-            style: 'destructive',
           },
         ]}
-        onClose={() => setDiscardDialog(false)}
+        onClose={() => setShowBackDialog(false)}
       />
     </SafeAreaView>
   );

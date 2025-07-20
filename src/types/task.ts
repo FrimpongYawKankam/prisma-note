@@ -1,18 +1,24 @@
 export interface DailyTask {
-  id: number; // Backend uses Long/number, not string
-  text: string;
+  id: number;          // Backend uses number, not string
+  text: string;        // max 500 chars
   isCompleted: boolean;
-  createdAt: string; // ISO datetime string
-  updatedAt?: string; // Optional, may not be present in response
+  createdAt: string;   // ISO timestamp
 }
 
 export interface CreateTaskRequest {
-  text: string;
+  text: string;        // required, max 500 chars
 }
 
 export interface UpdateTaskRequest {
-  text?: string;
-  isCompleted?: boolean;
+  text: string;        // required, max 500 chars (backend doesn't support partial text updates)
+}
+
+// Additional types for API responses
+export interface TaskResponse {
+  id: number;
+  text: string;
+  isCompleted: boolean;
+  createdAt: string;
 }
 
 export interface TaskCountResponse {
@@ -21,7 +27,7 @@ export interface TaskCountResponse {
   remaining: number;
 }
 
-export interface CleanupResponse {
+export interface TaskCleanupResponse {
   message: string;
   expiredTasksFound: number;
   tasksDeleted: number;

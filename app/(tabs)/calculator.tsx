@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Dimensions,
   SafeAreaView,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ModernDialog } from '../../src/components/ui/ModernDialog';
 import { useTheme } from '../../src/context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
@@ -37,8 +37,29 @@ export default function CalculatorScreen() {
   const [isScientific, setIsScientific] = useState(false);
   const [ans, setAns] = useState('0');
   const [memory, setMemory] = useState('0');
+  const [dialog, setDialog] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    title: '',
+    message: ''
+  });
 
   const animation = useRef(new Animated.Value(0)).current;
+
+  const showDialog = (title: string, message: string) => {
+    setDialog({
+      visible: true,
+      title,
+      message
+    });
+  };
+
+  const hideDialog = () => {
+    setDialog(prev => ({ ...prev, visible: false }));
+  };
 
   // Live calculation preview
   useEffect(() => {
@@ -107,7 +128,7 @@ export default function CalculatorScreen() {
         setAns(String(roundedResult));
         setHistory(prev => [`${expression} = ${roundedResult}`, ...prev.slice(0, 9)]); // Keep only last 10 entries
       } catch {
-        Alert.alert('Error', 'Invalid Expression');
+        showDialog('Error', 'Invalid Expression');
         setResult('Error');
       }
     } else if (val === 'ans') {
@@ -128,7 +149,7 @@ export default function CalculatorScreen() {
           const evaluated = eval(expression.replace(/÷/g, '/').replace(/×/g, '*').replace(/−/g, '-'));
           setExpression((evaluated / 100).toString());
         } catch {
-          Alert.alert('Error', 'Invalid Expression');
+          showDialog('Error', 'Invalid Expression');
         }
       }
     } else if (val === 'x²') {
@@ -264,6 +285,14 @@ export default function CalculatorScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ModernDialog
+        visible={dialog.visible}
+        title={dialog.title}
+        message={dialog.message}
+        buttons={[{ text: 'OK', onPress: hideDialog }]}
+        onClose={hideDialog}
+      />
     </SafeAreaView>
   );
 }

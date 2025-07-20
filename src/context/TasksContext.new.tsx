@@ -12,7 +12,6 @@ interface TasksContextType {
   // Operations
   createTask: (taskData: CreateTaskRequest) => Promise<DailyTask>;
   updateTask: (taskId: number, taskData: UpdateTaskRequest) => Promise<DailyTask>;
-  toggleTaskCompletion: (taskId: number) => Promise<DailyTask>;
   deleteTask: (taskId: number) => Promise<void>;
   clearAllTasks: () => Promise<void>;
   refreshTasks: () => Promise<void>;
@@ -87,23 +86,6 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const toggleTaskCompletion = async (taskId: number): Promise<DailyTask> => {
-    try {
-      setTasksError(null);
-      
-      const updatedTask = await taskService.toggleTaskCompletion(taskId);
-      setTodayTasks(prev => prev.map(task => 
-        task.id === taskId ? updatedTask : task
-      ));
-      
-      return updatedTask;
-    } catch (error: any) {
-      console.error('Failed to toggle task completion:', error);
-      setTasksError(error.message || 'Failed to toggle task');
-      throw error;
-    }
-  };
-
   const deleteTask = async (taskId: number): Promise<void> => {
     try {
       setTasksError(null);
@@ -147,7 +129,6 @@ export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     tasksError,
     createTask,
     updateTask,
-    toggleTaskCompletion,
     deleteTask,
     clearAllTasks,
     refreshTasks,

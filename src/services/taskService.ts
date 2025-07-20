@@ -1,4 +1,4 @@
-import { CreateTaskRequest, DailyTask, UpdateTaskRequest, TaskCountResponse, CleanupResponse } from '../types/task';
+import { CreateTaskRequest, DailyTask, TaskCleanupResponse, TaskCountResponse, UpdateTaskRequest } from '../types/task';
 import axiosInstance from '../utils/axiosInstance';
 
 class TaskService {
@@ -12,19 +12,6 @@ class TaskService {
     } catch (error: any) {
       console.error('Failed to fetch today\'s tasks:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch tasks');
-    }
-  }
-
-  /**
-   * Get today's task count
-   */
-  async getTodayTasksCount(): Promise<TaskCountResponse> {
-    try {
-      const response = await axiosInstance.get('/api/tasks/today/count');
-      return response.data;
-    } catch (error: any) {
-      console.error('Failed to fetch today\'s tasks count:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch task count');
     }
   }
 
@@ -80,9 +67,34 @@ class TaskService {
   }
 
   /**
+   * Clear all tasks for today (for admin/cleanup purposes)
+   */
+  async clearAllTasks(): Promise<void> {
+    try {
+      await axiosInstance.delete('/api/tasks/today');
+    } catch (error: any) {
+      console.error('Failed to clear all tasks:', error);
+      throw new Error(error.response?.data?.message || 'Failed to clear tasks');
+    }
+  }
+
+  /**
+   * Get today's task count and limits
+   */
+  async getTodayTaskCount(): Promise<TaskCountResponse> {
+    try {
+      const response = await axiosInstance.get('/api/tasks/today/count');
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch task count:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch task count');
+    }
+  }
+
+  /**
    * Manual cleanup of expired tasks (admin endpoint)
    */
-  async cleanupExpiredTasks(): Promise<CleanupResponse> {
+  async cleanupExpiredTasks(): Promise<TaskCleanupResponse> {
     try {
       const response = await axiosInstance.delete('/api/tasks/cleanup');
       return response.data;

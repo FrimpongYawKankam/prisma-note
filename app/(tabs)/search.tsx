@@ -46,7 +46,7 @@ export default function NotesScreen(): React.JSX.Element {
     
     setRefreshing(true);
     try {
-      await refreshNotes(true);
+      await refreshNotes();
     } finally {
       setRefreshing(false);
     }

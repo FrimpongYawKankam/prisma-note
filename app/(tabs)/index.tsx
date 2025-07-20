@@ -3,7 +3,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
-  Alert,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -17,6 +16,7 @@ import { Menu, Provider } from 'react-native-paper';
 import { MockDebugPanel } from '../../src/components/ui/MockDebugPanel';
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
+import { ModernDialog } from '../../src/components/ui/ModernDialog';
 import { useAuth } from '../../src/context/AuthContext';
 import { useEvents } from '../../src/context/EventsContext';
 import { useNotes } from '../../src/context/NotesContext';
@@ -31,10 +31,21 @@ export default function HomeScreen() {
   const { isAuthenticated, user } = useAuth();
   const { events, eventsLoading, refreshEvents } = useEvents();
   const { createNote } = useNotes();
-  const { todayTasks, tasksLoading, updateTask, deleteTask, clearAllTasks, refreshTasks } = useTasks();
+  const { todayTasks, tasksLoading, updateTask, toggleTaskCompletion, deleteTask, clearAllTasks, refreshTasks } = useTasks();
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [dialog, setDialog] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: []
+  });
 
   // Reload data when screen is focused
   useFocusEffect(
@@ -57,6 +68,19 @@ export default function HomeScreen() {
     }
   }, [isAuthenticated]);
 
+  const showDialog = (title: string, message: string, buttons: Array<{ text: string; onPress: () => void; style?: 'default' | 'cancel' | 'destructive' }>) => {
+    setDialog({
+      visible: true,
+      title,
+      message,
+      buttons
+    });
+  };
+
+  const hideDialog = () => {
+    setDialog(prev => ({ ...prev, visible: false }));
+  };
+
   // Get today's date in YYYY-MM-DD format
   const getTodayDateString = () => {
     const today = new Date();
@@ -71,9 +95,11 @@ export default function HomeScreen() {
 
   const handleTaskToggle = async (task: DailyTask) => {
     try {
-      await updateTask(task.id, { isCompleted: !task.isCompleted });
+      await toggleTaskCompletion(task.id);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update task');
+      showDialog('Error', error.message || 'Failed to update task', [
+        { text: 'OK', onPress: hideDialog }
+      ]);
     }
   };
 
@@ -85,19 +111,22 @@ export default function HomeScreen() {
   };
 
   const handleTaskDelete = async (task: DailyTask) => {
-    Alert.alert(
+    showDialog(
       'Delete Task',
       'Are you sure you want to delete this task?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel', onPress: hideDialog },
         { 
           text: 'Delete', 
           style: 'destructive', 
           onPress: async () => {
+            hideDialog();
             try {
               await deleteTask(task.id);
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete task');
+              showDialog('Error', error.message || 'Failed to delete task', [
+                { text: 'OK', onPress: hideDialog }
+              ]);
             }
           }
         },
@@ -108,19 +137,22 @@ export default function HomeScreen() {
   const handleClearAllTasks = () => {
     if (todayTasks.length === 0) return;
     
-    Alert.alert(
+    showDialog(
       'Clear All Tasks',
       'Are you sure you want to clear all tasks for today?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel', onPress: hideDialog },
         { 
           text: 'Clear All', 
           style: 'destructive', 
           onPress: async () => {
+            hideDialog();
             try {
               await clearAllTasks();
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to clear tasks');
+              showDialog('Error', error.message || 'Failed to clear tasks', [
+                { text: 'OK', onPress: hideDialog }
+              ]);
             }
           }
         },
@@ -141,7 +173,9 @@ export default function HomeScreen() {
       });
       router.push({ pathname: '/note-detail', params: { id: note.id } });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create note');
+      showDialog('Error', error.message || 'Failed to create note', [
+        { text: 'OK', onPress: hideDialog }
+      ]);
     }
   };
 
@@ -385,6 +419,14 @@ export default function HomeScreen() {
             </View>
           </ScrollView>
         </SafeAreaView>
+
+        <ModernDialog
+          visible={dialog.visible}
+          title={dialog.title}
+          message={dialog.message}
+          buttons={dialog.buttons}
+          onClose={hideDialog}
+        />
       </GestureHandlerRootView>
     </Provider>
   );

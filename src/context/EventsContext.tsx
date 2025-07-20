@@ -51,29 +51,29 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const { isAuthenticated } = useAuth();
 
-  // Add a flag to prevent multiple simultaneous loads
-  const [isInitialLoading, setIsInitialLoading] = useState(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState(0);
+  // Load events when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshEvents();
+    } else {
+      // Clear events when user logs out
+      setEvents([]);
+      setEventsCount(0);
+      setFilteredEvents([]);
+    }
+  }, [isAuthenticated]);
+
+  // Update filtered events when events, selectedDate, or selectedTag changes
+  useEffect(() => {
+    applyFilters();
+  }, [events, selectedDate, selectedTag]);
 
   const refreshEvents = useCallback(async () => {
     if (!isAuthenticated) return;
     
-    // Debounce: Don't refresh if we've refreshed in the last 5 seconds
-    const now = Date.now();
-    if (now - lastRefreshTime < 5000) {
-      console.log('Skipping events refresh - too recent');
-      return;
-    }
-    
-    if (eventsLoading) {
-      console.log('Skipping events refresh - already loading');
-      return;
-    }
-    
     try {
       setEventsLoading(true);
       setEventsError(null);
-      setLastRefreshTime(now);
       const userEvents = await eventService.getUserEvents();
       setEvents(userEvents);
       setEventsCount(userEvents.length);
@@ -83,7 +83,7 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       setEventsLoading(false);
     }
-  }, [isAuthenticated]); // Remove eventsLoading and lastRefreshTime from dependencies
+  }, [isAuthenticated]);
 
   const applyFilters = useCallback(() => {
     let filtered = [...events];
@@ -101,9 +101,11 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (selectedTag) {
       filtered = filtered.filter(event => event.tag === selectedTag);
     }
-
+    
     setFilteredEvents(filtered);
-  }, [events, selectedDate, selectedTag]);  const createEvent = async (eventData: CreateEventRequest): Promise<Event> => {
+  }, [events, selectedDate, selectedTag]);
+
+  const createEvent = async (eventData: CreateEventRequest): Promise<Event> => {
     try {
       setEventsError(null);
       const newEvent = await eventService.createEvent(eventData);
@@ -175,13 +177,13 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const filterEventsByDate = (date: Date) => {
+  const filterEventsByDate = useCallback((date: Date) => {
     setSelectedDate(date);
-  };
+  }, []);
 
-  const filterEventsByTag = (tag: EventTag | null) => {
+  const filterEventsByTag = useCallback((tag: EventTag | null) => {
     setSelectedTag(tag);
-  };
+  }, []);
 
   const getEventsForDate = (date: Date): Event[] => {
     return eventService.getEventsForDate(events, date);
@@ -284,45 +286,6 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     removeEventTag,
     getEventsByTag,
   };
-
-  // Load events when user is authenticated
-  useEffect(() => {
-    if (isAuthenticated && !isInitialLoading) {
-      setIsInitialLoading(true);
-      
-      // Call refreshEvents directly without dependency issues
-      const loadInitialEvents = async () => {
-        try {
-          setEventsLoading(true);
-          setEventsError(null);
-          const now = Date.now();
-          setLastRefreshTime(now);
-          const userEvents = await eventService.getUserEvents();
-          setEvents(userEvents);
-          setEventsCount(userEvents.length);
-        } catch (err: any) {
-          console.error('Failed to load initial events:', err);
-          setEventsError(err.message || 'Failed to load events');
-        } finally {
-          setEventsLoading(false);
-          setIsInitialLoading(false);
-        }
-      };
-      
-      loadInitialEvents();
-    } else if (!isAuthenticated) {
-      // Clear events when user logs out
-      setEvents([]);
-      setEventsCount(0);
-      setFilteredEvents([]);
-      setIsInitialLoading(false);
-    }
-  }, [isAuthenticated]); // Only depend on isAuthenticated
-
-  // Update filtered events when events, selectedDate, or selectedTag changes
-  useEffect(() => {
-    applyFilters();
-  }, [events, selectedDate, selectedTag]); // Use actual dependencies instead of the function
 
   return (
     <EventsContext.Provider value={value}>
