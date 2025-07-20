@@ -207,11 +207,6 @@ export default function HomeScreen() {
               contentStyle={{ backgroundColor: colors.surface }}
             >
               <Menu.Item 
-                onPress={() => { setMenuVisible(false); router.push('/profile'); }} 
-                title="Profile" 
-                titleStyle={{ color: colors.text }}
-              />
-              <Menu.Item 
                 onPress={() => { setMenuVisible(false); router.push('/settings'); }} 
                 title="Settings" 
                 titleStyle={{ color: colors.text }}
