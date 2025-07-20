@@ -4,18 +4,30 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## About PrismaNote 📝
 
-PrismaNote is a modern, full-featured note-taking application built with React Native and Expo. It provides a seamless experience for creating, organizing, and managing your notes with real-time synchronization.
+PrismaNote is a revolutionary all-in-one productivity application designed to eliminate the need for multiple separate apps cluttering your device. Instead of juggling between different apps for notes, reminders, calendar events, and calculations, PrismaNote seamlessly integrates all these essential productivity tools into one cohesive, modern platform.
 
-### ✨ Features
+**🎯 Our Vision**: End the era of app switching and create a unified workspace where your thoughts, tasks, events, and calculations flow together naturally.
 
-- **📝 Rich Note Taking** - Create notes with Markdown support for rich text formatting
-- **🔍 Smart Search** - Quickly find your notes with powerful search functionality  
-- **🌙 Dark/Light Mode** - Toggle between themes for comfortable viewing
-- **📱 Cross-Platform** - Works on iOS, Android, and web
-- **🔄 Real-time Sync** - Auto-save functionality with backend synchronization
-- **👤 User Authentication** - Secure login with email verification
-- **📅 Event Management** - Organize your schedule alongside your notes
-- **🎨 Modern UI** - Clean, intuitive interface with smooth animations
+### ✨ Current Features
+
+- **📝 Rich Note Taking** - Create and organize notes with Markdown support for rich text formatting
+- **✅ Smart Task Management** - Daily task system with auto-expiration and visual completion tracking
+- **📅 Comprehensive Calendar** - Full event management with scheduling, reminders, and organization
+- **🧮 Built-in Calculator** - Scientific calculator with history for quick calculations without app switching
+- **🔍 Universal Search** - Find anything across notes, tasks, and events with powerful search functionality  
+- **🌙 Adaptive Themes** - Dark/Light mode support for comfortable viewing in any environment
+- **📱 Cross-Platform Ready** - Works seamlessly on iOS, Android, and web platforms
+- **🔄 Real-time Sync** - Auto-save functionality with backend synchronization across devices
+- **👤 Secure Authentication** - JWT-based login with email verification and OTP security
+- **🎨 Modern Design** - Intuitive interface with smooth animations and consistent theming
+
+### 🚀 Future Roadmap
+
+- **📁 File Storage & Management** - Upload, organize, and access documents, images, and files
+- **👥 Team Collaboration** - Share notes, tasks, and events with colleagues and friends
+- **📊 Advanced Analytics** - Productivity insights and task completion tracking
+- **🔗 Smart Integrations** - Connect with popular productivity services and tools
+- **🤖 AI-Powered Features** - Intelligent suggestions and automated organization
 
 ### 🚀 Tech Stack
 
@@ -27,11 +39,14 @@ PrismaNote is a modern, full-featured note-taking application built with React N
 
 ### 🎭 Development Mode
 
-The app includes a complete mock system for frontend development without requiring a backend server. Toggle between mock and real data by updating the configuration in `src/mockFunctionality/utils/constants.ts`.
+The app includes a complete mock system for frontend development without requiring a backend server. This allows you to experience all productivity features - notes, tasks, events, and calculator - with realistic data. Toggle between mock and real backend data by updating the configuration in `src/mockFunctionality/utils/constants.ts`.
 
-**Mock Credentials:**
+**Mock Credentials for Testing:**
 - Email: `testemail@example.com`
 - Password: `Test123=`
+
+**Why One App?** 
+Stop the endless app switching! PrismaNote proves that productivity tools work better together. Whether you're jotting down ideas, planning your day, scheduling meetings, or doing quick calculations, everything stays in context within one beautifully designed interface.
 
 ## Get started
 
