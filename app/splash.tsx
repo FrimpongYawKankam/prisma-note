@@ -14,12 +14,11 @@ const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
   const { colors } = useTheme();
-  const [dotCount, setDotCount] = useState(0);
+  const [dotCount, setDotCount] = useState(3); // Start with 3 dots for countdown
   
   // Animation values
   const logoScale = useRef(new Animated.Value(0.5)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
-  const glowOpacity = useRef(new Animated.Value(0)).current;
   const loadingOpacity = useRef(new Animated.Value(0)).current;
   const backgroundGlow = useRef(new Animated.Value(0)).current;
 
@@ -27,13 +26,19 @@ export default function SplashScreen() {
     // Start animations sequence
     startAnimations();
     
-    // Dot animation timer
-    const dotTimer = setInterval(() => {
-      setDotCount(prev => (prev + 1) % 4);
-    }, 400);
+    // Countdown timer - starts at 3 and counts down every 2 seconds
+    let currentCount = 3;
+    const countdownTimer = setInterval(() => {
+      currentCount -= 1;
+      setDotCount(currentCount);
+      
+      if (currentCount <= 0) {
+        clearInterval(countdownTimer);
+      }
+    }, 2000); // 2 seconds per countdown step (6 seconds total)
 
     return () => {
-      clearInterval(dotTimer);
+      clearInterval(countdownTimer);
     };
   }, []);
 
@@ -60,25 +65,6 @@ export default function SplashScreen() {
       }),
     ]).start();
 
-    // Glow animation with pulsing effect
-    Animated.sequence([
-      Animated.delay(600),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowOpacity, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowOpacity, {
-            toValue: 0.4,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-        ])
-      ),
-    ]).start();
-
     // Loading text fade-in
     Animated.sequence([
       Animated.delay(1200),
@@ -90,8 +76,18 @@ export default function SplashScreen() {
     ]).start();
   };
 
-  const renderLoadingDots = () => {
-    return '.'.repeat(dotCount);
+  const renderCountdownDots = () => {
+    return Array.from({ length: 3 }, (_, index) => (
+      <View
+        key={index}
+        style={[
+          styles.countdownDot,
+          {
+            backgroundColor: index < dotCount ? colors.primary : '#333',
+          },
+        ]}
+      />
+    ));
   };
 
   return (
@@ -112,40 +108,11 @@ export default function SplashScreen() {
         />
         
         <View style={styles.content}>
-          {/* Logo with glow effect */}
+          {/* Logo */}
           <View style={styles.logoContainer}>
-            {/* Multiple glow layers for depth */}
-            <Animated.View
-              style={[
-                styles.glowEffect,
-                styles.outerGlow,
-                {
-                  opacity: glowOpacity.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 0.6],
-                  }),
-                  shadowColor: colors.primary,
-                },
-              ]}
-            />
-            
-            <Animated.View
-              style={[
-                styles.glowEffect,
-                styles.innerGlow,
-                {
-                  opacity: glowOpacity.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 0.8],
-                  }),
-                  shadowColor: '#ffffff',
-                },
-              ]}
-            />
-            
             {/* Main logo */}
             <Animated.Image
-              source={require('../assets/images/logo.jpeg')}
+              source={require('../assets/images/finallogo.png')}
               style={[
                 styles.logo,
                 {
@@ -153,23 +120,18 @@ export default function SplashScreen() {
                   opacity: logoOpacity,
                 },
               ]}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </View>
 
-          {/* Loading section */}
+          {/* Countdown dots section */}
           <Animated.View
             style={[
-              styles.loadingContainer,
+              styles.countdownContainer,
               { opacity: loadingOpacity },
             ]}
           >
-            <Text style={[styles.loadingText, { color: colors.primary }]}>
-              Loading
-            </Text>
-            <Text style={[styles.dotsText, { color: colors.primary }]}>
-              {renderLoadingDots()}
-            </Text>
+            {renderCountdownDots()}
           </Animated.View>
 
           {/* App tagline */}
@@ -210,52 +172,26 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: 'relative',
-    marginBottom: 80,
+    marginBottom: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glowEffect: {
-    position: 'absolute',
-    borderRadius: 150,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    elevation: 10,
-  },
-  outerGlow: {
-    top: -40,
-    left: -40,
-    right: -40,
-    bottom: -40,
-    shadowRadius: 50,
-  },
-  innerGlow: {
-    top: -20,
-    left: -20,
-    right: -20,
-    bottom: -20,
-    shadowRadius: 25,
-  },
   logo: {
-    width: 220,
-    height: 220,
-    borderRadius: 110, // Half of width/height to make it perfectly circular
-    overflow: 'hidden', // Ensures the image is clipped to the circular shape
+    width: 280,
+    height: 120,
+    // Removed borderRadius and overflow to show full logo with text
   },
-  loadingContainer: {
+  countdownContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 60,
+    gap: 15,
   },
-  loadingText: {
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-  },
-  dotsText: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginLeft: 6,
-    minWidth: 30,
+  countdownDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   taglineContainer: {
     position: 'absolute',

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { safeNavigateBack } from '../../utils/navigation';
 
@@ -30,7 +30,11 @@ export default function AboutScreen() {
         <View style={styles.section}>
           <View style={[styles.appCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
             <View style={[styles.appIconContainer, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="document-text-outline" size={32} color={colors.primary} />
+              <Image 
+                source={require('../../../assets/images/logo.jpeg')}
+                style={styles.appIcon}
+                resizeMode="cover"
+              />
             </View>
             <Text style={[styles.appName, { color: isDark ? '#fff' : '#000' }]}>
               PrismaNote
@@ -224,6 +228,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
+  },
+  appIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   appName: {
     fontSize: 28,
