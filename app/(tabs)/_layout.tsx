@@ -15,7 +15,7 @@ export default function Tablayout() {
           borderTopColor: isDark ? '#333333' : '#e0e0e0',
           borderTopWidth: 1,
         },
-        tabBarActiveTintColor: isDark ? '#64ffda' : '#007bff',
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: isDark ? '#808080' : '#666666',
       }}
     >
