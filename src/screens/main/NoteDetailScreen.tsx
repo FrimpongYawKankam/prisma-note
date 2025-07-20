@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
+  Animated,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -12,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernDialog } from '../../components/ui/ModernDialog';
 import { useAuth } from '../../context/AuthContext';
@@ -23,7 +21,7 @@ import { Note } from '../../types/api';
 export default function NoteDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const { getNoteById, updateNote, createNote, moveToTrash, notesLoading, notesError } = useNotes();
   const { isAuthenticated } = useAuth();
   const isDark = theme === 'dark';
@@ -31,12 +29,32 @@ export default function NoteDetailScreen() {
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [previewMode, setPreviewMode] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('info');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Animation refs for inputs
+  const titleAnimation = useRef(new Animated.Value(0)).current;
+  const contentAnimation = useRef(new Animated.Value(0)).current;
+
+  // Animation functions
+  const animateInput = (animation: Animated.Value, toValue: number) => {
+    Animated.timing(animation, {
+      toValue,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handleInputFocus = (animation: Animated.Value) => {
+    animateInput(animation, 1);
+  };
+
+  const handleInputBlur = (animation: Animated.Value) => {
+    animateInput(animation, 0);
+  };
 
   useEffect(() => {
     const loadNote = async () => {
@@ -170,116 +188,203 @@ export default function NoteDetailScreen() {
   // Show loading if note is being loaded
   if (notesLoading && id) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <Text style={[styles.message, { color: isDark ? '#aaa' : '#444' }]}>Loading note...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+        <Text style={[styles.message, { color: isDark ? '#aaa' : '#666' }]}>Loading note...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.iconButton}>
-            <Ionicons name="arrow-back" size={24} color={isDark ? '#64ffda' : '#00796b'} />
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+              Back
+            </Text>
           </TouchableOpacity>
+          <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>
+            {note ? 'Edit Note' : 'New Note'}
+          </Text>
+        </View>
 
-          <View style={styles.headerMiddle}>
-            {saving && (
-              <Text style={[styles.savingText, { color: isDark ? '#64ffda' : '#00796b' }]}>
-                Saving...
-              </Text>
-            )}
-            {hasUnsavedChanges && !saving && (
-              <Text style={[styles.unsavedText, { color: isDark ? '#ff9800' : '#f57c00' }]}>
-                Unsaved changes
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.headerActions}>
-            <TouchableOpacity 
-              onPress={handleSave} 
-              style={[
-                styles.saveButton, 
-                { 
-                  backgroundColor: hasUnsavedChanges 
-                    ? (isDark ? '#64ffda' : '#00796b')
-                    : (isDark ? '#333' : '#ddd'),
-                  opacity: saving ? 0.6 : 1
-                }
-              ]}
-              disabled={saving}
-            >
-              <Ionicons 
-                name="save-outline" 
-                size={20} 
-                color={hasUnsavedChanges 
-                  ? (isDark ? '#000' : '#fff')
-                  : (isDark ? '#666' : '#999')
-                } 
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setPreviewMode(!previewMode)} style={styles.iconButton}>
-              <Ionicons
-                name={previewMode ? 'create-outline' : 'eye-outline'}
-                size={24}
-                color={isDark ? '#64ffda' : '#00796b'}
-              />
-            </TouchableOpacity>
-
-            {note && (
-              <TouchableOpacity onPress={handleDelete} style={styles.iconButton}>
-                <Ionicons name="trash-outline" size={24} color="#ff5252" />
+        {/* Status and Actions */}
+        <View style={styles.section}>
+          <View style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.statusContent}>
+              {saving && (
+                <Text style={[styles.statusText, { color: colors.primary }]}>
+                  Saving...
+                </Text>
+              )}
+              {hasUnsavedChanges && !saving && (
+                <Text style={[styles.statusText, { color: isDark ? '#ff9800' : '#f57c00' }]}>
+                  Unsaved changes
+                </Text>
+              )}
+              {!hasUnsavedChanges && !saving && (
+                <Text style={[styles.statusText, { color: isDark ? '#4caf50' : '#2e7d32' }]}>
+                  {note ? 'Saved' : 'Ready'}
+                </Text>
+              )}
+            </View>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                onPress={handleSave} 
+                style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                disabled={saving}
+              >
+                <Ionicons name="save-outline" size={18} color="#fff" />
               </TouchableOpacity>
-            )}
+
+              {note && (
+                <TouchableOpacity 
+                  onPress={handleDelete} 
+                  style={[styles.actionButton, { backgroundColor: '#e53935' }]}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
-        {previewMode ? (
-          <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <Text style={[styles.previewTitle, { color: isDark ? '#fff' : '#000' }]}>{title}</Text>
-            <Markdown style={getMarkdownStyles(isDark)}>
-              {content.trim() !== '' ? content : '_Nothing here yet..._'}
-            </Markdown>
-          </ScrollView>
-        ) : (
-          <View style={styles.editContent}>
+        {/* Title Input */}
+        <Animated.View style={[
+          styles.inputContainer, 
+          { 
+            backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa',
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: titleAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.025, 0.15],
+            }),
+            shadowRadius: titleAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [3, 8],
+            }),
+            elevation: titleAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [2, 8],
+            }),
+          }
+        ]}>
+          <View style={styles.inputHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="text-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.inputHeaderText}>
+              <Text style={[styles.inputLabel, { color: isDark ? '#fff' : '#000' }]}>
+                Title
+              </Text>
+            </View>
+          </View>
+          
+          <Animated.View style={[
+            styles.inputWrapper,
+            {
+              borderColor: titleAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [isDark ? '#333' : '#ddd', colors.primary],
+              }),
+              borderWidth: titleAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 2],
+              }),
+            }
+          ]}>
             <TextInput
-              style={[
-                styles.titleInput,
-                {
-                  color: isDark ? '#fff' : '#000',
-                  borderBottomColor: isDark ? '#333' : '#aaa',
-                },
-              ]}
-              placeholder="Title"
-              placeholderTextColor={isDark ? '#777' : '#aaa'}
+              style={[styles.titleInput, {
+                color: isDark ? '#fff' : '#000',
+                backgroundColor: isDark ? '#0d0d0d' : '#fff',
+              }]}
+              placeholder="Enter note title..."
+              placeholderTextColor={isDark ? '#666' : '#999'}
               value={title}
               onChangeText={handleTitleChange}
+              onFocus={() => handleInputFocus(titleAnimation)}
+              onBlur={() => handleInputBlur(titleAnimation)}
             />
+          </Animated.View>
+        </Animated.View>
+
+        {/* Content Input */}
+        <Animated.View style={[
+          styles.inputContainer, 
+          { 
+            backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa', 
+            flex: 1,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: contentAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.025, 0.15],
+            }),
+            shadowRadius: contentAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [3, 8],
+            }),
+            elevation: contentAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [2, 8],
+            }),
+          }
+        ]}>
+          <View style={styles.inputHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="document-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.inputHeaderText}>
+              <Text style={[styles.inputLabel, { color: isDark ? '#fff' : '#000' }]}>
+                Content
+              </Text>
+              <Text style={[styles.inputSubLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                Supports Markdown formatting
+              </Text>
+            </View>
+          </View>
+          
+          <Animated.View style={[
+            styles.inputWrapper,
+            {
+              borderColor: contentAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [isDark ? '#333' : '#ddd', colors.primary],
+              }),
+              borderWidth: contentAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 2],
+              }),
+            }
+          ]}>
             <TextInput
-              style={[
-                styles.contentInput,
-                {
-                  color: isDark ? '#eee' : '#111',
-                },
-              ]}
-              placeholder={note ? "Start writing here..." : "# New note\nStart writing..."}
-              placeholderTextColor={isDark ? '#666' : '#aaa'}
+              style={[styles.contentInput, {
+                color: isDark ? '#fff' : '#000',
+                backgroundColor: isDark ? '#0d0d0d' : '#fff',
+              }]}
+              placeholder="Write your note content here..."
+              placeholderTextColor={isDark ? '#666' : '#999'}
               value={content}
               onChangeText={handleContentChange}
               multiline
-              scrollEnabled={true}
+              textAlignVertical="top"
+              onFocus={() => handleInputFocus(contentAnimation)}
+              onBlur={() => handleInputBlur(contentAnimation)}
             />
-          </View>
-        )}
-      </KeyboardAvoidingView>
+          </Animated.View>
+        </Animated.View>
+      </ScrollView>
 
       <MessageBox
         message={message}
@@ -312,79 +417,141 @@ export default function NoteDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
   },
-  keyboardAvoidingView: {
+  scrollView: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerMiddle: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    padding: 8,
-  },
-  saveButton: {
-    padding: 8,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  savingText: {
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  unsavedText: {
-    fontSize: 14,
-    fontWeight: '500',
   },
   scrollContent: {
-    flex: 1,
-    paddingBottom: 80, // Extra padding to prevent content from being hidden behind tab bar
+    paddingBottom: 100,
   },
-  editContent: {
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 25,
+    marginBottom: 10,
+  },
+  header: {
+    fontSize: 26,
+    fontWeight: '700',
     flex: 1,
+    textAlign: 'right',
+    lineHeight: 30,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  backText: {
+    fontSize: 16,
+    marginLeft: 6,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  section: {
+    marginBottom: 15,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statusContent: {
+    flex: 1,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inputContainer: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  inputWrapper: {
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+  },
+  inputHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  inputHeaderText: {
+    flex: 1,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  inputSubLabel: {
+    fontSize: 14,
+    fontWeight: '400',
+    marginTop: 2,
   },
   titleInput: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    borderBottomWidth: 1,
-    marginBottom: 12,
-    paddingVertical: 8,
+    padding: 12,
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 24,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
   },
   contentInput: {
-    flex: 1,
+    padding: 12,
     fontSize: 16,
+    lineHeight: 22,
+    minHeight: 200,
     textAlignVertical: 'top',
-    paddingBottom: 80, // Extra padding to prevent content from being hidden behind tab bar
-  },
-  previewTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
   },
   message: {
     textAlign: 'center',
     marginTop: 50,
     fontSize: 16,
   },
-});
-
-const getMarkdownStyles = (isDark: boolean) => ({
-  body: {
-    color: isDark ? '#ccc' : '#333',
-    fontSize: 16,
-    lineHeight: 24,
-    paddingBottom: 40,
-  },
-  heading1: { color: '#64ffda' },
 });

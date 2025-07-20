@@ -2,8 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -14,14 +12,13 @@ import {
 } from 'react-native';
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernButton } from '../../components/ui/ModernButton';
-import { ModernCard } from '../../components/ui/ModernCard';
 import { ModernDialog } from '../../components/ui/ModernDialog';
 import { useTasks } from '../../context/TasksContext';
 import { useTheme } from '../../context/ThemeContext';
-import { BorderRadius, Shadows, Spacing, Typography } from '../../styles/tokens';
 
 const AddTaskScreen = () => {
-  const { colors } = useTheme();
+  const { theme, colors } = useTheme();
+  const isDark = theme === 'dark';
   const { editTaskId, editTaskText } = useLocalSearchParams<{
     editTaskId?: string;
     editTaskText?: string;
@@ -127,145 +124,116 @@ const AddTaskScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Modern Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity 
-            style={[styles.headerButton, { backgroundColor: colors.surface }]} 
-            onPress={handleCancel}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
+        {/* Header with Back Button */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={handleCancel}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+              Back
+            </Text>
           </TouchableOpacity>
-          
-          <View style={styles.headerContent}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              {isEditing ? 'Edit Task' : 'New Task'}
-            </Text>
-            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-              {isEditing ? 'Update your daily task' : 'Create a new daily task'}
-            </Text>
+          <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>
+            {isEditing ? 'Edit Task' : 'New Task'}
+          </Text>
+        </View>
+        {/* Message Box */}
+        {message ? (
+          <MessageBox
+            message={message}
+            type={messageType}
+            style={styles.messageBox}
+            duration={messageType === 'success' ? 2000 : 4000}
+          />
+        ) : null}
+
+        {/* Task Input */}
+        <View style={[styles.inputContainer, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <View style={styles.inputHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="create-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.inputHeaderText}>
+              <Text style={[styles.inputLabel, { color: isDark ? '#fff' : '#000' }]}>
+                Task Description
+              </Text>
+              <Text style={[styles.inputSubLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                What do you need to accomplish today?
+              </Text>
+            </View>
           </View>
           
-          <View style={styles.headerSpacer} />
+          <TextInput
+            style={[styles.textInput, { 
+              backgroundColor: isDark ? '#0d0d0d' : '#fff',
+              borderColor: isDark ? '#333' : '#ddd',
+              color: isDark ? '#fff' : '#000'
+            }]}
+            value={taskText}
+            onChangeText={setTaskText}
+            placeholder="Enter your task description..."
+            placeholderTextColor={isDark ? '#666' : '#999'}
+            multiline
+            numberOfLines={6}
+            textAlignVertical="top"
+            autoFocus
+          />
+          
+          <View style={styles.inputFooter}>
+            <Text style={[styles.characterCountText, { color: isDark ? '#666' : '#999' }]}>
+              {taskText.length} characters
+            </Text>
+          </View>
         </View>
 
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Message Box */}
-          {message ? (
-            <MessageBox
-              message={message}
-              type={messageType}
-              style={styles.messageBox}
-              duration={messageType === 'success' ? 2000 : 4000}
-            />
-          ) : null}
-
-          {/* Task Input Card */}
-          <ModernCard style={styles.inputCard} variant="elevated" padding="lg">
-            <View style={styles.inputHeader}>
-              <Ionicons name="create-outline" size={24} color={colors.primary} />
-              <View style={styles.inputHeaderText}>
-                <Text style={[styles.inputLabel, { color: colors.text }]}>
-                  Task Description
-                </Text>
-                <Text style={[styles.inputSubLabel, { color: colors.textSecondary }]}>
-                  What do you need to accomplish today?
-                </Text>
-              </View>
+        {/* Tips Section */}
+        <View style={styles.section}>
+          <View style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="bulb-outline" size={20} color={colors.primary} />
             </View>
-            
-            <TextInput
-              style={[styles.textInput, { 
-                backgroundColor: colors.surface, 
-                borderColor: colors.border, 
-                color: colors.text 
-              }]}
-              value={taskText}
-              onChangeText={setTaskText}
-              placeholder="Enter your task description..."
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-              autoFocus
-            />
-            
-            <View style={styles.inputFooter}>
-              <View style={styles.characterCount}>
-                <Text style={[styles.characterCountText, { color: colors.textMuted }]}>
-                  {taskText.length} characters
-                </Text>
-              </View>
-            </View>
-          </ModernCard>
-
-          {/* Tips Card */}
-          <ModernCard style={styles.tipsCard} variant="outlined" padding="md">
-            <View style={styles.tipsHeader}>
-              <Ionicons name="bulb-outline" size={20} color={colors.accent} />
-              <Text style={[styles.tipsTitle, { color: colors.text }]}>
+            <View style={styles.tipsContent}>
+              <Text style={[styles.tipsTitle, { color: isDark ? '#fff' : '#000' }]}>
                 Tips for better tasks
               </Text>
+              <View style={styles.tipsList}>
+                <Text style={[styles.tipItem, { color: isDark ? '#ccc' : '#666' }]}>
+                  • Be specific and actionable
+                </Text>
+                <Text style={[styles.tipItem, { color: isDark ? '#ccc' : '#666' }]}>
+                  • Include time estimates if helpful
+                </Text>
+                <Text style={[styles.tipItem, { color: isDark ? '#ccc' : '#666' }]}>
+                  • Break large tasks into smaller ones
+                </Text>
+              </View>
             </View>
-            <View style={styles.tipsList}>
-              <Text style={[styles.tipItem, { color: colors.textSecondary }]}>
-                • Be specific and actionable
-              </Text>
-              <Text style={[styles.tipItem, { color: colors.textSecondary }]}>
-                • Include time estimates if helpful
-              </Text>
-              <Text style={[styles.tipItem, { color: colors.textSecondary }]}>
-                • Break large tasks into smaller ones
-              </Text>
-            </View>
-          </ModernCard>
-        </ScrollView>
+          </View>
+        </View>
 
-        {/* Modern Footer */}
-        <View style={[styles.footer, { 
-          borderTopColor: colors.border, 
-          backgroundColor: colors.background 
-        }]}>
+        {/* Bottom Buttons */}
+        <View style={styles.bottomContainer}>
           <ModernButton
             title="Cancel"
             onPress={handleCancel}
-            variant="outline"
-            size="md"
+            style={styles.cancelButton}
             disabled={loading}
-            style={styles.footerButton}
-            enableHaptics={true}
           />
           <ModernButton
             title={isEditing ? 'Update Task' : 'Create Task'}
             onPress={handleSave}
-            variant="primary"
-            size="md"
             loading={loading}
             disabled={loading || !taskText.trim()}
-            style={styles.footerButton}
-            enableHaptics={true}
-            leftIcon={
-              !loading ? (
-                <Ionicons 
-                  name={isEditing ? "checkmark" : "add"} 
-                  size={18} 
-                  color="#ffffff" 
-                />
-              ) : undefined
-            }
+            style={styles.saveButton}
           />
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
 
       <ModernDialog
         visible={dialog.visible}
@@ -281,127 +249,149 @@ const AddTaskScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 20,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.base,
-    borderBottomWidth: 1,
-    minHeight: 70,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.full,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Shadows.sm,
-  },
-  headerContent: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: '700',
-    lineHeight: Typography.lineHeight.lg,
-  },
-  headerSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: '400',
-    marginTop: 2,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  content: {
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
-    gap: Spacing.lg,
+    paddingBottom: 100,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 25,
+    marginBottom: 10,
+  },
+  header: {
+    fontSize: 26,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'right',
+    lineHeight: 30,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  backText: {
+    fontSize: 16,
+    marginLeft: 6,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   messageBox: {
-    marginBottom: Spacing.base,
+    marginBottom: 15,
   },
-  inputCard: {
-    marginBottom: Spacing.base,
+  section: {
+    marginBottom: 15,
+  },
+  inputContainer: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   inputHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: Spacing.base,
+    marginBottom: 12,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   inputHeaderText: {
     flex: 1,
-    marginLeft: Spacing.sm,
   },
   inputLabel: {
-    fontSize: Typography.fontSize.lg,
+    fontSize: 16,
     fontWeight: '600',
-    lineHeight: Typography.lineHeight.lg,
+    lineHeight: 20,
   },
   inputSubLabel: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: 14,
     fontWeight: '400',
     marginTop: 2,
   },
   textInput: {
-    borderRadius: BorderRadius.md,
+    borderRadius: 8,
     borderWidth: 1,
-    padding: Spacing.base,
-    fontSize: Typography.fontSize.base,
-    lineHeight: Typography.lineHeight.base,
-    minHeight: 140,
+    padding: 12,
+    fontSize: 16,
+    lineHeight: 22,
+    minHeight: 120,
     textAlignVertical: 'top',
-    marginBottom: Spacing.sm,
+    marginBottom: 8,
   },
   inputFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  characterCount: {
-    marginLeft: 'auto',
+    alignItems: 'flex-end',
   },
   characterCountText: {
-    fontSize: Typography.fontSize.xs,
+    fontSize: 12,
     fontWeight: '400',
   },
-  tipsCard: {
-    marginBottom: Spacing.base,
-  },
-  tipsHeader: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
+    alignItems: 'flex-start',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tipsContent: {
+    flex: 1,
   },
   tipsTitle: {
-    fontSize: Typography.fontSize.base,
+    fontSize: 16,
     fontWeight: '600',
-    marginLeft: Spacing.xs,
+    marginBottom: 8,
   },
   tipsList: {
-    gap: Spacing.xs,
+    gap: 4,
   },
   tipItem: {
-    fontSize: Typography.fontSize.sm,
-    lineHeight: Typography.lineHeight.sm,
+    fontSize: 14,
+    lineHeight: 20,
   },
-  footer: {
+  bottomContainer: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing['2xl'], // Extra space for tab bar
-    gap: Spacing.sm,
-    borderTopWidth: 1,
-    ...Shadows.lg,
+    gap: 15,
+    marginTop: 30,
+    marginBottom: 20,
   },
-  footerButton: {
+  cancelButton: {
     flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#007bff',
   },
 });
 
