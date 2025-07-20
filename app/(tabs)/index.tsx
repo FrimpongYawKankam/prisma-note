@@ -189,11 +189,8 @@ export default function HomeScreen() {
           {/* Header Section */}
           <View style={styles.headerRow}>
             <View>
-              <Text style={[styles.headerText, { color: colors.text }]}>
-                📝 <Text style={{ color: colors.primary }}>PrismaNote</Text>
-              </Text>
-              <Text style={[styles.subText, { color: colors.textSecondary }]}>
-                Welcome back, {user?.fullName || 'User'}!
+              <Text style={[styles.headerText, { color: colors.primary }]}>
+                Welcome back, {user?.fullName?.split(' ')[0] || 'User'}!
               </Text>
             </View>
             <Menu
@@ -444,9 +441,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   headerText: { 
-    fontSize: Typography.fontSize['3xl'],
+    fontSize: Typography.fontSize['2xl'],
     fontWeight: '700' as const,
-    lineHeight: Typography.lineHeight['3xl'],
+    lineHeight: Typography.lineHeight['2xl'],
   },
   subText: { 
     fontSize: Typography.fontSize.base,
