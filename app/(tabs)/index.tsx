@@ -177,17 +177,9 @@ export default function HomeScreen() {
       return;
     }
 
-    try {
-      const note = await createNote({
-        title: 'New Note',
-        content: '# New Note\nStart writing...'
-      });
-      router.push({ pathname: '/note-detail', params: { id: note.id } });
-    } catch (error: any) {
-      showDialog('Error', error.message || 'Failed to create note', [
-        { text: 'OK', onPress: hideDialog }
-      ]);
-    }
+    // Navigate directly to note detail screen without creating a note
+    // This will show the clean placeholder interface for new notes
+    router.push('/note-detail');
   };
 
   return (

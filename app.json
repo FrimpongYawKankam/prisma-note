@@ -49,7 +49,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/finallogo.png",
+          "color": "#64ffda",
+          "defaultChannel": "event-reminders"
+        }
+      ]
     ]
   }
 }

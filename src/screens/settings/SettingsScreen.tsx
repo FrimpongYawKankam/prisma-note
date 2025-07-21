@@ -1,21 +1,46 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { getNotificationPreferences, toggleEventNotifications } from '../../services/notificationPreferences';
 import { safeNavigateBack } from '../../utils/navigation';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { theme, colors, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  // Load notification preferences on component mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const preferences = await getNotificationPreferences();
+        setNotificationsEnabled(preferences.eventsEnabled);
+      } catch (error) {
+        console.error('Error loading notification preferences:', error);
+      }
+    };
+    loadPreferences();
+  }, []);
+
+  const handleNotificationToggle = async () => {
+    try {
+      const newState = await toggleEventNotifications();
+      setNotificationsEnabled(newState);
+    } catch (error) {
+      console.error('Error toggling notifications:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
@@ -82,6 +107,31 @@ export default function SettingsScreen() {
             </Text>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
           </TouchableOpacity>
+        </View>
+
+        {/* Notifications Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+            Notifications
+          </Text>
+          <View style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+            </View>
+            <Text style={[styles.rowText, { color: isDark ? '#fff' : '#000' }]}>
+              Event Reminders
+            </Text>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={handleNotificationToggle}
+              trackColor={{ false: isDark ? '#333' : '#ddd', true: colors.primary + '40' }}
+              thumbColor={notificationsEnabled ? colors.primary : (isDark ? '#666' : '#fff')}
+              ios_backgroundColor={isDark ? '#333' : '#ddd'}
+            />
+          </View>
+          <Text style={[styles.sectionDescription, { color: isDark ? '#888' : '#666' }]}>
+            Get notified 24h, 12h, and 6h before your events
+          </Text>
         </View>
 
         {/* Account Section */}
@@ -167,6 +217,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  sectionDescription: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 16,
+    fontStyle: 'italic',
   },
   row: {
     flexDirection: 'row',

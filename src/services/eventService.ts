@@ -1,13 +1,13 @@
-import axiosInstance from '../utils/axiosInstance';
 import {
   CreateEventRequest,
-  UpdateEventRequest,
-  EventResponse,
   Event,
-  EventTag,
+  EventResponse,
   EventSearchParams,
-  ApiError
+  EventTag,
+  UpdateEventRequest
 } from '../types/api';
+import axiosInstance from '../utils/axiosInstance';
+import { cancelEventNotifications, scheduleEventNotifications } from './notificationService';
 
 // Utility function to convert backend date strings to Date objects
 const convertEventResponse = (eventResponse: EventResponse): Event => ({
@@ -29,7 +29,22 @@ export const createEvent = async (eventData: CreateEventRequest): Promise<Event>
   try {
     const response = await axiosInstance.post<EventResponse>('/api/events', eventData);
     console.log('Create event response:', response.data);
-    return convertEventResponse(response.data);
+    const event = convertEventResponse(response.data);
+    
+    // Schedule notifications for the new event
+    try {
+      await scheduleEventNotifications(
+        event.startDateTime,
+        event.title,
+        event.description
+      );
+      console.log('✅ Notifications scheduled for event:', event.title);
+    } catch (notificationError) {
+      console.error('⚠️ Failed to schedule notifications:', notificationError);
+      // Don't throw here - event creation should succeed even if notifications fail
+    }
+    
+    return event;
   } catch (error: any) {
     console.error('Create event error:', error);
     
@@ -100,7 +115,26 @@ export const updateEvent = async (eventId: number, eventData: UpdateEventRequest
   try {
     const response = await axiosInstance.put<EventResponse>(`/api/events/${eventId}`, eventData);
     console.log('Update event response:', response.data);
-    return convertEventResponse(response.data);
+    const event = convertEventResponse(response.data);
+    
+    // Cancel old notifications and schedule new ones if event time changed
+    try {
+      // Cancel existing notifications for this event
+      await cancelEventNotifications(event.startDateTime);
+      
+      // Schedule new notifications
+      await scheduleEventNotifications(
+        event.startDateTime,
+        event.title,
+        event.description
+      );
+      console.log('✅ Notifications rescheduled for updated event:', event.title);
+    } catch (notificationError) {
+      console.error('⚠️ Failed to reschedule notifications:', notificationError);
+      // Don't throw here - event update should succeed even if notifications fail
+    }
+    
+    return event;
   } catch (error: any) {
     console.error('Update event error:', error);
     
@@ -125,8 +159,29 @@ export const updateEvent = async (eventId: number, eventData: UpdateEventRequest
  */
 export const deleteEvent = async (eventId: number): Promise<void> => {
   try {
+    // Get event details first to cancel notifications
+    let eventDate: Date | null = null;
+    try {
+      const event = await getEventById(eventId);
+      eventDate = event.startDateTime;
+    } catch (getError) {
+      console.warn('Could not get event details for notification cancellation:', getError);
+    }
+    
+    // Delete the event
     await axiosInstance.delete(`/api/events/${eventId}`);
     console.log('Event deleted successfully:', eventId);
+    
+    // Cancel notifications if we got the event date
+    if (eventDate) {
+      try {
+        await cancelEventNotifications(eventDate);
+        console.log('✅ Notifications cancelled for deleted event');
+      } catch (notificationError) {
+        console.error('⚠️ Failed to cancel notifications:', notificationError);
+        // Don't throw here - event deletion should succeed even if notification cancellation fails
+      }
+    }
   } catch (error: any) {
     console.error('Delete event error:', error);
     

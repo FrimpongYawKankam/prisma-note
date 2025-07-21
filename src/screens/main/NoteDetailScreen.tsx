@@ -64,7 +64,7 @@ export default function NoteDetailScreen() {
       }
 
       if (!id) {
-        // New note
+        // New note - start with empty fields
         setNote(null);
         setTitle('');
         setContent('');
@@ -210,9 +210,6 @@ export default function NoteDetailScreen() {
               Back
             </Text>
           </TouchableOpacity>
-          <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>
-            {note ? 'Edit Note' : 'New Note'}
-          </Text>
         </View>
 
         {/* Status and Actions */}
@@ -373,7 +370,7 @@ export default function NoteDetailScreen() {
                 color: isDark ? '#fff' : '#000',
                 backgroundColor: isDark ? '#0d0d0d' : '#fff',
               }]}
-              placeholder="Write your note content here..."
+              placeholder="Start writing your note here.."
               placeholderTextColor={isDark ? '#666' : '#999'}
               value={content}
               onChangeText={handleContentChange}
