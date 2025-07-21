@@ -296,22 +296,22 @@ export default function HomeScreen() {
             {/* Daily Tasks Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
                   Daily Tasks
                 </Text>
                 <View style={styles.taskButtons}>
                   <TouchableOpacity
-                    style={[styles.taskButton, { backgroundColor: colors.primary }]}
+                    style={[styles.addTaskBtn, { backgroundColor: '#025e94ff' }]}
                     onPress={() => router.push('/add-task')}
                   >
-                    <Ionicons name="add" size={16} color="#ffffff" />
+                    <Text style={styles.addTaskBtnText}>Add Task</Text>
                   </TouchableOpacity>
                   {todayTasks.length > 0 && (
                     <TouchableOpacity
-                      style={[styles.taskButton, { backgroundColor: colors.error }]}
+                      style={[styles.clearTasksBtn, { backgroundColor: colors.error }]}
                       onPress={handleClearAllTasks}
                     >
-                      <Ionicons name="trash" size={16} color="#ffffff" />
+                      <Text style={styles.clearTasksBtnText}>Clear All</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -352,29 +352,23 @@ export default function HomeScreen() {
                             color={task.isCompleted ? colors.success : colors.error}
                           />
                         </TouchableOpacity>
-                        <Text 
-                          style={[
-                            styles.taskText, 
-                            { color: task.isCompleted ? colors.textMuted : colors.text },
-                            task.isCompleted && styles.taskTextCompleted
-                          ]}
+                        <TouchableOpacity 
+                          style={styles.taskTextContainer}
+                          onPress={() => handleTaskToggle(task)}
                         >
-                          {task.text}
-                        </Text>
+                          <Text 
+                            style={[
+                              styles.taskText, 
+                              { color: task.isCompleted ? colors.textMuted : colors.text },
+                              task.isCompleted && styles.taskTextCompleted
+                            ]}
+                          >
+                            {task.text}
+                          </Text>
+                        </TouchableOpacity>
                         <View style={styles.taskActions}>
                           <TouchableOpacity
-                            style={[styles.taskActionButton, { backgroundColor: task.isCompleted ? colors.success : colors.warning }]}
-                            onPress={() => handleTaskToggle(task)}
-                            accessibilityLabel={task.isCompleted ? "Mark as incomplete" : "Mark as complete"}
-                          >
-                            <Ionicons 
-                              name={task.isCompleted ? "checkmark" : "ellipse-outline"} 
-                              size={14} 
-                              color="#ffffff" 
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.taskActionButton, { backgroundColor: colors.primary }]}
+                            style={[styles.taskActionButton, { backgroundColor: '#025e94ff' }]}
                             onPress={() => handleTaskEdit(task)}
                             accessibilityLabel="Edit task"
                           >
@@ -482,12 +476,40 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginBottom: Spacing.base,
   },
   taskButtons: {
     flexDirection: 'row',
     gap: Spacing.sm,
+  },
+  addTaskBtn: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 32,
+  },
+  addTaskBtnText: {
+    color: '#ffffff',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: '600' as const,
+    lineHeight: Typography.fontSize.sm,
+  },
+  clearTasksBtn: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 32,
+  },
+  clearTasksBtnText: {
+    color: '#ffffff',
+    fontSize: Typography.fontSize.sm,
+    fontWeight: '600' as const,
+    lineHeight: Typography.fontSize.sm,
   },
   taskButton: {
     width: 32,
@@ -543,6 +565,10 @@ const styles = StyleSheet.create({
   },
   taskCheckbox: {
     padding: Spacing.xs,
+  },
+  taskTextContainer: {
+    flex: 1,
+    paddingVertical: Spacing.xs,
   },
   taskText: {
     flex: 1,
