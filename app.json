@@ -8,7 +8,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/FinalLogo.PNG",
+      "image": "./assets/images/finallogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -19,10 +19,10 @@
       "bundleIdentifier": "com.frimpongyawkankam03.prisma-note",
       "usesAppleSignIn": true,
       "splash": {
-        "image": "./assets/images/FinalLogo.PNG",
+        "image": "./assets/images/finallogo.png",
         "resizeMode": "contain",
         "backgroundColor": "#000000",
-        "tabletImage": "./assets/images/FinalLogo.PNG"
+        "tabletImage": "./assets/images/finallogo.png"
       }
     },
     "android": {
@@ -31,20 +31,20 @@
       "networkSecurityConfig": {
         "domain-config": [
           {
-            "domain": "10.40.32.231",
+            "domain": "192.168.39.163",
             "cleartextTrafficPermitted": true
           }
         ]
       },
       "splash": {
-        "image": "./assets/images/FinalLogo.PNG",
+        "image": "./assets/images/finallogo.png",
         "resizeMode": "contain",
         "backgroundColor": "#000000",
-        "mdpi": "./assets/images/FinalLogo.PNG",
-        "hdpi": "./assets/images/FinalLogo.PNG",
-        "xhdpi": "./assets/images/FinalLogo.PNG",
-        "xxhdpi": "./assets/images/FinalLogo.PNG",
-        "xxxhdpi": "./assets/images/FinalLogo.PNG"
+        "mdpi": "./assets/images/finallogo.png",
+        "hdpi": "./assets/images/finallogo.png",
+        "xhdpi": "./assets/images/finallogo.png",
+        "xxhdpi": "./assets/images/finallogo.png",
+        "xxxhdpi": "./assets/images/finallogo.png"
       }
     },
     "plugins": [
