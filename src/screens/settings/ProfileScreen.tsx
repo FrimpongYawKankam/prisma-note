@@ -14,6 +14,7 @@ import { ModernDialog } from '../../components/ui/ModernDialog';
 import { useAuth } from '../../context/AuthContext';
 import { useNotes } from '../../context/NotesContext';
 import { useTasks } from '../../context/TasksContext';
+import { useTaskStats } from '../../context/TaskStatsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { safeNavigateBack } from '../../utils/navigation';
 
@@ -25,16 +26,15 @@ export default function ProfileScreen() {
   const { logout, user } = useAuth();
   const { notes } = useNotes();
   const { todayTasks } = useTasks();
+  const { stats: taskStats } = useTaskStats();
   const isDark = theme === 'dark';
 
   // Calculate user stats
   const userStats = {
-    totalTasks: todayTasks.length,
-    completedTasks: todayTasks.filter(task => task.isCompleted).length,
+    totalTasks: taskStats.totalTasksEverCreated,
+    completedTasks: taskStats.totalTasksEverCompleted,
     totalNotes: notes.length,
-    completionRate: todayTasks.length > 0 
-      ? Math.round((todayTasks.filter(task => task.isCompleted).length / todayTasks.length) * 100)
-      : 0,
+    completionRate: taskStats.completionRate,
   };
 
   useEffect(() => {

@@ -13,8 +13,8 @@ import {
 import { MessageBox } from '../../components/ui/MessageBox';
 import { ModernButton } from '../../components/ui/ModernButton';
 import { ModernDialog } from '../../components/ui/ModernDialog';
-import { useTasks } from '../../context/TasksContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useTaskManagement } from '../../context/useTaskManagement';
 
 const AddTaskScreen = () => {
   const { theme, colors } = useTheme();
@@ -39,7 +39,7 @@ const AddTaskScreen = () => {
     message: '',
     buttons: []
   });
-  const { createTask, updateTask } = useTasks();
+  const { createTask, updateTask } = useTaskManagement();
   
   const isEditing = !!editTaskId;
 

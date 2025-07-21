@@ -20,8 +20,8 @@ import { ModernDialog } from '../../src/components/ui/ModernDialog';
 import { useAuth } from '../../src/context/AuthContext';
 import { useEvents } from '../../src/context/EventsContext';
 import { useNotes } from '../../src/context/NotesContext';
-import { useTasks } from '../../src/context/TasksContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useTaskManagement } from '../../src/context/useTaskManagement';
 import productivityQuotes from '../../src/screens/others/productivityQuotes.json';
 import { BorderRadius, Spacing, Typography } from '../../src/styles/tokens';
 import { DailyTask } from '../../src/types/task';
@@ -32,7 +32,7 @@ export default function HomeScreen() {
   const { isAuthenticated, user } = useAuth();
   const { events, eventsLoading, refreshEvents } = useEvents();
   const { createNote } = useNotes();
-  const { todayTasks, tasksLoading, updateTask, toggleTaskCompletion, deleteTask, clearAllTasks, refreshTasks } = useTasks();
+  const { todayTasks, tasksLoading, updateTask, toggleTaskCompletion, deleteTask, clearAllTasks, refreshTasks } = useTaskManagement();
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

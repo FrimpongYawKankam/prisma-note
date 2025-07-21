@@ -7,6 +7,7 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { EventsProvider } from '../src/context/EventsContext';
 import { NotesProvider } from '../src/context/NotesContext';
 import { TasksProvider } from '../src/context/TasksContext';
+import { TaskStatsProvider } from '../src/context/TaskStatsContext';
 import { ThemeProvider, useTheme } from '../src/context/ThemeContext';
 import { removeNotificationListeners, requestNotificationPermissions, setupNotificationListeners } from '../src/services/notificationService';
 
@@ -47,16 +48,18 @@ function AppContent() {
     <>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <AuthProvider>
-        <SafeAreaProvider>
-          <NotesProvider>
-            <EventsProvider>
-              <TasksProvider>
-                {/* This is where the app's main content will be rendered */}
-                <Slot />
-              </TasksProvider>
-            </EventsProvider>
-          </NotesProvider>
-        </SafeAreaProvider>
+        <TaskStatsProvider>
+          <SafeAreaProvider>
+            <NotesProvider>
+              <EventsProvider>
+                <TasksProvider>
+                  {/* This is where the app's main content will be rendered */}
+                  <Slot />
+                </TasksProvider>
+              </EventsProvider>
+            </NotesProvider>
+          </SafeAreaProvider>
+        </TaskStatsProvider>
       </AuthProvider>
     </>
   );
