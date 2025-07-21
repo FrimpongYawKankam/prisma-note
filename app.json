@@ -23,6 +23,9 @@
         "resizeMode": "contain",
         "backgroundColor": "#000000",
         "tabletImage": "./assets/images/finallogo.png"
+      },
+      "notification": {
+        "icon": "./assets/images/logo.png"
       }
     },
     "android": {
@@ -45,6 +48,10 @@
         "xhdpi": "./assets/images/finallogo.png",
         "xxhdpi": "./assets/images/finallogo.png",
         "xxxhdpi": "./assets/images/finallogo.png"
+      },
+      "notification": {
+        "icon": "./assets/images/logo.png",
+        "color": "#0ea5e9"
       }
     },
     "plugins": [
@@ -53,8 +60,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/finallogo.png",
-          "color": "#64ffda",
+          "icon": "./assets/images/logo.png",
+          "color": "#0ea5e9",
           "defaultChannel": "event-reminders"
         }
       ]
