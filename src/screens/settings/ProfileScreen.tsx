@@ -12,23 +12,46 @@ import {
 } from 'react-native';
 import { ModernDialog } from '../../components/ui/ModernDialog';
 import { useAuth } from '../../context/AuthContext';
+import { useNotes } from '../../context/NotesContext';
+import { useTasks } from '../../context/TasksContext';
 import { useTheme } from '../../context/ThemeContext';
 import { safeNavigateBack } from '../../utils/navigation';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [userData, setUserData] = useState({ fullName: '', email: '' });
+  const [userData, setUserData] = useState({ fullName: '', email: '', createdAt: '' });
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { theme, colors } = useTheme();
   const { logout, user } = useAuth();
+  const { notes } = useNotes();
+  const { todayTasks } = useTasks();
   const isDark = theme === 'dark';
+
+  // Calculate user stats
+  const userStats = {
+    totalTasks: todayTasks.length,
+    completedTasks: todayTasks.filter(task => task.isCompleted).length,
+    totalNotes: notes.length,
+    completionRate: todayTasks.length > 0 
+      ? Math.round((todayTasks.filter(task => task.isCompleted).length / todayTasks.length) * 100)
+      : 0,
+  };
 
   useEffect(() => {
     const fetchUser = async () => {
+      // Find the earliest note date as fallback join date
+      const earliestNoteDate = notes.length > 0 
+        ? notes.reduce((earliest, note) => {
+            const noteDate = new Date(note.timeCreated);
+            return noteDate < earliest ? noteDate : earliest;
+          }, new Date(notes[0].timeCreated))
+        : new Date('2024-01-01');
+
       if (user) {
         setUserData({
           fullName: user.fullName || '',
           email: user.email,
+          createdAt: earliestNoteDate.toISOString(),
         });
       } else {
         try {
@@ -38,6 +61,7 @@ export default function ProfileScreen() {
             setUserData({
               fullName: parsedUser.fullName || '',
               email: parsedUser.email,
+              createdAt: earliestNoteDate.toISOString(),
             });
           }
         } catch (error) {
@@ -46,7 +70,7 @@ export default function ProfileScreen() {
       }
     };
     fetchUser();
-  }, [user]);
+  }, [user, notes]);
 
   const handleLogout = () => {
     setShowLogoutDialog(true);
@@ -111,15 +135,82 @@ export default function ProfileScreen() {
 
           <View style={[styles.infoCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
             <View style={[styles.infoIconContainer, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="checkmark-circle-outline" size={20} color={colors.primary} />
+              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.infoContent}>
               <Text style={[styles.infoTitle, { color: isDark ? '#fff' : '#000' }]}>
-                Account Status
+                Joined PrismaNote on
               </Text>
               <Text style={[styles.infoText, { color: isDark ? '#aaa' : '#666' }]}>
-                Active
+                {new Date(userData.createdAt).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
               </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* User Stats Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+            Your PrismaNote Stats
+          </Text>
+          
+          <View style={[styles.statsContainer, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            {/* First Row */}
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="list-outline" size={24} color={colors.primary} />
+                </View>
+                <Text style={[styles.statNumber, { color: isDark ? '#fff' : '#000' }]}>
+                  {userStats.totalTasks}
+                </Text>
+                <Text style={[styles.statLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  Total Tasks
+                </Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: colors.success + '20' }]}>
+                  <Ionicons name="checkmark-circle-outline" size={24} color={colors.success} />
+                </View>
+                <Text style={[styles.statNumber, { color: isDark ? '#fff' : '#000' }]}>
+                  {userStats.completedTasks}
+                </Text>
+                <Text style={[styles.statLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  Completed
+                </Text>
+              </View>
+            </View>
+
+            {/* Second Row */}
+            <View style={styles.statsRow}>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: colors.warning + '20' }]}>
+                  <Ionicons name="document-text-outline" size={24} color={colors.warning} />
+                </View>
+                <Text style={[styles.statNumber, { color: isDark ? '#fff' : '#000' }]}>
+                  {userStats.totalNotes}
+                </Text>
+                <Text style={[styles.statLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  Notes Created
+                </Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <View style={[styles.statIconContainer, { backgroundColor: colors.accent + '20' }]}>
+                  <Ionicons name="trophy-outline" size={24} color={colors.accent} />
+                </View>
+                <Text style={[styles.statNumber, { color: isDark ? '#fff' : '#000' }]}>
+                  {userStats.completionRate}%
+                </Text>
+                <Text style={[styles.statLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                  Success Rate
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -308,5 +399,50 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  statsContainer: {
+    backgroundColor: 'transparent',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+    marginBottom: 8,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
+    textAlign: 'center',
+    fontWeight: '500',
+    lineHeight: 14,
   },
 });

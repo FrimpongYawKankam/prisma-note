@@ -6,7 +6,6 @@ import { getNotificationPreferences } from './notificationPreferences';
 // Configure notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
     shouldShowBanner: true,
@@ -175,12 +174,12 @@ export const getScheduledNotifications = async (): Promise<Notifications.Notific
 export const setupNotificationListeners = () => {
   // Listener for notifications received while app is in foreground
   const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
-    console.log('🔔 Notification received in foreground:', notification);
+    console.log('🔔 Notification received:', notification.request.content.title);
   });
 
   // Listener for notification taps (when user taps notification)
   const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-    console.log('👆 Notification tapped:', response);
+    console.log('👆 Notification tapped:', response.notification.request.content.title);
     const eventData = response.notification.request.content.data;
     
     // Handle notification tap - you can navigate to event detail here
