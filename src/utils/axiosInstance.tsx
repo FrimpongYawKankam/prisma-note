@@ -3,8 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://10.40.32.48:8080', // pc ip adress depening on network being used
-  //run ipconfig in terminal to get ip address
+  baseURL: 'https://prismanote-backend.onrender.com', 
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
