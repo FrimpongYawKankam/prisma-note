@@ -227,6 +227,11 @@ export default function HomeScreen() {
                 title="Settings" 
                 titleStyle={{ color: colors.text }}
               />
+              <Menu.Item
+                onPress={() => { setMenuVisible(false); router.push('/calculator'); }} 
+                title="Calculator" 
+                titleStyle={{ color: colors.text }}
+              />
               <Menu.Item 
                 onPress={() => { setMenuVisible(false); router.push('/about'); }} 
                 title="About" 
