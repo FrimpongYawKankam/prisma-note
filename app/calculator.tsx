@@ -1,13 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { ModernDialog } from '../src/components/ui/ModernDialog';
 import { useTheme } from '../src/context/ThemeContext';
@@ -31,6 +33,7 @@ const basicButtons = [
 
 export default function CalculatorScreen() {
   const { theme, colors } = useTheme();
+  const router = useRouter();
   const [expression, setExpression] = useState('');
   const [result, setResult] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -329,6 +332,22 @@ export default function CalculatorScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme === 'dark' ? '#000' : '#fff' }]}>
+      {/* Header with back button */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons 
+            name="arrow-back" 
+            size={24} 
+            color={colors.text} 
+          />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Calculator</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
       <ScrollView 
         style={{ flex: 1 }}
         contentContainerStyle={{ 
@@ -411,6 +430,25 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingBottom: 10,
     justifyContent: 'flex-end',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  headerSpacer: {
+    width: 40, // Same width as back button to center the title
   },
   displayContainer: {
     padding: 20,

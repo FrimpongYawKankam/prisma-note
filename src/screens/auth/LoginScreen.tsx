@@ -20,6 +20,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Spacing, Typography } from '../../styles/tokens';
 import productivityQuotes from '../others/productivityQuotes.json';
+// Add these imports for the modals
+import { NeedHelpModal } from '../../components/modals/NeedHelp';
+import { PrivacyTermsModal } from '../../components/modals/Privacy&Terms';
 
 const { height, width } = Dimensions.get('window');
 
@@ -34,6 +37,11 @@ export default function LoginScreen() {
   const [messageType, setMessageType] = useState<'error' | 'success' | 'info' | 'warning'>('error');
   const [isLoading, setIsLoading] = useState(false);
   const [currentQuote, setCurrentQuote] = useState({ text: '', author: '' });
+  
+  // Add these state variables for the modals
+  const [showPrivacyTermsModal, setShowPrivacyTermsModal] = useState(false);
+  const [showNeedHelpModal, setShowNeedHelpModal] = useState(false);
+  const [initialTab, setInitialTab] = useState<'privacy' | 'terms'>('privacy');
 
   // Password validation individual checks
   const passwordChecks = {
@@ -82,6 +90,7 @@ export default function LoginScreen() {
       </Text>
     </View>
   );
+
   const { login } = useAuth();
   
   const handleLogin = async () => {
@@ -258,17 +267,33 @@ export default function LoginScreen() {
             <Text style={[styles.termsText, { color: colors.textMuted }]}>
               By continuing, you acknowledge that you understand and agree to the Terms & condition and Privacy Policy
             </Text>
+            {/* Updated bottom links with modal functionality */}
             <View style={styles.bottomLinksRow}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                setInitialTab('privacy');
+                setShowPrivacyTermsModal(true);
+              }}>
                 <Text style={[styles.bottomLink, { color: colors.primary }]}>Privacy & terms</Text>
               </TouchableOpacity>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowNeedHelpModal(true)}>
                 <Text style={[styles.bottomLink, { color: colors.primary }]}>Need help?</Text>
               </TouchableOpacity>
             </View>
           </ModernCard>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Add the modals */}
+      <PrivacyTermsModal 
+        visible={showPrivacyTermsModal} 
+        onClose={() => setShowPrivacyTermsModal(false)}
+        initialTab={initialTab}
+      />
+
+      <NeedHelpModal 
+        visible={showNeedHelpModal} 
+        onClose={() => setShowNeedHelpModal(false)} 
+      />
     </SafeAreaView>
   );
 }

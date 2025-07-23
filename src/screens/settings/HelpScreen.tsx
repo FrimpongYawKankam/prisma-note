@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ModernButton } from '../../components/ui/ModernButton';
+import { ModernCard } from '../../components/ui/ModernCard';
 import { useTheme } from '../../context/ThemeContext';
+import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
 import { safeNavigateBack } from '../../utils/navigation';
 
 export default function HelpScreen() {
@@ -10,11 +13,29 @@ export default function HelpScreen() {
   const isDark = theme === 'dark';
   const router = useRouter();
 
+  const handleContactSupport = () => {
+    const email = 'support@prismanote.com';
+    const subject = 'Help Request - Prisma Note';
+    const body = 'Hi,\n\nI need help with Prisma Note:\n\n[Please describe your issue here]\n\nThanks!';
+    
+    Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`)
+      .catch(() => {
+        Alert.alert(
+          'Email Not Available',
+          'Please send your support request to:\nsupport@prismanote.com',
+          [{ text: 'OK' }]
+        );
+      });
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Header with Back Button and Title */}
-        <View style={styles.headerContainer}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView 
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header with Back Button */}
+        <View style={styles.headerRow}>
           <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
             <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
             <Text style={[styles.backText, { color: colors.primary }]}>
@@ -25,122 +46,127 @@ export default function HelpScreen() {
         
         {/* Getting Started Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Getting Started
           </Text>
-          <View style={[styles.helpCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <ModernCard style={styles.helpCard}>
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
               <Ionicons name="bulb-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.helpContent}>
-              <Text style={[styles.helpTitle, { color: isDark ? '#fff' : '#000' }]}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
                 Creating Your First Note
               </Text>
-              <Text style={[styles.helpText, { color: isDark ? '#aaa' : '#666' }]}>
-                Tap the "+" icon to create a new note. Add a title and start writing your content.
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                Tap the New Note button on the home screen to create a new note. Add a title and start writing your content.
               </Text>
             </View>
-          </View>
+          </ModernCard>
           
-          <View style={[styles.helpCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <ModernCard style={styles.helpCard}>
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
               <Ionicons name="create-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.helpContent}>
-              <Text style={[styles.helpTitle, { color: isDark ? '#fff' : '#000' }]}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
                 Editing Notes
               </Text>
-              <Text style={[styles.helpText, { color: isDark ? '#aaa' : '#666' }]}>
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
                 Tap on any note to open and edit it. Your changes are automatically saved.
               </Text>
             </View>
-          </View>
+          </ModernCard>
         </View>
 
         {/* Managing Notes Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Managing Notes
           </Text>
-          <View style={[styles.helpCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <ModernCard style={styles.helpCard}>
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
               <Ionicons name="trash-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.helpContent}>
-              <Text style={[styles.helpTitle, { color: isDark ? '#fff' : '#000' }]}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
                 Deleting Notes
               </Text>
-              <Text style={[styles.helpText, { color: isDark ? '#aaa' : '#666' }]}>
-                Swipe left on a note or use the delete button to move it to trash.
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                Tap on a note to open it, then use the delete button to move it to trash.
               </Text>
             </View>
-          </View>
+          </ModernCard>
           
-          <View style={[styles.helpCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <ModernCard style={styles.helpCard}>
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
               <Ionicons name="search-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.helpContent}>
-              <Text style={[styles.helpTitle, { color: isDark ? '#fff' : '#000' }]}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
                 Finding Notes
               </Text>
-              <Text style={[styles.helpText, { color: isDark ? '#aaa' : '#666' }]}>
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
                 Use the search function to quickly find notes by title or content.
               </Text>
             </View>
-          </View>
+          </ModernCard>
         </View>
 
         {/* App Features Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             App Features
           </Text>
-          <View style={[styles.helpCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <ModernCard style={styles.helpCard}>
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
               <Ionicons name="calendar-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.helpContent}>
-              <Text style={[styles.helpTitle, { color: isDark ? '#fff' : '#000' }]}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
                 Events & Tasks
               </Text>
-              <Text style={[styles.helpText, { color: isDark ? '#aaa' : '#666' }]}>
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
                 Organize your schedule with events and manage daily tasks efficiently.
               </Text>
             </View>
-          </View>
+          </ModernCard>
           
-          <View style={[styles.helpCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+          <ModernCard style={styles.helpCard}>
             <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
               <Ionicons name="calculator-outline" size={20} color={colors.primary} />
             </View>
             <View style={styles.helpContent}>
-              <Text style={[styles.helpTitle, { color: isDark ? '#fff' : '#000' }]}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
                 Built-in Calculator
               </Text>
-              <Text style={[styles.helpText, { color: isDark ? '#aaa' : '#666' }]}>
-                Access the calculator from the tab bar for quick calculations.
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                Access the calculator from the settings option for quick calculations.
               </Text>
             </View>
-          </View>
+          </ModernCard>
         </View>
 
         {/* Support Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Need More Help?
           </Text>
-          <View style={[styles.supportCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa', borderColor: colors.primary + '30' }]}>
+          <ModernCard style={[styles.supportCard, { borderColor: colors.primary + '30' }] as any}>
+            <View style={styles.supportIconContainer}>
+              <Ionicons name="help-circle" size={32} color={colors.primary} />
+            </View>
             <Text style={[styles.supportTitle, { color: colors.primary }]}>
               Contact Support
             </Text>
-            <Text style={[styles.supportText, { color: isDark ? '#aaa' : '#666' }]}>
+            <Text style={[styles.supportText, { color: colors.textSecondary }]}>
               If you need additional assistance, please reach out to our support team. We're here to help!
             </Text>
-            <TouchableOpacity style={[styles.supportButton, { backgroundColor: colors.primary }]}>
-              <Text style={styles.supportButtonText}>Get Support</Text>
-            </TouchableOpacity>
-          </View>
+            <ModernButton
+              title="Get Support"
+              onPress={handleContactSupport}
+              style={styles.supportButton}
+            />
+          </ModernCard>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -150,113 +176,83 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    padding: Spacing.lg,
   },
-  headerContainer: {
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 10,
-  },
-  header: {
-    fontSize: 26,
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'right',
-    lineHeight: 30,
+    marginBottom: Spacing.xl,
+    paddingTop: Spacing.sm,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.xs,
   },
   backText: {
-    fontSize: 16,
-    marginLeft: 6,
+    fontSize: Typography.fontSize.base,
+    marginLeft: Spacing.sm,
     fontWeight: '500',
-    lineHeight: 20,
+    lineHeight: Typography.lineHeight.base,
   },
   section: {
-    marginBottom: 15,
+    marginBottom: Spacing.xl,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: Typography.fontSize.xl,
     fontWeight: '600',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    marginBottom: Spacing.base,
   },
   helpCard: {
     flexDirection: 'row',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    padding: Spacing.base,
+    marginBottom: Spacing.base,
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: BorderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: Spacing.sm,
     flexShrink: 0,
   },
   helpContent: {
     flex: 1,
   },
   helpTitle: {
-    fontSize: 16,
+    fontSize: Typography.fontSize.lg,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
+    lineHeight: Typography.lineHeight.lg,
   },
   helpText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: Typography.fontSize.base,
+    lineHeight: Typography.lineHeight.base,
   },
   supportCard: {
-    padding: 20,
-    borderRadius: 12,
+    padding: Spacing.lg,
+    alignItems: 'center',
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+  },
+  supportIconContainer: {
+    marginBottom: Spacing.base,
   },
   supportTitle: {
-    fontSize: 18,
+    fontSize: Typography.fontSize.xl,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   supportText: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: Typography.fontSize.base,
+    lineHeight: Typography.lineHeight.base,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: Spacing.base,
   },
   supportButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignSelf: 'center',
-  },
-  supportButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
+    marginTop: Spacing.sm,
   },
 });
