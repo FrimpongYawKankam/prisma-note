@@ -182,6 +182,19 @@ export default function HomeScreen() {
     router.push('/note-detail');
   };
 
+  // Get time-based greeting
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning';
+    } else if (hour >= 12 && hour < 17) {
+      return 'Good afternoon';
+    } else {
+      return 'Good evening';
+    }
+  };
+
   return (
     <Provider>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -193,7 +206,7 @@ export default function HomeScreen() {
           <View style={styles.headerRow}>
             <View>
               <Text style={[styles.headerText, { color: colors.primary }]}>
-                Welcome back, {user?.fullName?.split(' ')[0] || 'User'}!
+                {getTimeBasedGreeting()}, {user?.fullName?.split(' ')[0] || 'User'}!
               </Text>
             </View>
             <Menu
