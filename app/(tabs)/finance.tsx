@@ -82,7 +82,7 @@ export default function Finance() {
             {budget && (
               <View style={styles.statsSection}>
                 <View style={styles.statsGrid}>
-                  <ModernCard style={[styles.statCard, { backgroundColor: colors.surface }]}>
+                  <ModernCard style={StyleSheet.flatten([styles.statCard, { backgroundColor: colors.surface }])}>
                     <View style={styles.statContent}>
                       <Ionicons name="trending-up" size={24} color="#4CAF50" />
                       <View style={styles.statText}>
@@ -96,7 +96,7 @@ export default function Finance() {
                     </View>
                   </ModernCard>
 
-                  <ModernCard style={[styles.statCard, { backgroundColor: colors.surface }]}>
+                  <ModernCard style={StyleSheet.flatten([styles.statCard, { backgroundColor: colors.surface }])}>
                     <View style={styles.statContent}>
                       <Ionicons 
                         name="wallet" 
@@ -185,7 +185,7 @@ export default function Finance() {
                 </View>
 
                 {/* Category Performance */}
-                <ModernCard style={[styles.performanceCard, { backgroundColor: colors.surface }]}>
+                <ModernCard style={StyleSheet.flatten([styles.performanceCard, { backgroundColor: colors.surface }])}>
                   <Text style={[styles.cardTitle, { color: colors.text }]}>
                     Category Performance
                   </Text>
@@ -225,7 +225,7 @@ export default function Finance() {
                 </ModernCard>
               </>
             ) : (
-              <ModernCard style={[styles.emptyAnalytics, { backgroundColor: colors.surface }]}>
+              <ModernCard style={{ ...styles.emptyAnalytics, backgroundColor: colors.surface }}>
                 <Ionicons name="analytics-outline" size={48} color={colors.textSecondary} />
                 <Text style={[styles.emptyTitle, { color: colors.text }]}>
                   No Analytics Available
@@ -310,7 +310,7 @@ export default function Finance() {
         showsVerticalScrollIndicator={false}
       >
         {hasError ? (
-          <ModernCard style={[styles.errorCard, { backgroundColor: colors.surface }]}>
+          <ModernCard style={{ ...styles.errorCard, backgroundColor: colors.surface }}>
             <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
             <Text style={[styles.errorTitle, { color: colors.text }]}>
               Something went wrong
