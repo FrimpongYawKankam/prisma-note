@@ -34,6 +34,20 @@ export default function SetEventScreen() {
   const [endDate, setEndDate] = useState(new Date(date as string || new Date()));
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date(Date.now() + 60 * 60 * 1000)); // 1 hour later
+
+  // Handle all-day toggle with automatic end date calculation
+  const handleAllDayToggle = (value: boolean) => {
+    setAllDay(value);
+    
+    // If setting to all day, automatically set end date to next day at midnight
+    if (value) {
+      const nextDay = new Date(startDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      nextDay.setHours(0, 0, 0, 0); // Set to midnight
+      
+      setEndDate(nextDay);
+    }
+  };
   const [tag, setTag] = useState<EventTag>(EventTag.NONE);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -189,11 +203,16 @@ export default function SetEventScreen() {
             <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>All day</Text>
             <Switch
               value={allDay}
-              onValueChange={setAllDay}
+              onValueChange={handleAllDayToggle}
               trackColor={{ false: isDark ? '#666' : '#ccc', true: colors.primary }}
               thumbColor="#fff"
             />
           </View>
+          {allDay && (
+            <Text style={[styles.helperText, { color: isDark ? '#666' : '#999', marginTop: 8, marginLeft: 16 }]}>
+              ℹ️ End date automatically set to next day at 12:00 AM
+            </Text>
+          )}
         </View>
 
         {/* Start Date and Time */}
@@ -215,23 +234,26 @@ export default function SetEventScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.section]}>
-          <TouchableOpacity
-            style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
-            onPress={() => setShowEndDatePicker(true)}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-            </View>
-            <View style={styles.dateTimeContent}>
-              <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>End</Text>
-              <Text style={[styles.dateTimeText, { color: colors.primary }]}>
-                {formatDate(endDate)}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
-          </TouchableOpacity>
-        </View>
+        {/* End Date - Hidden for all-day events */}
+        {!allDay && (
+          <View style={[styles.section]}>
+            <TouchableOpacity
+              style={[styles.row, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}
+              onPress={() => setShowEndDatePicker(true)}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+              </View>
+              <View style={styles.dateTimeContent}>
+                <Text style={[styles.label, { color: isDark ? '#fff' : '#000' }]}>End</Text>
+                <Text style={[styles.dateTimeText, { color: colors.primary }]}>
+                  {formatDate(endDate)}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} style={styles.arrow} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {!allDay && (
           <>
@@ -351,7 +373,17 @@ export default function SetEventScreen() {
           display="default"
           onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
             setShowStartDatePicker(false);
-            if (selectedDate) setStartDate(selectedDate);
+            if (selectedDate) {
+              setStartDate(selectedDate);
+              
+              // If it's an all-day event, automatically update end date to next day at midnight
+              if (allDay) {
+                const nextDay = new Date(selectedDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                nextDay.setHours(0, 0, 0, 0);
+                setEndDate(nextDay);
+              }
+            }
           }}
         />
       )}
@@ -508,6 +540,10 @@ const styles = StyleSheet.create({
   },
   arrow: {
     marginLeft: 'auto',
+  },
+  helperText: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   tagContainer: {
     flexDirection: 'row',

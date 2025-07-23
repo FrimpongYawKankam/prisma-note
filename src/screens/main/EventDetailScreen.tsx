@@ -185,6 +185,21 @@ export default function EventDetailScreen() {
     }
   };
 
+  const handleAllDayToggle = (value: boolean) => {
+    setAllDay(value);
+    
+    // If setting to all day, automatically set end date to next day at midnight
+    if (value) {
+      const startDateObj = new Date(startDate);
+      const nextDay = new Date(startDateObj);
+      nextDay.setDate(nextDay.getDate() + 1);
+      nextDay.setHours(0, 0, 0, 0); // Set to midnight
+      
+      setEndDate(nextDay.toISOString());
+      setEndTime(nextDay.toISOString());
+    }
+  };
+
   const handleCancel = () => {
     if (!event) return;
     
@@ -232,6 +247,15 @@ export default function EventDetailScreen() {
     setShowStartDatePicker(false);
     if (selectedDate) {
       setStartDate(selectedDate.toISOString());
+      
+      // If it's an all-day event, automatically update end date to next day at midnight
+      if (allDay) {
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        nextDay.setHours(0, 0, 0, 0);
+        setEndDate(nextDay.toISOString());
+        setEndTime(nextDay.toISOString());
+      }
     }
   };
 
@@ -429,12 +453,17 @@ export default function EventDetailScreen() {
                   </Text>
                   <Switch
                     value={allDay}
-                    onValueChange={setAllDay}
+                    onValueChange={handleAllDayToggle}
                     disabled={!isEditing}
                     trackColor={{ false: '#767577', true: colors.primary }}
                     thumbColor={allDay ? '#fff' : '#f4f3f4'}
                   />
                 </View>
+                {allDay && (
+                  <Text style={[styles.helperText, { color: isDark ? '#666' : '#999', marginTop: 8 }]}>
+                    ℹ️ End date automatically set to next day at 12:00 AM
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -481,30 +510,30 @@ export default function EventDetailScreen() {
               </View>
             </View>
 
-            {/* End Date Field */}
-            <View style={styles.fieldContainer}>
-              <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-                <Ionicons name="calendar-clear-outline" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.fieldContent}>
-                <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
-                  End {allDay ? 'Date' : 'Date & Time'}
-                </Text>
-                <View style={styles.dateTimeRow}>
-                  <TouchableOpacity
-                    style={[styles.dateTimeInput, { 
-                      backgroundColor: isDark ? '#262626' : '#fff',
-                      borderColor: isDark ? '#333' : '#e0e0e0',
-                      flex: allDay ? 1 : 0.6
-                    }]}
-                    onPress={() => isEditing && setShowEndDatePicker(true)}
-                    disabled={!isEditing}
-                  >
-                    <Text style={[styles.inputText, { color: isDark ? '#fff' : '#000' }]}>
-                      {formatDate(endDate)}
-                    </Text>
-                  </TouchableOpacity>
-                  {!allDay && (
+            {/* End Date Field - Hidden for all-day events */}
+            {!allDay && (
+              <View style={styles.fieldContainer}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+                  <Ionicons name="calendar-clear-outline" size={20} color={colors.primary} />
+                </View>
+                <View style={styles.fieldContent}>
+                  <Text style={[styles.fieldLabel, { color: isDark ? '#aaa' : '#666' }]}>
+                    End Date & Time
+                  </Text>
+                  <View style={styles.dateTimeRow}>
+                    <TouchableOpacity
+                      style={[styles.dateTimeInput, { 
+                        backgroundColor: isDark ? '#262626' : '#fff',
+                        borderColor: isDark ? '#333' : '#e0e0e0',
+                        flex: 0.6
+                      }]}
+                      onPress={() => isEditing && setShowEndDatePicker(true)}
+                      disabled={!isEditing}
+                    >
+                      <Text style={[styles.inputText, { color: isDark ? '#fff' : '#000' }]}>
+                        {formatDate(endDate)}
+                      </Text>
+                    </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.dateTimeInput, { 
                         backgroundColor: isDark ? '#262626' : '#fff',
@@ -519,10 +548,10 @@ export default function EventDetailScreen() {
                         {formatTime(endTime)}
                       </Text>
                     </TouchableOpacity>
-                  )}
+                  </View>
                 </View>
               </View>
-            </View>
+            )}
 
             {/* Tag Field */}
             <View style={styles.fieldContainer}>
@@ -828,6 +857,10 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  helperText: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   inputText: {
     fontSize: 16,
