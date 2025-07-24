@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
+  FlatList,
   RefreshControl,
   SafeAreaView,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -34,12 +34,9 @@ export default function Finance() {
     expensesError,
     totalSpent,
     remainingBudget,
-    spentPercentage,
     addExpense,
-    updateExpense,
     deleteExpense,
     refreshData,
-    getSpendingTrends,
     getCategoryBreakdown,
   } = useFinanceData();
 
@@ -67,88 +64,140 @@ export default function Finance() {
   const isLoading = isLoadingBudget || isLoadingExpenses;
   const hasError = budgetError || expensesError;
 
-  const renderTabContent = () => {
+  // Create sections data for FlatList
+  const getSectionsData = () => {
+    const sections = [];
+    
     switch (activeTab) {
       case 'overview':
+        sections.push({ type: 'budgetOverview' });
+        if (budget) {
+          sections.push({ type: 'stats' });
+        }
+        if (expenses.length > 0) {
+          sections.push({ type: 'recentExpenses' });
+        }
+        break;
+      case 'history':
+        sections.push({ type: 'expenseHistory' });
+        break;
+      case 'analytics':
+        sections.push({ type: 'analytics' });
+        break;
+    }
+    
+    return sections;
+  };
+
+  const renderSection = ({ item }: { item: { type: string } }) => {
+    switch (item.type) {
+      case 'budgetOverview':
         return (
-          <View style={styles.tabContent}>
-            {/* Budget Overview */}
-            <BudgetOverview
-              onSetupBudget={handleSetupBudget}
-              onQuickExpense={handleQuickExpense}
-            />
+          <BudgetOverview
+            onSetupBudget={handleSetupBudget}
+            onQuickExpense={handleQuickExpense}
+          />
+        );
 
-            {/* Quick Stats */}
-            {budget && (
-              <View style={styles.statsSection}>
-                <View style={styles.statsGrid}>
-                  <ModernCard style={StyleSheet.flatten([styles.statCard, { backgroundColor: colors.surface }])}>
-                    <View style={styles.statContent}>
-                      <Ionicons name="trending-up" size={24} color="#4CAF50" />
-                      <View style={styles.statText}>
-                        <Text style={[styles.statValue, { color: colors.text }]}>
-                          {budget.currency.symbol}{totalSpent.toLocaleString()}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                          Total Spent
-                        </Text>
-                      </View>
-                    </View>
-                  </ModernCard>
-
-                  <ModernCard style={StyleSheet.flatten([styles.statCard, { backgroundColor: colors.surface }])}>
-                    <View style={styles.statContent}>
-                      <Ionicons 
-                        name="wallet" 
-                        size={24} 
-                        color={remainingBudget >= 0 ? '#2196F3' : '#F44336'} 
-                      />
-                      <View style={styles.statText}>
-                        <Text style={[
-                          styles.statValue, 
-                          { color: remainingBudget >= 0 ? colors.text : '#F44336' }
-                        ]}>
-                          {budget.currency.symbol}{Math.abs(remainingBudget).toLocaleString()}
-                        </Text>
-                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                          {remainingBudget >= 0 ? 'Remaining' : 'Over Budget'}
-                        </Text>
-                      </View>
-                    </View>
-                  </ModernCard>
-                </View>
-              </View>
-            )}
-
-            {/* Recent Expenses Preview */}
-            {expenses.length > 0 && (
-              <View style={styles.recentSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    Recent Expenses
-                  </Text>
-                  <TouchableOpacity onPress={() => setActiveTab('history')}>
-                    <Text style={[styles.seeAllText, { color: colors.primary }]}>
-                      See All
+      case 'stats':
+        return (
+          <View style={styles.statsSection}>
+            <View style={styles.statsGrid}>
+              <ModernCard style={StyleSheet.flatten([styles.statCard, { backgroundColor: colors.surface }])}>
+                <View style={styles.statContent}>
+                  <Ionicons name="trending-up" size={24} color="#4CAF50" />
+                  <View style={styles.statText}>
+                    <Text style={[styles.statValue, { color: colors.text }]}>
+                      {budget?.currency.symbol}{totalSpent.toLocaleString()}
                     </Text>
-                  </TouchableOpacity>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                      Total Spent
+                    </Text>
+                  </View>
                 </View>
-                
-                <ExpenseHistory
-                  expenses={expenses.slice(0, 3)} // Show only 3 recent
-                  categories={budget?.categories || []}
-                  onEditExpense={(expense) => console.log('Edit expense:', expense)}
-                  onDeleteExpense={deleteExpense}
-                  showFilters={false}
-                />
-              </View>
-            )}
+              </ModernCard>
+
+              <ModernCard style={StyleSheet.flatten([styles.statCard, { backgroundColor: colors.surface }])}>
+                <View style={styles.statContent}>
+                  <Ionicons 
+                    name="wallet" 
+                    size={24} 
+                    color={remainingBudget >= 0 ? '#2196F3' : '#F44336'} 
+                  />
+                  <View style={styles.statText}>
+                    <Text style={[
+                      styles.statValue, 
+                      { color: remainingBudget >= 0 ? colors.text : '#F44336' }
+                    ]}>
+                      {budget?.currency.symbol}{Math.abs(remainingBudget).toLocaleString()}
+                    </Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                      {remainingBudget >= 0 ? 'Remaining' : 'Over Budget'}
+                    </Text>
+                  </View>
+                </View>
+              </ModernCard>
+            </View>
           </View>
         );
 
-      case 'history':
+      case 'recentExpenses':
         return (
-          <View style={styles.tabContent}>
+          <View style={styles.recentSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Recent Expenses
+              </Text>
+              <TouchableOpacity onPress={() => setActiveTab('history')}>
+                <Text style={[styles.seeAllText, { color: colors.primary }]}>
+                  See All
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Render recent expenses directly without FlatList */}
+            <View style={styles.recentExpensesList}>
+              {expenses.slice(0, 3).map((expense, index) => {
+                const categoryInfo = budget?.categories.find(cat => cat.id === expense.category);
+                return (
+                  <View key={`${expense.id}-${index}`} style={styles.recentExpenseItem}>
+                    <View style={styles.expenseContent}>
+                      <View style={styles.expenseLeft}>
+                        {categoryInfo && (
+                          <View style={[styles.categoryIcon, { backgroundColor: categoryInfo.color + '20' }]}>
+                            <Ionicons name={categoryInfo.icon as any} size={20} color={categoryInfo.color} />
+                          </View>
+                        )}
+                        <View style={styles.expenseDetails}>
+                          <Text style={[styles.expenseDescription, { color: colors.text }]}>
+                            {expense.description}
+                          </Text>
+                          {categoryInfo && (
+                            <Text style={[styles.expenseCategory, { color: colors.textSecondary }]}>
+                              {categoryInfo.name}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                      <View style={styles.expenseRight}>
+                        <Text style={[styles.expenseAmount, { color: colors.text }]}>
+                          {budget?.currency.symbol || '$'}{expense.amount.toLocaleString()}
+                        </Text>
+                        <Text style={[styles.expenseDate, { color: colors.textSecondary }]}>
+                          {new Date(expense.date).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        );
+
+      case 'expenseHistory':
+        return (
+          <View style={styles.historyContainer}>
             <ExpenseHistory
               expenses={expenses}
               categories={budget?.categories || []}
@@ -160,82 +209,162 @@ export default function Finance() {
         );
 
       case 'analytics':
-        return (
-          <View style={styles.tabContent}>
-            {budget && expenses.length > 0 ? (
-              <>
-                {/* Spending Chart */}
+        return budget && expenses.length > 0 ? (
+          <>
+            {/* Analytics Summary */}
+            <ModernCard style={StyleSheet.flatten([styles.analyticsHeader, { backgroundColor: colors.surface }])}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>
+                Spending Analytics
+              </Text>
+              <View style={styles.summaryStats}>
+                <View style={styles.summaryItem}>
+                  <Text style={[styles.summaryValue, { color: colors.primary }]}>
+                    {budget.currency.symbol}{totalSpent.toLocaleString()}
+                  </Text>
+                  <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                    Total Spent This Month
+                  </Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={[styles.summaryValue, { color: expenses.length > 0 ? '#4CAF50' : colors.textSecondary }]}>
+                    {expenses.length}
+                  </Text>
+                  <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                    Transactions
+                  </Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={[styles.summaryValue, { color: budget.categories.length > 0 ? '#FF9800' : colors.textSecondary }]}>
+                    {budget.categories.length}
+                  </Text>
+                  <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
+                    Categories
+                  </Text>
+                </View>
+              </View>
+            </ModernCard>
+
+            {/* Spending Chart */}
+            <SpendingChart
+              expenses={expenses}
+              categories={budget.categories}
+              chartType="pie"
+              period="month"
+              height={300}
+            />
+
+            {/* Debug info - Remove in production */}
+            {__DEV__ && (
+              <View style={{ padding: 10, backgroundColor: '#f0f0f0', margin: 10 }}>
+                <Text style={{ fontSize: 12, color: '#666' }}>
+                  Debug: {expenses.length} expenses, {budget.categories.length} categories
+                </Text>
+                <Text style={{ fontSize: 10, color: '#666' }}>
+                  Categories: {budget.categories.map(c => c.name).join(', ')}
+                </Text>
+              </View>
+            )}
+
+            {/* Trends Chart */}
+            <View style={styles.trendsSection}>
+              <ModernCard style={StyleSheet.flatten([styles.trendsCard, { backgroundColor: colors.surface }])}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>
+                  Spending Trends
+                </Text>
                 <SpendingChart
                   expenses={expenses}
                   categories={budget.categories}
-                  chartType="pie"
+                  chartType="line"
                   period="month"
-                  height={300}
+                  height={250}
                 />
+              </ModernCard>
+            </View>
 
-                {/* Trends Chart */}
-                <View style={styles.trendsSection}>
-                  <SpendingChart
-                    expenses={expenses}
-                    categories={budget.categories}
-                    chartType="line"
-                    period="month"
-                    height={250}
-                  />
-                </View>
+            {/* Category Performance */}
+            <ModernCard style={StyleSheet.flatten([styles.performanceCard, { backgroundColor: colors.surface }])}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>
+                Category Performance
+              </Text>
+              {budget.categories.length > 0 ? (
+                budget.categories.map(categoryInfo => {
+                  const categoryBreakdown = getCategoryBreakdown().find(cat => cat.categoryId === categoryInfo.id);
+                  const spent = categoryBreakdown?.spent || 0;
+                  const budgetUsedPercentage = (spent / categoryInfo.budgetAmount) * 100;
 
-                {/* Category Performance */}
-                <ModernCard style={StyleSheet.flatten([styles.performanceCard, { backgroundColor: colors.surface }])}>
-                  <Text style={[styles.cardTitle, { color: colors.text }]}>
-                    Category Performance
-                  </Text>
-                  {getCategoryBreakdown().map(category => {
-                    const categoryInfo = budget.categories.find(cat => cat.id === category.categoryId);
-                    if (!categoryInfo) return null;
-
-                    return (
-                      <View key={category.categoryId} style={styles.performanceItem}>
-                        <View style={styles.performanceHeader}>
-                          <View style={styles.performanceLeft}>
-                            <View style={[styles.performanceIcon, { backgroundColor: categoryInfo.color + '20' }]}>
-                              <Ionicons name={categoryInfo.icon as any} size={16} color={categoryInfo.color} />
-                            </View>
-                            <Text style={[styles.performanceName, { color: colors.text }]}>
-                              {categoryInfo.name}
-                            </Text>
+                  return (
+                    <View key={categoryInfo.id} style={styles.performanceItem}>
+                      <View style={styles.performanceHeader}>
+                        <View style={styles.performanceLeft}>
+                          <View style={[styles.performanceIcon, { backgroundColor: categoryInfo.color + '20' }]}>
+                            <Ionicons name={categoryInfo.icon as any} size={16} color={categoryInfo.color} />
                           </View>
-                          <Text style={[styles.performancePercentage, { 
-                            color: category.percentage >= 90 ? '#F44336' : 
-                                   category.percentage >= 70 ? '#FF9800' : '#4CAF50'
-                          }]}>
-                            {category.percentage.toFixed(1)}%
+                          <Text style={[styles.performanceName, { color: colors.text }]}>
+                            {categoryInfo.name}
                           </Text>
                         </View>
-                        <View style={styles.performanceAmounts}>
-                          <Text style={[styles.performanceSpent, { color: colors.text }]}>
-                            {budget.currency.symbol}{category.spent.toLocaleString()}
-                          </Text>
-                          <Text style={[styles.performanceBudget, { color: colors.textSecondary }]}>
-                            of {budget.currency.symbol}{category.budget.toLocaleString()}
-                          </Text>
+                        <Text style={[styles.performancePercentage, { 
+                          color: budgetUsedPercentage >= 90 ? '#F44336' : 
+                                 budgetUsedPercentage >= 70 ? '#FF9800' : '#4CAF50'
+                        }]}>
+                          {budgetUsedPercentage.toFixed(1)}%
+                        </Text>
+                      </View>
+                      
+                      {/* Progress Bar */}
+                      <View style={styles.progressBarContainer}>
+                        <View style={[styles.progressBarBackground, { backgroundColor: colors.border }]}>
+                          <View 
+                            style={[
+                              styles.progressBarFill, 
+                              { 
+                                backgroundColor: budgetUsedPercentage >= 90 ? '#F44336' : 
+                                               budgetUsedPercentage >= 70 ? '#FF9800' : categoryInfo.color,
+                                width: `${Math.min(budgetUsedPercentage, 100)}%`
+                              }
+                            ]} 
+                          />
                         </View>
                       </View>
-                    );
-                  })}
-                </ModernCard>
-              </>
-            ) : (
-              <ModernCard style={{ ...styles.emptyAnalytics, backgroundColor: colors.surface }}>
-                <Ionicons name="analytics-outline" size={48} color={colors.textSecondary} />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                  No Analytics Available
-                </Text>
-                <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-                  Add some expenses to see your spending analytics
-                </Text>
-              </ModernCard>
-            )}
-          </View>
+                      
+                      <View style={styles.performanceAmounts}>
+                        <Text style={[styles.performanceSpent, { color: colors.text }]}>
+                          {budget.currency.symbol}{spent.toLocaleString()}
+                        </Text>
+                        <Text style={[styles.performanceBudget, { color: colors.textSecondary }]}>
+                          of {budget.currency.symbol}{categoryInfo.budgetAmount.toLocaleString()}
+                        </Text>
+                        <Text style={[styles.performanceRemaining, { 
+                          color: (categoryInfo.budgetAmount - spent) >= 0 ? '#4CAF50' : '#F44336' 
+                        }]}>
+                          {(categoryInfo.budgetAmount - spent) >= 0 ? 
+                            `${budget.currency.symbol}${(categoryInfo.budgetAmount - spent).toLocaleString()} left` :
+                            `${budget.currency.symbol}${Math.abs(categoryInfo.budgetAmount - spent).toLocaleString()} over`
+                          }
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Text style={[styles.noDataText, { color: colors.textSecondary }]}>
+                    No categories configured
+                  </Text>
+                </View>
+              )}
+            </ModernCard>
+          </>
+        ) : (
+          <ModernCard style={{ ...styles.emptyAnalytics, backgroundColor: colors.surface }}>
+            <Ionicons name="analytics-outline" size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              No Analytics Available
+            </Text>
+            <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
+              Add some expenses to see your spending analytics
+            </Text>
+          </ModernCard>
         );
 
       default:
@@ -298,18 +427,8 @@ export default function Finance() {
       </View>
 
       {/* Content */}
-      <ScrollView 
-        style={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refreshData}
-            tintColor={colors.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {hasError ? (
+      {hasError ? (
+        <View style={styles.content}>
           <ModernCard style={{ ...styles.errorCard, backgroundColor: colors.surface }}>
             <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
             <Text style={[styles.errorTitle, { color: colors.text }]}>
@@ -325,10 +444,23 @@ export default function Finance() {
               style={styles.retryButton}
             />
           </ModernCard>
-        ) : (
-          renderTabContent()
-        )}
-      </ScrollView>
+        </View>
+      ) : (
+        <FlatList
+          data={getSectionsData()}
+          keyExtractor={(item, index) => `${item.type}-${index}`}
+          renderItem={renderSection}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refreshData}
+              tintColor={colors.primary}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        />
+      )}
 
       {/* Quick Add Expense Modal */}
       <QuickAddExpense
@@ -387,7 +519,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
+    padding: Spacing.lg,
   },
   tabContent: {
     padding: Spacing.lg,
@@ -436,8 +569,85 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: '500',
   },
+  recentExpensesList: {
+    gap: Spacing.sm,
+  },
+  recentExpenseItem: {
+    backgroundColor: 'transparent',
+    borderRadius: BorderRadius.base,
+    padding: Spacing.base,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  expenseContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expenseLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  categoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  expenseDetails: {
+    flex: 1,
+  },
+  expenseDescription: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: '500',
+  },
+  expenseCategory: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: 2,
+  },
+  expenseRight: {
+    alignItems: 'flex-end',
+  },
+  expenseAmount: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: '600',
+  },
+  expenseDate: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: 2,
+  },
+  historyContainer: {
+    minHeight: 600, // Ensure enough height for the nested FlatList
+  },
   trendsSection: {
     marginTop: Spacing.base,
+  },
+  trendsCard: {
+    padding: Spacing.lg,
+  },
+  analyticsHeader: {
+    padding: Spacing.lg,
+    marginBottom: Spacing.base,
+  },
+  summaryStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: Spacing.base,
+  },
+  summaryItem: {
+    alignItems: 'center',
+  },
+  summaryValue: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: '700',
+  },
+  summaryLabel: {
+    fontSize: Typography.fontSize.sm,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
   },
   performanceCard: {
     padding: Spacing.lg,
@@ -452,6 +662,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    marginBottom: Spacing.xs,
   },
   performanceHeader: {
     flexDirection: 'row',
@@ -463,6 +674,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    flex: 1,
   },
   performanceIcon: {
     width: 28,
@@ -484,6 +696,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
     marginLeft: 40,
+    flexWrap: 'wrap',
   },
   performanceSpent: {
     fontSize: Typography.fontSize.sm,
@@ -491,6 +704,25 @@ const styles = StyleSheet.create({
   },
   performanceBudget: {
     fontSize: Typography.fontSize.sm,
+  },
+  performanceRemaining: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: '500',
+    marginLeft: Spacing.xs,
+  },
+  progressBarContainer: {
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
+    marginLeft: 40,
+  },
+  progressBarBackground: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
   },
   emptyAnalytics: {
     padding: Spacing.xl,
@@ -524,5 +756,13 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     paddingHorizontal: Spacing.xl,
+  },
+  noDataContainer: {
+    padding: Spacing.lg,
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: Typography.fontSize.base,
+    fontStyle: 'italic',
   },
 });

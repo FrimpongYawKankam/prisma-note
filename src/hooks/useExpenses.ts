@@ -33,36 +33,67 @@ export function useExpenses(): UseExpensesReturn {
       // const response = await financeApi.getExpenses();
       // setExpenses(response.data);
       
-      // Mock data for now
-      const mockExpenses: Expense[] = [
-        {
-          id: '1',
-          amount: 25.50,
-          description: 'Lunch at cafe',
-          category: '1', // Food
-          date: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          amount: 45.00,
-          description: 'Gas station',
-          category: '2', // Transport
-          date: new Date(Date.now() - 86400000), // Yesterday
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '3',
-          amount: 120.00,
-          description: 'Grocery shopping',
-          category: '1', // Food
-          date: new Date(Date.now() - 172800000), // 2 days ago
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
+      // Mock data for now - Generate more realistic spending patterns
+      const generateMockExpenses = (): Expense[] => {
+        const expenses: Expense[] = [];
+        const now = new Date();
+        let id = 1;
+
+        // Categories with their typical spending patterns
+        const categories = [
+          { id: '1', name: 'Food', avgDaily: 20, variance: 15 },
+          { id: '2', name: 'Transport', avgDaily: 15, variance: 10 },
+          { id: '3', name: 'Shopping', avgDaily: 8, variance: 25 },
+          { id: '4', name: 'Entertainment', avgDaily: 5, variance: 20 },
+          { id: '5', name: 'Bills', avgDaily: 3, variance: 30 },
+        ];
+
+        // Generate expenses for the last 30 days
+        for (let days = 0; days < 30; days++) {
+          const date = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+          
+          categories.forEach(category => {
+            // Some days might have no expenses for certain categories
+            if (Math.random() > 0.6) return;
+            
+            // Random number of expenses per day (0-3)
+            const numExpenses = Math.floor(Math.random() * 4);
+            
+            for (let i = 0; i < numExpenses; i++) {
+              const baseAmount = category.avgDaily;
+              const variance = category.variance;
+              const amount = Math.max(1, baseAmount + (Math.random() - 0.5) * variance);
+              
+              const descriptions = {
+                '1': ['Lunch', 'Coffee', 'Dinner', 'Groceries', 'Snacks', 'Restaurant'],
+                '2': ['Gas', 'Bus fare', 'Taxi', 'Parking', 'Train ticket'],
+                '3': ['Clothes', 'Electronics', 'Books', 'Gifts', 'Home items'],
+                '4': ['Movies', 'Games', 'Concert', 'Sports', 'Streaming'],
+                '5': ['Internet', 'Phone', 'Utilities', 'Insurance', 'Rent'],
+              };
+              
+              const categoryDescriptions = descriptions[category.id as keyof typeof descriptions] || ['Expense'];
+              const description = categoryDescriptions[Math.floor(Math.random() * categoryDescriptions.length)];
+              
+              expenses.push({
+                id: id.toString(),
+                amount: Math.round(amount * 100) / 100,
+                description,
+                category: category.id,
+                date: new Date(date.getTime() + Math.random() * 24 * 60 * 60 * 1000),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+              
+              id++;
+            }
+          });
+        }
+        
+        return expenses.sort((a, b) => b.date.getTime() - a.date.getTime());
+      };
+
+      const mockExpenses = generateMockExpenses();
       
       setExpenses(mockExpenses);
     } catch (err) {

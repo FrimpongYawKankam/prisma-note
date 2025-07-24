@@ -56,7 +56,7 @@ export function SpendingChart({
     const total = Array.from(categoryTotals.values()).reduce((sum, val) => sum + val, 0);
 
     // Create chart data
-    return Array.from(categoryTotals.entries()).map(([categoryId, amount]) => {
+    const data = Array.from(categoryTotals.entries()).map(([categoryId, amount]) => {
       const category = categories.find(cat => cat.id === categoryId);
       return {
         id: categoryId,
@@ -66,6 +66,11 @@ export function SpendingChart({
         percentage: total > 0 ? (amount / total) * 100 : 0,
       };
     }).sort((a, b) => b.value - a.value);
+
+    // Debug log to check data
+    console.log('Chart data:', data);
+    
+    return data;
   }, [expenses, categories]);
 
   useEffect(() => {
@@ -75,7 +80,7 @@ export function SpendingChart({
       duration: 1500,
       useNativeDriver: false,
     }).start();
-  }, [chartData]);
+  }, [chartData, animationProgress]);
 
   const formatCurrency = (amount: number) => {
     return `$${amount.toLocaleString(undefined, {
@@ -168,40 +173,43 @@ export function SpendingChart({
 
   const BarChart = () => {
     const chartHeight = 150;
-    const maxValue = Math.max(...chartData.map(item => item.value));
-    const barWidth = (screenWidth - 80) / chartData.length - 10;
+    const maxValue = Math.max(...chartData.map(item => item.value), 1); // Ensure minimum value
+    const barWidth = Math.max(40, (screenWidth - 120) / chartData.length - 10); // Minimum bar width
 
     return (
       <View style={styles.barContainer}>
         <View style={[styles.barChart, { height: chartHeight }]}>
           {chartData.map((item, index) => {
-            const barHeight = (item.value / maxValue) * chartHeight;
+            const barHeight = Math.max(4, (item.value / maxValue) * (chartHeight - 40)); // Minimum bar height
             
             return (
               <TouchableOpacity
                 key={item.id}
-                style={styles.barItem}
+                style={[
+                  styles.barItem,
+                  { width: barWidth },
+                  {
+                    opacity: selectedSegment === item.id ? 1 : selectedSegment ? 0.3 : 0.8,
+                  }
+                ]}
                 onPress={() => setSelectedSegment(selectedSegment === item.id ? null : item.id)}
+                activeOpacity={0.7}
               >
                 <View style={styles.barColumn}>
                   <Text style={[styles.barValue, { color: colors.text }]}>
                     {formatCurrency(item.value)}
                   </Text>
-                  <Animated.View
+                  <View
                     style={[
                       styles.bar,
                       {
-                        height: animationProgress.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0, barHeight],
-                        }),
+                        height: barHeight,
                         backgroundColor: item.color,
-                        width: barWidth,
-                        opacity: selectedSegment === item.id ? 1 : selectedSegment ? 0.3 : 0.8,
+                        width: barWidth - 10,
                       }
                     ]}
                   />
-                  <Text style={[styles.barLabel, { color: colors.textSecondary }]} numberOfLines={1}>
+                  <Text style={[styles.barLabel, { color: colors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">
                     {item.name}
                   </Text>
                 </View>
@@ -211,9 +219,7 @@ export function SpendingChart({
         </View>
       </View>
     );
-  };
-
-  const LineChart = () => {
+  };  const LineChart = () => {
     // Simplified line chart for spending over time
     const chartHeight = 150;
     const chartWidth = screenWidth - 80;
@@ -244,6 +250,8 @@ export function SpendingChart({
         date,
         amount,
       }));
+    // We need expenses and period in dependencies for correct recalculation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [expenses, period]);
 
     const maxAmount = Math.max(...dailySpending.map(d => d.amount), 1);
@@ -308,21 +316,26 @@ export function SpendingChart({
 
   const Legend = () => (
     <View style={styles.legend}>
+      <Text style={[styles.legendTitle, { color: colors.text }]}>Categories</Text>
       {chartData.map(item => (
         <TouchableOpacity
           key={item.id}
           style={[
             styles.legendItem,
-            { opacity: selectedSegment === item.id ? 1 : selectedSegment ? 0.3 : 1 }
+            { 
+              opacity: selectedSegment === item.id ? 1 : selectedSegment ? 0.3 : 1,
+              backgroundColor: selectedSegment === item.id ? colors.primary + '10' : 'transparent'
+            }
           ]}
           onPress={() => setSelectedSegment(selectedSegment === item.id ? null : item.id)}
+          activeOpacity={0.7}
         >
           <View style={[styles.legendColor, { backgroundColor: item.color }]} />
           <View style={styles.legendText}>
-            <Text style={[styles.legendName, { color: colors.text }]}>
+            <Text style={[styles.legendName, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
               {item.name}
             </Text>
-            <Text style={[styles.legendValue, { color: colors.textSecondary }]}>
+            <Text style={[styles.legendValue, { color: colors.textSecondary }]} numberOfLines={1}>
               {formatCurrency(item.value)} ({item.percentage.toFixed(1)}%)
             </Text>
           </View>
@@ -344,7 +357,7 @@ export function SpendingChart({
   };
 
   return (
-    <ModernCard style={[styles.container, { backgroundColor: colors.surface, height }]}>
+    <ModernCard style={[styles.container, { backgroundColor: colors.surface }] as any}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>
           Spending {chartType === 'line' ? 'Trends' : 'Breakdown'}
@@ -378,11 +391,17 @@ export function SpendingChart({
         </View>
       </View>
 
-      <View style={styles.content}>
+      <View style={[styles.content, { minHeight: height - 100 }]}>
         {chartData.length > 0 ? (
           <>
-            {renderChart()}
-            {chartType !== 'line' && <Legend />}
+            <View style={styles.chartContainer}>
+              {renderChart()}
+            </View>
+            {chartType !== 'line' && (
+              <View style={styles.legendContainer}>
+                <Legend />
+              </View>
+            )}
           </>
         ) : (
           <View style={styles.emptyState}>
@@ -425,21 +444,33 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  chartContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  legendContainer: {
+    paddingTop: Spacing.base,
+  },
   pieContainer: {
     alignItems: 'center',
     marginBottom: Spacing.lg,
   },
   barContainer: {
     marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
   },
   barChart: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-around',
     paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.lg,
   },
   barItem: {
     alignItems: 'center',
+    flex: 1,
+    maxWidth: 100,
   },
   barColumn: {
     alignItems: 'center',
@@ -456,7 +487,8 @@ const styles = StyleSheet.create({
   barLabel: {
     fontSize: Typography.fontSize.xs,
     textAlign: 'center',
-    maxWidth: 60,
+    maxWidth: 80,
+    lineHeight: 14,
   },
   lineContainer: {
     marginBottom: Spacing.lg,
@@ -475,27 +507,41 @@ const styles = StyleSheet.create({
   },
   legend: {
     gap: Spacing.sm,
+    marginTop: Spacing.base,
+  },
+  legendTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: '600',
+    marginBottom: Spacing.xs,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+    minHeight: 44, // Ensure enough space for touch
   },
   legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: Spacing.sm,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: Spacing.base,
+    flexShrink: 0,
   },
   legendText: {
     flex: 1,
+    minWidth: 0, // Allow text to shrink
   },
   legendName: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: '500',
+    fontSize: Typography.fontSize.base,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   legendValue: {
-    fontSize: Typography.fontSize.xs,
+    fontSize: Typography.fontSize.sm,
+    lineHeight: 16,
+    marginTop: 2,
   },
   emptyState: {
     flex: 1,
