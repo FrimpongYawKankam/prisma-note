@@ -36,35 +36,43 @@ export type BudgetStatus = 'safe' | 'warning' | 'danger';
 // New interfaces aligned with backend DTOs
 export interface BackendExpense {
   id: number;
+  userId: number;
+  categoryId: number;
+  budgetId: number;
   amount: number;
   description: string;
   date: string;
-  tags: string[];
   createdAt: string;
   updatedAt: string;
-  userId: number;
-  categoryId: number;
-  category?: BackendCategory;
+  // Additional response fields
+  categoryName: string;
+  categoryIcon: string;
 }
 
 export interface BackendBudget {
   id: number;
-  totalAmount: number;
+  userId: number;
+  totalBudget: number;  // Backend uses 'totalBudget' not 'totalAmount'
+  currency: string;
+  period: string;
   startDate: string;
   endDate: string;
-  currency: string;
-  description?: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  userId: number;
+  // Additional calculated fields
+  totalSpent: number;
+  remainingBudget: number;
+  spentPercentage: number;
 }
 
 export interface BackendCategory {
   id: number;
   name: string;
-  color: string;
   icon: string;
-  description?: string;
+  isDefault: boolean;
+  isActive: boolean;
+  createdByUserId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -179,7 +187,7 @@ export const COMMON_CURRENCIES: Currency[] = [
 export const transformBackendExpenseToLegacy = (backendExpense: BackendExpense): Expense => ({
   id: backendExpense.id.toString(),
   amount: backendExpense.amount,
-  category: backendExpense.category?.name || 'Unknown',
+  category: backendExpense.categoryName || 'Unknown',
   description: backendExpense.description,
   date: new Date(backendExpense.date),
   createdAt: new Date(backendExpense.createdAt),
@@ -199,7 +207,7 @@ export const transformBackendCategoryToLegacy = (backendCategory: BackendCategor
   budgetAmount: budgetAmount,
   spentAmount: spentAmount,
   icon: backendCategory.icon,
-  color: backendCategory.color,
+  color: '#007AFF',  // Default color since backend doesn't store color
 });
 
 export const getCurrencyFromCode = (code: string): Currency => {

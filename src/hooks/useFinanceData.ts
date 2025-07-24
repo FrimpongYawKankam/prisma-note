@@ -86,7 +86,7 @@ export function useFinanceData(): UseFinanceDataReturn {
       const spentAmount = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
       
       // For now, distribute budget evenly across categories (this can be enhanced later)
-      const budgetAmount = currentBudget.totalAmount / userAssignedCategories.length;
+      const budgetAmount = currentBudget.totalBudget / userAssignedCategories.length;
 
       return transformBackendCategoryToLegacy(category, budgetAmount, spentAmount);
     });
@@ -94,7 +94,7 @@ export function useFinanceData(): UseFinanceDataReturn {
     return {
       id: currentBudget.id.toString(),
       month: new Date(currentBudget.startDate).toISOString().slice(0, 7),
-      totalAmount: currentBudget.totalAmount,
+      totalAmount: currentBudget.totalBudget,
       categories: categoryBudgets,
       currency: getCurrencyFromCode(currentBudget.currency)
     };
@@ -153,11 +153,11 @@ export function useFinanceData(): UseFinanceDataReturn {
       const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
       const budgetData = {
-        totalAmount,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
+        totalBudget: totalAmount,  // Backend expects 'totalBudget'
         currency: currency.code,
-        description: `Budget for ${now.toLocaleString('default', { month: 'long', year: 'numeric' })}`
+        period: 'MONTHLY' as const,  // Backend requires period enum
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
       };
 
       const newBudget = await createBudget(budgetData);
@@ -175,15 +175,17 @@ export function useFinanceData(): UseFinanceDataReturn {
             // Create new category
             const newCategory = await createCategory({
               name: categoryData.name,
-              color: categoryData.color,
-              icon: categoryData.icon,
-              description: `Category: ${categoryData.name}`
+              icon: categoryData.icon  // Backend only expects name and icon
             });
             categoryId = newCategory.id;
           }
 
-          // Assign category to user
-          await assignCategoryToUser(categoryId);
+          // Assign category to user with budget allocation
+          await assignCategoryToUser({
+            categoryId,
+            budgetId: newBudget.id,
+            allocatedBudget: totalAmount / categories.length  // Distribute budget evenly
+          });
         } catch (error) {
           console.error(`Failed to setup category ${categoryData.name}:`, error);
           // Continue with other categories
@@ -204,7 +206,7 @@ export function useFinanceData(): UseFinanceDataReturn {
       const updateData: any = {};
       
       if (updates.totalAmount !== undefined) {
-        updateData.totalAmount = updates.totalAmount;
+        updateData.totalBudget = updates.totalAmount;  // Backend expects 'totalBudget'
       }
       
       if (updates.currency) {
@@ -220,13 +222,17 @@ export function useFinanceData(): UseFinanceDataReturn {
   }, [currentBudget, updateBackendBudget, refreshAll]);
 
   const addExpense = useCallback(async (categoryId: string, amount: number, description: string) => {
+    if (!currentBudget) {
+      throw new Error('No active budget found');
+    }
+
     try {
       const expenseData = {
+        categoryId: parseInt(categoryId),
+        budgetId: currentBudget.id,  // Required by backend
         amount,
         description,
-        categoryId: parseInt(categoryId),
-        date: new Date().toISOString().split('T')[0],
-        tags: []
+        date: new Date().toISOString().split('T')[0]
       };
 
       await createExpense(expenseData);
@@ -235,7 +241,7 @@ export function useFinanceData(): UseFinanceDataReturn {
       console.error('Failed to add expense:', error);
       throw error;
     }
-  }, [createExpense]);
+  }, [createExpense, currentBudget]);
 
   const updateExpense = useCallback(async (expenseId: string, updates: Partial<Expense>) => {
     try {

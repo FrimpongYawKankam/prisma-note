@@ -8,6 +8,7 @@ import financeService, {
     ExpenseCreateRequest,
     ExpenseResponse,
     ExpenseUpdateRequest,
+    UserCategoryRequest,
     UserCategoryResponse
 } from '../services/financeService';
 import { useAuth } from './AuthContext';
@@ -45,7 +46,7 @@ interface FinanceContextType {
   createCategory: (categoryData: CategoryCreateRequest) => Promise<CategoryResponse>;
   updateCategory: (categoryId: number, categoryData: Partial<CategoryCreateRequest>) => Promise<CategoryResponse>;
   deleteCategory: (categoryId: number) => Promise<void>;
-  assignCategoryToUser: (categoryId: number) => Promise<UserCategoryResponse>;
+  assignCategoryToUser: (userCategoryData: UserCategoryRequest) => Promise<UserCategoryResponse>;
   removeUserCategory: (userCategoryId: number) => Promise<void>;
   refreshCategories: () => Promise<void>;
 
@@ -315,12 +316,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  const assignCategoryToUser = useCallback(async (categoryId: number): Promise<UserCategoryResponse> => {
+  const assignCategoryToUser = useCallback(async (userCategoryData: UserCategoryRequest): Promise<UserCategoryResponse> => {
     try {
       setCategoriesLoading(true);
       setCategoriesError(null);
 
-      const userCategory = await financeService.assignCategoryToUser({ categoryId });
+      const userCategory = await financeService.assignCategoryToUser(userCategoryData);
       
       // Update local state
       setUserCategories(prev => [userCategory, ...prev]);
@@ -529,7 +530,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         } else {
           acc.push({
             categoryId: expense.categoryId,
-            categoryName: expense.category?.name || 'Unknown',
+            categoryName: expense.categoryName || 'Unknown',
             amount: expense.amount
           });
         }

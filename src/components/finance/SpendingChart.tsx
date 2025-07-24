@@ -56,11 +56,11 @@ export function SpendingChart({
     const total = Array.from(categoryTotals.values()).reduce((sum, val) => sum + val, 0);
 
     // Create chart data
-    const data = Array.from(categoryTotals.entries()).map(([categoryId, amount]) => {
-      const category = categories.find(cat => cat.id === categoryId);
+    const data = Array.from(categoryTotals.entries()).map(([categoryName, amount]) => {
+      const category = categories.find(cat => cat.name === categoryName);
       return {
-        id: categoryId,
-        name: category?.name || 'Unknown',
+        id: category?.id || categoryName,  // Use category ID if found, otherwise use name
+        name: categoryName,               // expense.category is now the name
         value: amount,
         color: category?.color || '#666',
         percentage: total > 0 ? (amount / total) * 100 : 0,

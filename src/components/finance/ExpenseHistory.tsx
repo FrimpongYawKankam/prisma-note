@@ -39,9 +39,9 @@ export function ExpenseHistory({
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Helper function to get category info
-  const getCategoryInfo = (categoryId: string) => {
-    return categories.find(cat => cat.id === categoryId);
+  // Helper function to get category info by name (since expense.category is now the name)
+  const getCategoryInfo = (categoryName: string) => {
+    return categories.find(cat => cat.name === categoryName);
   };
 
   // Filter and sort expenses
@@ -53,7 +53,7 @@ export function ExpenseHistory({
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(expense =>
         expense.description.toLowerCase().includes(query) ||
-        getCategoryInfo(expense.category)?.name.toLowerCase().includes(query)
+        expense.category.toLowerCase().includes(query)  // expense.category is now the name
       );
     }
 
@@ -165,7 +165,7 @@ export function ExpenseHistory({
     if (!showFilters) return null;
 
     return (
-      <ModernCard style={[styles.filtersCard, { backgroundColor: colors.surface }]}>
+      <ModernCard style={{ ...styles.filtersCard, backgroundColor: colors.surface }}>
         {/* Search Bar */}
         <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
           <Ionicons name="search" size={20} color={colors.textSecondary} />
@@ -347,7 +347,7 @@ export function ExpenseHistory({
   );
 
   const renderEmptyState = () => (
-    <ModernCard style={[styles.emptyCard, { backgroundColor: colors.surface }]}>
+    <ModernCard style={{ ...styles.emptyCard, backgroundColor: colors.surface }}>
       <Ionicons name="receipt-outline" size={48} color={colors.textSecondary} />
       <Text style={[styles.emptyTitle, { color: colors.text }]}>
         {searchQuery || selectedCategory || filterPeriod !== 'all'

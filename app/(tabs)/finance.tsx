@@ -158,7 +158,8 @@ export default function Finance() {
             {/* Render recent expenses directly without FlatList */}
             <View style={styles.recentExpensesList}>
               {expenses.slice(0, 3).map((expense, index) => {
-                const categoryInfo = budget?.categories.find(cat => cat.id === expense.category);
+                // Find category info using category name from the transformed expense
+                const categoryInfo = budget?.categories.find(cat => cat.name === expense.category);
                 return (
                   <View key={`${expense.id}-${index}`} style={styles.recentExpenseItem}>
                     <View style={styles.expenseContent}>
@@ -172,11 +173,9 @@ export default function Finance() {
                           <Text style={[styles.expenseDescription, { color: colors.text }]}>
                             {expense.description}
                           </Text>
-                          {categoryInfo && (
-                            <Text style={[styles.expenseCategory, { color: colors.textSecondary }]}>
-                              {categoryInfo.name}
-                            </Text>
-                          )}
+                          <Text style={[styles.expenseCategory, { color: colors.textSecondary }]}>
+                            {expense.category}
+                          </Text>
                         </View>
                       </View>
                       <View style={styles.expenseRight}>
