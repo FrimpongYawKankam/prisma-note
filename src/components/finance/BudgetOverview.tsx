@@ -9,8 +9,9 @@ import {
   View
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { useBudget } from '../../hooks/useBudget';
+import { useFinanceData } from '../../hooks/useFinanceData';
 import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
+import { Currency } from '../../types/finance';
 import { ModernCard } from '../ui/ModernCard';
 import { CategoryCard } from './CategoryCard';
 import { BudgetProgressBar } from './ProgressBar';
@@ -30,11 +31,21 @@ const CURRENCIES = [
 
 export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverviewProps) {
   const { theme, colors } = useTheme();
-  const { budget, isLoading, initializeBudget } = useBudget();
+  const { budget, isLoadingBudget, initializeBudget } = useFinanceData();
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
 
   const handleGetStarted = () => {
-    initializeBudget();
+    // Initialize with default budget
+    const defaultCurrency: Currency = { code: 'USD', symbol: '$', name: 'US Dollar' };
+    const defaultCategories = [
+      { id: '1', name: 'Food', budgetAmount: 900, spentAmount: 0, icon: 'restaurant-outline', color: '#4CAF50' },
+      { id: '2', name: 'Transport', budgetAmount: 450, spentAmount: 0, icon: 'car-outline', color: '#FF9800' },
+      { id: '3', name: 'Shopping', budgetAmount: 600, spentAmount: 0, icon: 'bag-outline', color: '#2196F3' },
+      { id: '4', name: 'Entertainment', budgetAmount: 300, spentAmount: 0, icon: 'game-controller-outline', color: '#9C27B0' },
+      { id: '5', name: 'Bills', budgetAmount: 750, spentAmount: 0, icon: 'receipt-outline', color: '#F44336' },
+    ];
+    
+    initializeBudget(3000, defaultCurrency, defaultCategories);
   };
 
   const handleCategoryPress = (categoryId: string) => {
@@ -57,9 +68,9 @@ export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverview
     // TODO: Navigate to category management
   };
 
-  if (isLoading) {
+  if (isLoadingBudget) {
     return (
-      <ModernCard style={[styles.card, { backgroundColor: colors.surface }]}>
+      <ModernCard style={StyleSheet.flatten([styles.card, { backgroundColor: colors.surface }])}>
         <View style={styles.setupContainer}>
           <Text style={[styles.setupTitle, { color: colors.text }]}>
             Setting up your budget...
@@ -71,7 +82,7 @@ export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverview
 
   if (!budget) {
     return (
-      <ModernCard style={[styles.card, { backgroundColor: colors.surface }]}>
+      <ModernCard style={StyleSheet.flatten([styles.card, { backgroundColor: colors.surface }])}>
         <View style={styles.setupContainer}>
           <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
             <Ionicons name="wallet-outline" size={32} color={colors.primary} />
@@ -95,14 +106,14 @@ export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverview
     );
   }
 
-  const totalSpent = budget.categories.reduce((sum, cat) => sum + cat.spentAmount, 0);
+  const totalSpent = budget.categories.reduce((sum: number, cat: any) => sum + cat.spentAmount, 0);
   const remaining = budget.totalAmount - totalSpent;
   const spentPercentage = (totalSpent / budget.totalAmount) * 100;
 
   return (
     <View>
       {/* Budget Summary Card */}
-      <ModernCard style={[styles.card, { backgroundColor: colors.surface }]}>
+      <ModernCard style={StyleSheet.flatten([styles.card, { backgroundColor: colors.surface }])}>
         <View style={styles.header}>
           <View>
             <Text style={[styles.title, { color: colors.text }]}>
@@ -183,7 +194,7 @@ export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverview
         
         {/* Grid Layout for Categories */}
         <View style={styles.categoriesGrid}>
-          {budget.categories.map((category) => (
+          {budget.categories.map((category: any) => (
             <View key={category.id} style={styles.categoryGridItem}>
               <CategoryCard
                 category={category}

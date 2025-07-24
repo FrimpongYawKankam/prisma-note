@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '../src/context/AuthContext';
 import { EventsProvider } from '../src/context/EventsContext';
+import { FinanceProvider } from '../src/context/FinanceContext';
 import { NotesProvider } from '../src/context/NotesContext';
 import { TasksProvider } from '../src/context/TasksContext';
 import { TaskStatsProvider } from '../src/context/TaskStatsContext';
@@ -53,8 +54,10 @@ function AppContent() {
             <NotesProvider>
               <EventsProvider>
                 <TasksProvider>
-                  {/* This is where the app's main content will be rendered */}
-                  <Slot />
+                  <FinanceProvider>
+                    {/* This is where the app's main content will be rendered */}
+                    <Slot />
+                  </FinanceProvider>
                 </TasksProvider>
               </EventsProvider>
             </NotesProvider>
