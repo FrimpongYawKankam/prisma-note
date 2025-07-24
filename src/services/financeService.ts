@@ -1,91 +1,106 @@
 import axiosInstance from '../utils/axiosInstance';
 
-// Request DTOs matching backend
+// Request DTOs matching backend exactly
 export interface BudgetCreateRequest {
-  totalAmount: number;
-  startDate: string;
-  endDate: string;
-  currency: string;
-  description?: string;
+  totalBudget: number;  // Backend: BigDecimal (will be converted)
+  currency: string;     // Backend: String (3 chars, uppercase)
+  period: 'WEEKLY' | 'MONTHLY' | 'YEARLY';  // Backend: BudgetPeriod enum
+  startDate: string;    // Backend: LocalDate (YYYY-MM-DD format)
+  endDate: string;      // Backend: LocalDate (YYYY-MM-DD format)
 }
 
 export interface BudgetUpdateRequest {
-  totalAmount?: number;
-  startDate?: string;
-  endDate?: string;
-  currency?: string;
-  description?: string;
+  totalBudget?: number;  // Backend: BigDecimal
+  currency?: string;     // Backend: String (3 chars, uppercase)
+  period?: 'WEEKLY' | 'MONTHLY' | 'YEARLY';  // Backend: BudgetPeriod enum
+  startDate?: string;    // Backend: LocalDate (YYYY-MM-DD format)
+  endDate?: string;      // Backend: LocalDate (YYYY-MM-DD format)
 }
 
 export interface CategoryCreateRequest {
-  name: string;
-  color: string;
-  icon: string;
-  description?: string;
+  name: string;    // Backend: String (1-100 chars, specific pattern)
+  icon?: string;   // Backend: String (max 50 chars, optional)
 }
 
 export interface ExpenseCreateRequest {
-  amount: number;
-  description: string;
-  categoryId: number;
-  date: string;
-  tags?: string[];
+  categoryId: number;   // Backend: Long (required, positive)
+  budgetId: number;     // Backend: Long (required, positive)
+  amount: number;       // Backend: BigDecimal (required, > 0)
+  description?: string; // Backend: String (max 500 chars, optional)
+  date: string;         // Backend: LocalDate (required, PastOrPresent)
 }
 
 export interface ExpenseUpdateRequest {
-  amount?: number;
-  description?: string;
-  categoryId?: number;
-  date?: string;
-  tags?: string[];
+  categoryId?: number;   // Backend: Long
+  budgetId?: number;     // Backend: Long  
+  amount?: number;       // Backend: BigDecimal
+  description?: string;  // Backend: String (max 500 chars)
+  date?: string;         // Backend: LocalDate (PastOrPresent)
 }
 
 export interface UserCategoryRequest {
-  categoryId: number;
+  categoryId: number;      // Backend: Long (required, positive)
+  budgetId: number;        // Backend: Long (required, positive)
+  allocatedBudget: number; // Backend: BigDecimal (required, > 0)
+  isActive?: boolean;      // Backend: Boolean (optional)
 }
 
-// Response DTOs matching backend
+// Response DTOs matching backend exactly
 export interface BudgetResponse {
-  id: number;
-  totalAmount: number;
-  startDate: string;
-  endDate: string;
-  currency: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: number;
+  id: number;              // Backend: Long
+  userId: number;          // Backend: Long
+  totalBudget: number;     // Backend: BigDecimal
+  currency: string;        // Backend: String
+  period: string;          // Backend: BudgetPeriod enum
+  startDate: string;       // Backend: LocalDate
+  endDate: string;         // Backend: LocalDate
+  isActive: boolean;       // Backend: Boolean
+  createdAt: string;       // Backend: LocalDateTime
+  updatedAt: string;       // Backend: LocalDateTime
+  // Additional calculated fields
+  totalSpent: number;      // Backend: BigDecimal
+  remainingBudget: number; // Backend: BigDecimal
+  spentPercentage: number; // Backend: Double
 }
 
 export interface CategoryResponse {
-  id: number;
-  name: string;
-  color: string;
-  icon: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
+  id: number;              // Backend: Long
+  name: string;            // Backend: String
+  icon: string;            // Backend: String
+  isDefault: boolean;      // Backend: Boolean
+  isActive: boolean;       // Backend: Boolean
+  createdByUserId: number | null; // Backend: Long (nullable)
+  createdAt: string;       // Backend: LocalDateTime
+  updatedAt: string;       // Backend: LocalDateTime
 }
 
 export interface ExpenseResponse {
-  id: number;
-  amount: number;
-  description: string;
-  date: string;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  userId: number;
-  categoryId: number;
-  category?: CategoryResponse;
+  id: number;              // Backend: Long
+  userId: number;          // Backend: Long
+  categoryId: number;      // Backend: Long
+  budgetId: number;        // Backend: Long
+  amount: number;          // Backend: BigDecimal
+  description: string;     // Backend: String
+  date: string;            // Backend: LocalDate
+  createdAt: string;       // Backend: LocalDateTime
+  updatedAt: string;       // Backend: LocalDateTime
+  // Additional response fields
+  categoryName: string;    // Backend: String
+  categoryIcon: string;    // Backend: String
 }
 
 export interface UserCategoryResponse {
-  id: number;
-  userId: number;
-  categoryId: number;
-  assignedAt: string;
-  category?: CategoryResponse;
+  id: number;              // Backend: Long
+  userId: number;          // Backend: Long  
+  categoryId: number;      // Backend: Long
+  budgetId: number;        // Backend: Long
+  allocatedBudget: number; // Backend: BigDecimal
+  isActive: boolean;       // Backend: Boolean
+  createdAt: string;       // Backend: LocalDateTime
+  updatedAt: string;       // Backend: LocalDateTime
+  // Additional response fields
+  categoryName: string;    // Backend: String
+  categoryIcon: string;    // Backend: String
 }
 
 export interface SpendingTrendResponse {
