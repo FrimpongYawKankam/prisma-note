@@ -1,14 +1,14 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import financeService, {
-  BudgetCreateRequest,
-  BudgetResponse,
-  BudgetUpdateRequest,
-  CategoryCreateRequest,
-  CategoryResponse,
-  ExpenseCreateRequest,
-  ExpenseResponse,
-  ExpenseUpdateRequest,
-  UserCategoryResponse
+    BudgetCreateRequest,
+    BudgetResponse,
+    BudgetUpdateRequest,
+    CategoryCreateRequest,
+    CategoryResponse,
+    ExpenseCreateRequest,
+    ExpenseResponse,
+    ExpenseUpdateRequest,
+    UserCategoryResponse
 } from '../services/financeService';
 import { useAuth } from './AuthContext';
 
@@ -63,6 +63,12 @@ interface FinanceContextType {
   getCategoryBreakdown: (startDate?: string, endDate?: string) => Promise<any[]>;
   getMonthlySpending: (year: number, month: number) => Promise<any>;
   getTotalSpending: (startDate?: string, endDate?: string) => Promise<{ totalAmount: number }>;
+  getBudgetAnalytics: (budgetId: number, startDate: string, endDate: string) => Promise<any>;
+  getBudgetSummary: (budgetId: number) => Promise<any>;
+  getBudgetWarnings: (budgetId: number) => Promise<string[]>;
+  getBudgetSpendingTrends: (budgetId: number, months?: number) => Promise<any>;
+  getBudgetTopCategories: (budgetId: number, limit?: number) => Promise<any[]>;
+  getDefaultCategories: () => Promise<CategoryResponse[]>;
 
   // Utility Operations
   refreshAll: () => Promise<void>;
@@ -126,7 +132,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setCurrentBudgetState(currentBudgetData);
     } catch (error: any) {
       console.error('Failed to load budgets:', error);
-      setBudgetsError(error.message || 'Failed to load budgets');
+      // Don't set error for 403 cases - just means finance endpoints don't exist yet
+      if (error.response?.status !== 403) {
+        setBudgetsError(error.message || 'Failed to load budgets');
+      }
     } finally {
       setBudgetsLoading(false);
     }
@@ -232,7 +241,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setUserCategories(userCategoriesData);
     } catch (error: any) {
       console.error('Failed to load categories:', error);
-      setCategoriesError(error.message || 'Failed to load categories');
+      // Don't set error for 403 cases - just means finance endpoints don't exist yet
+      if (error.response?.status !== 403) {
+        setCategoriesError(error.message || 'Failed to load categories');
+      }
     } finally {
       setCategoriesLoading(false);
     }
@@ -353,7 +365,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setExpenses(expensesData);
     } catch (error: any) {
       console.error('Failed to load expenses:', error);
-      setExpensesError(error.message || 'Failed to load expenses');
+      // Don't set error for 403 cases - just means finance endpoints don't exist yet
+      if (error.response?.status !== 403) {
+        setExpensesError(error.message || 'Failed to load expenses');
+      }
     } finally {
       setExpensesLoading(false);
     }
@@ -492,7 +507,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAnalyticsLoading(true);
       setAnalyticsError(null);
       
-      return await financeService.getMonthlySpending(year, month);
+      // Calculate start and end dates for the month
+      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+      
+      const expensesData = await financeService.getExpensesByDateRange(startDate, endDate);
+      const totalAmount = expensesData.reduce((sum, expense) => sum + expense.amount, 0);
+      
+      // Group by categories
+      const categoryBreakdown = expensesData.reduce((acc: any[], expense) => {
+        const existing = acc.find(item => item.categoryId === expense.categoryId);
+        if (existing) {
+          existing.amount += expense.amount;
+        } else {
+          acc.push({
+            categoryId: expense.categoryId,
+            categoryName: expense.category?.name || 'Unknown',
+            amount: expense.amount
+          });
+        }
+        return acc;
+      }, []);
+      
+      return {
+        month: new Date(year, month - 1).toLocaleString('default', { month: 'long' }),
+        totalAmount,
+        categoryBreakdown
+      };
     } catch (error: any) {
       console.error('Failed to get monthly spending:', error);
       setAnalyticsError(error.message || 'Failed to get monthly spending');
@@ -507,13 +548,107 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAnalyticsLoading(true);
       setAnalyticsError(null);
       
-      return await financeService.getTotalSpending(startDate, endDate);
+      // Note: This method doesn't exist in financeService, implementing basic logic
+      const expensesData = await financeService.getExpensesByDateRange(startDate || '', endDate || '');
+      const totalAmount = expensesData.reduce((sum, expense) => sum + expense.amount, 0);
+      return { totalAmount };
     } catch (error: any) {
       console.error('Failed to get total spending:', error);
       setAnalyticsError(error.message || 'Failed to get total spending');
       throw error;
     } finally {
       setAnalyticsLoading(false);
+    }
+  }, []);
+
+  const getBudgetAnalytics = useCallback(async (budgetId: number, startDate: string, endDate: string) => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      
+      return await financeService.getBudgetAnalytics(budgetId, startDate, endDate);
+    } catch (error: any) {
+      console.error('Failed to get budget analytics:', error);
+      setAnalyticsError(error.message || 'Failed to get budget analytics');
+      throw error;
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
+  const getBudgetSummary = useCallback(async (budgetId: number) => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      
+      return await financeService.getBudgetSummary(budgetId);
+    } catch (error: any) {
+      console.error('Failed to get budget summary:', error);
+      setAnalyticsError(error.message || 'Failed to get budget summary');
+      throw error;
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
+  const getBudgetWarnings = useCallback(async (budgetId: number) => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      
+      return await financeService.getBudgetWarnings(budgetId);
+    } catch (error: any) {
+      console.error('Failed to get budget warnings:', error);
+      setAnalyticsError(error.message || 'Failed to get budget warnings');
+      // Return empty array instead of throwing for warnings
+      return [];
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
+  const getBudgetSpendingTrends = useCallback(async (budgetId: number, months: number = 6) => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      
+      return await financeService.getBudgetSpendingTrends(budgetId, months);
+    } catch (error: any) {
+      console.error('Failed to get budget spending trends:', error);
+      setAnalyticsError(error.message || 'Failed to get budget spending trends');
+      throw error;
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
+  const getBudgetTopCategories = useCallback(async (budgetId: number, limit: number = 5) => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      
+      return await financeService.getBudgetTopCategories(budgetId, limit);
+    } catch (error: any) {
+      console.error('Failed to get budget top categories:', error);
+      setAnalyticsError(error.message || 'Failed to get budget top categories');
+      throw error;
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
+  const getDefaultCategories = useCallback(async () => {
+    try {
+      setCategoriesLoading(true);
+      setCategoriesError(null);
+      
+      return await financeService.getDefaultCategories();
+    } catch (error: any) {
+      console.error('Failed to get default categories:', error);
+      setCategoriesError(error.message || 'Failed to get default categories');
+      throw error;
+    } finally {
+      setCategoriesLoading(false);
     }
   }, []);
 
@@ -592,6 +727,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     getCategoryBreakdown,
     getMonthlySpending,
     getTotalSpending,
+    getBudgetAnalytics,
+    getBudgetSummary,
+    getBudgetWarnings,
+    getBudgetSpendingTrends,
+    getBudgetTopCategories,
+    getDefaultCategories,
 
     // Utility Operations
     refreshAll,

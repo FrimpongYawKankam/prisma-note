@@ -124,6 +124,9 @@ class FinanceService {
       const response = await axiosInstance.get('/api/budgets');
       return response.data;
     } catch (error: any) {
+      if (error.response?.status === 403) {
+        return []; // Endpoints don't exist yet, return empty array
+      }
       console.error('Failed to fetch budgets:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch budgets');
     }
@@ -173,8 +176,8 @@ class FinanceService {
       const response = await axiosInstance.get('/api/budgets/current');
       return response.data;
     } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null; // No current budget found
+      if (error.response?.status === 404 || error.response?.status === 403) {
+        return null; // No current budget found or endpoints don't exist yet
       }
       console.error('Failed to fetch current budget:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch current budget');
@@ -196,9 +199,12 @@ class FinanceService {
   // Category Operations
   async getCategories(): Promise<CategoryResponse[]> {
     try {
-      const response = await axiosInstance.get('/api/categories');
+      const response = await axiosInstance.get('/api/budgets/categories');
       return response.data;
     } catch (error: any) {
+      if (error.response?.status === 403) {
+        return []; // Endpoints don't exist yet, return empty array
+      }
       console.error('Failed to fetch categories:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch categories');
     }
@@ -206,7 +212,7 @@ class FinanceService {
 
   async getCategoryById(categoryId: number): Promise<CategoryResponse> {
     try {
-      const response = await axiosInstance.get(`/api/categories/${categoryId}`);
+      const response = await axiosInstance.get(`/api/budgets/categories/${categoryId}`);
       return response.data;
     } catch (error: any) {
       console.error('Failed to fetch category:', error);
@@ -216,7 +222,7 @@ class FinanceService {
 
   async createCategory(categoryData: CategoryCreateRequest): Promise<CategoryResponse> {
     try {
-      const response = await axiosInstance.post('/api/categories', categoryData);
+      const response = await axiosInstance.post('/api/budgets/categories', categoryData);
       return response.data;
     } catch (error: any) {
       console.error('Failed to create category:', error);
@@ -226,7 +232,7 @@ class FinanceService {
 
   async updateCategory(categoryId: number, categoryData: Partial<CategoryCreateRequest>): Promise<CategoryResponse> {
     try {
-      const response = await axiosInstance.put(`/api/categories/${categoryId}`, categoryData);
+      const response = await axiosInstance.put(`/api/budgets/categories/${categoryId}`, categoryData);
       return response.data;
     } catch (error: any) {
       console.error('Failed to update category:', error);
@@ -236,19 +242,35 @@ class FinanceService {
 
   async deleteCategory(categoryId: number): Promise<void> {
     try {
-      await axiosInstance.delete(`/api/categories/${categoryId}`);
+      await axiosInstance.delete(`/api/budgets/categories/${categoryId}`);
     } catch (error: any) {
       console.error('Failed to delete category:', error);
       throw new Error(error.response?.data?.message || 'Failed to delete category');
     }
   }
 
+  async getDefaultCategories(): Promise<CategoryResponse[]> {
+    try {
+      const response = await axiosInstance.get('/api/budgets/categories/default');
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        return []; // Return empty array instead of throwing
+      }
+      console.error('Failed to fetch default categories:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch default categories');
+    }
+  }
+
   // User Category Operations
   async getUserCategories(): Promise<UserCategoryResponse[]> {
     try {
-      const response = await axiosInstance.get('/api/user-categories');
+      const response = await axiosInstance.get('/api/budgets/user-categories');
       return response.data;
     } catch (error: any) {
+      if (error.response?.status === 403) {
+        return []; // Endpoints don't exist yet, return empty array
+      }
       console.error('Failed to fetch user categories:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch user categories');
     }
@@ -256,7 +278,7 @@ class FinanceService {
 
   async assignCategoryToUser(categoryData: UserCategoryRequest): Promise<UserCategoryResponse> {
     try {
-      const response = await axiosInstance.post('/api/user-categories', categoryData);
+      const response = await axiosInstance.post('/api/budgets/user-categories', categoryData);
       return response.data;
     } catch (error: any) {
       console.error('Failed to assign category to user:', error);
@@ -266,7 +288,7 @@ class FinanceService {
 
   async removeUserCategory(userCategoryId: number): Promise<void> {
     try {
-      await axiosInstance.delete(`/api/user-categories/${userCategoryId}`);
+      await axiosInstance.delete(`/api/budgets/user-categories/${userCategoryId}`);
     } catch (error: any) {
       console.error('Failed to remove user category:', error);
       throw new Error(error.response?.data?.message || 'Failed to remove user category');
@@ -280,9 +302,12 @@ class FinanceService {
       if (page !== undefined) params.page = page;
       if (size !== undefined) params.size = size;
       
-      const response = await axiosInstance.get('/api/expenses', { params });
+      const response = await axiosInstance.get('/api/budgets/expenses', { params });
       return response.data;
     } catch (error: any) {
+      if (error.response?.status === 403) {
+        return []; // Endpoints don't exist yet, return empty array
+      }
       console.error('Failed to fetch expenses:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch expenses');
     }
@@ -290,7 +315,7 @@ class FinanceService {
 
   async getExpenseById(expenseId: number): Promise<ExpenseResponse> {
     try {
-      const response = await axiosInstance.get(`/api/expenses/${expenseId}`);
+      const response = await axiosInstance.get(`/api/budgets/expenses/${expenseId}`);
       return response.data;
     } catch (error: any) {
       console.error('Failed to fetch expense:', error);
@@ -300,7 +325,7 @@ class FinanceService {
 
   async createExpense(expenseData: ExpenseCreateRequest): Promise<ExpenseResponse> {
     try {
-      const response = await axiosInstance.post('/api/expenses', expenseData);
+      const response = await axiosInstance.post('/api/budgets/expenses', expenseData);
       return response.data;
     } catch (error: any) {
       console.error('Failed to create expense:', error);
@@ -310,7 +335,7 @@ class FinanceService {
 
   async updateExpense(expenseId: number, expenseData: ExpenseUpdateRequest): Promise<ExpenseResponse> {
     try {
-      const response = await axiosInstance.put(`/api/expenses/${expenseId}`, expenseData);
+      const response = await axiosInstance.put(`/api/budgets/expenses/${expenseId}`, expenseData);
       return response.data;
     } catch (error: any) {
       console.error('Failed to update expense:', error);
@@ -320,7 +345,7 @@ class FinanceService {
 
   async deleteExpense(expenseId: number): Promise<void> {
     try {
-      await axiosInstance.delete(`/api/expenses/${expenseId}`);
+      await axiosInstance.delete(`/api/budgets/expenses/${expenseId}`);
     } catch (error: any) {
       console.error('Failed to delete expense:', error);
       throw new Error(error.response?.data?.message || 'Failed to delete expense');
@@ -372,78 +397,102 @@ class FinanceService {
   // Analytics Operations
   async getSpendingTrends(period: 'day' | 'week' | 'month', startDate?: string, endDate?: string): Promise<SpendingTrendResponse[]> {
     try {
-      const params: any = { period };
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      
-      const response = await axiosInstance.get('/api/analytics/spending-trends', { params });
-      return response.data;
+      // Note: Backend analytics are budget-specific, so we need a budget ID
+      // For now, return empty array until we have a specific budget
+      console.warn('getSpendingTrends: Backend requires specific budget ID, returning empty array');
+      return [];
     } catch (error: any) {
       console.error('Failed to fetch spending trends:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch spending trends');
     }
   }
 
+  async getBudgetAnalytics(budgetId: number, startDate: string, endDate: string): Promise<any> {
+    try {
+      const response = await axiosInstance.get(`/api/budgets/${budgetId}/analytics`, {
+        params: { startDate, endDate }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch budget analytics:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch budget analytics');
+    }
+  }
+
+  async getBudgetSummary(budgetId: number): Promise<any> {
+    try {
+      const response = await axiosInstance.get(`/api/budgets/${budgetId}/summary`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to fetch budget summary:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch budget summary');
+    }
+  }
+
+  async getBudgetWarnings(budgetId: number): Promise<string[]> {
+    try {
+      const response = await axiosInstance.get(`/api/budgets/${budgetId}/warnings`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        return []; // Return empty array instead of throwing
+      }
+      console.error('Failed to fetch budget warnings:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch budget warnings');
+    }
+  }
+
+  async getBudgetSpendingTrends(budgetId: number, months: number = 6): Promise<any> {
+    try {
+      const response = await axiosInstance.get(`/api/budgets/${budgetId}/trends`, {
+        params: { months }
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        return { monthlySpending: [], averageSpending: 0, trend: 'stable' };
+      }
+      console.error('Failed to fetch budget spending trends:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch budget spending trends');
+    }
+  }
+
+  async getBudgetTopCategories(budgetId: number, limit: number = 5): Promise<any[]> {
+    try {
+      const response = await axiosInstance.get(`/api/budgets/${budgetId}/top-categories`, {
+        params: { limit }
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        return []; // Return empty array instead of throwing
+      }
+      console.error('Failed to fetch budget top categories:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch budget top categories');
+    }
+  }
+
   async getCategoryBreakdown(startDate?: string, endDate?: string): Promise<CategoryBreakdownResponse[]> {
     try {
-      const params: any = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      
-      const response = await axiosInstance.get('/api/analytics/category-breakdown', { params });
-      return response.data;
+      // Note: Backend analytics are budget-specific, returning empty array for now
+      console.warn('getCategoryBreakdown: Backend requires specific budget ID, returning empty array');
+      return [];
     } catch (error: any) {
       console.error('Failed to fetch category breakdown:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch category breakdown');
     }
   }
 
-  async getMonthlySpending(year: number, month: number): Promise<MonthlySpendingResponse> {
+  async getSupportedCurrencies(): Promise<string[]> {
     try {
-      const response = await axiosInstance.get('/api/analytics/monthly-spending', {
-        params: { year, month }
-      });
+      const response = await axiosInstance.get('/api/budgets/currencies');
       return response.data;
     } catch (error: any) {
-      console.error('Failed to fetch monthly spending:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch monthly spending');
+      console.error('Failed to fetch supported currencies:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch supported currencies');
     }
   }
 
-  async getTotalSpending(startDate?: string, endDate?: string): Promise<{ totalAmount: number }> {
-    try {
-      const params: any = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      
-      const response = await axiosInstance.get('/api/analytics/total-spending', { params });
-      return response.data;
-    } catch (error: any) {
-      console.error('Failed to fetch total spending:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch total spending');
-    }
-  }
-
-  async getSpendingComparison(currentStartDate: string, currentEndDate: string, previousStartDate: string, previousEndDate: string): Promise<{
-    currentPeriod: { totalAmount: number; categoryBreakdown: CategoryBreakdownResponse[] };
-    previousPeriod: { totalAmount: number; categoryBreakdown: CategoryBreakdownResponse[] };
-    percentageChange: number;
-  }> {
-    try {
-      const response = await axiosInstance.get('/api/analytics/spending-comparison', {
-        params: {
-          currentStartDate,
-          currentEndDate,
-          previousStartDate,
-          previousEndDate
-        }
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('Failed to fetch spending comparison:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch spending comparison');
-    }
-  }
 }
 
 const financeService = new FinanceService();

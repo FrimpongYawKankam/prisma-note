@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import {
-  Budget,
-  CategoryBudget,
-  Currency,
-  Expense,
-  getCurrencyFromCode,
-  transformBackendCategoryToLegacy,
-  transformBackendExpenseToLegacy
+    Budget,
+    CategoryBudget,
+    Currency,
+    Expense,
+    getCurrencyFromCode,
+    transformBackendCategoryToLegacy,
+    transformBackendExpenseToLegacy
 } from '../types/finance';
 
 interface UseFinanceDataReturn {
@@ -79,7 +79,7 @@ export function useFinanceData(): UseFinanceDataReturn {
 
     // Calculate spent amounts for each category
     const categoryBudgets: CategoryBudget[] = userAssignedCategories.map(category => {
-      const categoryExpenses = backendExpenses.filter(exp => exp.categoryId === category.id);
+      const categoryExpenses = (backendExpenses || []).filter(exp => exp.categoryId === category.id);
       const spentAmount = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
       
       // For now, distribute budget evenly across categories (this can be enhanced later)
@@ -99,12 +99,12 @@ export function useFinanceData(): UseFinanceDataReturn {
 
   // Transform backend expenses to legacy format
   const expenses = useMemo((): Expense[] => {
-    return backendExpenses.map(transformBackendExpenseToLegacy);
+    return (backendExpenses || []).map(transformBackendExpenseToLegacy);
   }, [backendExpenses]);
 
   // Computed values
   const totalSpent = useMemo(() => {
-    return backendExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    return (backendExpenses || []).reduce((sum, expense) => sum + expense.amount, 0);
   }, [backendExpenses]);
 
   const remainingBudget = useMemo(() => {
@@ -120,7 +120,7 @@ export function useFinanceData(): UseFinanceDataReturn {
   useEffect(() => {
     const newCategorySpending = new Map<string, number>();
     
-    backendExpenses.forEach(expense => {
+    (backendExpenses || []).forEach(expense => {
       const categoryId = expense.categoryId.toString();
       const currentAmount = newCategorySpending.get(categoryId) || 0;
       newCategorySpending.set(categoryId, currentAmount + expense.amount);
@@ -269,7 +269,7 @@ export function useFinanceData(): UseFinanceDataReturn {
     // Group expenses by the specified period
     const groupedExpenses = new Map<string, number>();
     
-    backendExpenses.forEach(expense => {
+    (backendExpenses || []).forEach(expense => {
       const date = new Date(expense.date);
       let key: string;
       
