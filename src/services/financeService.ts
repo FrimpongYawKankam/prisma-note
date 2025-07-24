@@ -266,13 +266,14 @@ class FinanceService {
   async getUserCategories(): Promise<UserCategoryResponse[]> {
     try {
       const response = await axiosInstance.get('/api/budgets/user-categories');
-      return response.data;
+      return response.data || [];
     } catch (error: any) {
-      if (error.response?.status === 403) {
-        return []; // Endpoints don't exist yet, return empty array
+      if (error.response?.status === 403 || error.response?.status === 404) {
+        return []; // Endpoints don't exist yet or no categories, return empty array
       }
       console.error('Failed to fetch user categories:', error);
-      throw new Error(error.response?.data?.message || 'Failed to fetch user categories');
+      // Return empty array instead of throwing to prevent crashes
+      return [];
     }
   }
 
@@ -302,13 +303,36 @@ class FinanceService {
       if (page !== undefined) params.page = page;
       if (size !== undefined) params.size = size;
       
-      const response = await axiosInstance.get('/api/budgets/expenses', { params });
+      // Use the new list endpoint that returns an array instead of Page object
+      const response = await axiosInstance.get('/api/budgets/expenses/list', { params });
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 403) {
         return []; // Endpoints don't exist yet, return empty array
       }
       console.error('Failed to fetch expenses:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch expenses');
+    }
+  }
+
+  // Keep the original method for pagination support if needed
+  async getExpensesPaginated(page?: number, size?: number): Promise<{content: ExpenseResponse[], totalElements: number, totalPages: number}> {
+    try {
+      const params: any = {};
+      if (page !== undefined) params.page = page;
+      if (size !== undefined) params.size = size;
+      
+      const response = await axiosInstance.get('/api/budgets/expenses', { params });
+      return {
+        content: response.data.content || [],
+        totalElements: response.data.totalElements || 0,
+        totalPages: response.data.totalPages || 0
+      };
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        return { content: [], totalElements: 0, totalPages: 0 };
+      }
+      console.error('Failed to fetch expenses (paginated):', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch expenses');
     }
   }

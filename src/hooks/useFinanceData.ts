@@ -79,7 +79,10 @@ export function useFinanceData(): UseFinanceDataReturn {
 
     // Calculate spent amounts for each category
     const categoryBudgets: CategoryBudget[] = userAssignedCategories.map(category => {
-      const categoryExpenses = (backendExpenses || []).filter(exp => exp.categoryId === category.id);
+      // Ensure we have a valid array before filtering
+      const categoryExpenses = Array.isArray(backendExpenses) 
+        ? backendExpenses.filter(exp => exp.categoryId === category.id)
+        : [];
       const spentAmount = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
       
       // For now, distribute budget evenly across categories (this can be enhanced later)
@@ -99,12 +102,21 @@ export function useFinanceData(): UseFinanceDataReturn {
 
   // Transform backend expenses to legacy format
   const expenses = useMemo((): Expense[] => {
-    return (backendExpenses || []).map(transformBackendExpenseToLegacy);
+    // Double-check that backendExpenses is an array
+    if (!Array.isArray(backendExpenses)) {
+      console.warn('backendExpenses is not an array:', backendExpenses);
+      return [];
+    }
+    return backendExpenses.map(transformBackendExpenseToLegacy);
   }, [backendExpenses]);
 
   // Computed values
   const totalSpent = useMemo(() => {
-    return (backendExpenses || []).reduce((sum, expense) => sum + expense.amount, 0);
+    // Ensure we have a valid array before reducing
+    if (!Array.isArray(backendExpenses)) {
+      return 0;
+    }
+    return backendExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   }, [backendExpenses]);
 
   const remainingBudget = useMemo(() => {
@@ -120,11 +132,14 @@ export function useFinanceData(): UseFinanceDataReturn {
   useEffect(() => {
     const newCategorySpending = new Map<string, number>();
     
-    (backendExpenses || []).forEach(expense => {
-      const categoryId = expense.categoryId.toString();
-      const currentAmount = newCategorySpending.get(categoryId) || 0;
-      newCategorySpending.set(categoryId, currentAmount + expense.amount);
-    });
+    // Ensure we have a valid array before processing
+    if (Array.isArray(backendExpenses)) {
+      backendExpenses.forEach(expense => {
+        const categoryId = expense.categoryId.toString();
+        const currentAmount = newCategorySpending.get(categoryId) || 0;
+        newCategorySpending.set(categoryId, currentAmount + expense.amount);
+      });
+    }
 
     setCategorySpendingMap(newCategorySpending);
   }, [backendExpenses]);

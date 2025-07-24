@@ -237,14 +237,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         financeService.getUserCategories()
       ]);
 
-      setCategories(categoriesData);
-      setUserCategories(userCategoriesData);
+      // Ensure we always have arrays
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      setUserCategories(Array.isArray(userCategoriesData) ? userCategoriesData : []);
     } catch (error: any) {
       console.error('Failed to load categories:', error);
       // Don't set error for 403 cases - just means finance endpoints don't exist yet
       if (error.response?.status !== 403) {
         setCategoriesError(error.message || 'Failed to load categories');
       }
+      // Always ensure we have empty arrays as fallback
+      setCategories([]);
+      setUserCategories([]);
     } finally {
       setCategoriesLoading(false);
     }
@@ -362,13 +366,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setExpensesError(null);
 
       const expensesData = await financeService.getExpenses();
-      setExpenses(expensesData);
+      // Ensure we always have an array
+      setExpenses(Array.isArray(expensesData) ? expensesData : []);
     } catch (error: any) {
       console.error('Failed to load expenses:', error);
       // Don't set error for 403 cases - just means finance endpoints don't exist yet
       if (error.response?.status !== 403) {
         setExpensesError(error.message || 'Failed to load expenses');
       }
+      // Always ensure we have an empty array as fallback
+      setExpenses([]);
     } finally {
       setExpensesLoading(false);
     }
