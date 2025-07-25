@@ -6,6 +6,7 @@ import { Calendar } from 'react-native-calendars';
 import { useEvents } from '../../src/context/EventsContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { formatEventTime, getTagColor } from '../../src/services/eventService';
+import { Spacing } from '../../src/styles/tokens';
 
 export default function EventScreen() {
   const { 
@@ -19,7 +20,7 @@ export default function EventScreen() {
   } = useEvents();
   
   const [localSelectedDate, setLocalSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const isDark = theme === 'dark';
   const router = useRouter();
 
@@ -69,10 +70,10 @@ export default function EventScreen() {
   const displayedEvents = getEventsForSelectedDate();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: isDark ? '#fff' : '#000' }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
           Events
         </Text>
         <View style={styles.dateIndicator}>
@@ -87,14 +88,14 @@ export default function EventScreen() {
         onDayPress={(day) => setLocalSelectedDate(day.dateString)}
         markedDates={markedDates}
         theme={{
-          backgroundColor: isDark ? '#000' : '#fff',
-          calendarBackground: isDark ? '#000' : '#fff',
-          dayTextColor: isDark ? '#fff' : '#000',
-          monthTextColor: isDark ? '#fff' : '#000',
+          backgroundColor: colors.background,
+          calendarBackground: colors.background,
+          dayTextColor: colors.text,
+          monthTextColor: colors.text,
           selectedDayTextColor: '#fff',
-          arrowColor: isDark ? '#fff' : '#000',
-          textSectionTitleColor: isDark ? '#64b5f6' : '#1e88e5',
-          todayTextColor: isDark ? '#64ffda' : '#007bff',
+          arrowColor: colors.text,
+          textSectionTitleColor: colors.primary,
+          todayTextColor: colors.primary,
           textDayFontWeight: '300',
           textMonthFontWeight: 'bold',
           textDayHeaderFontWeight: '300',
@@ -104,7 +105,7 @@ export default function EventScreen() {
 
       {/* Selected Date Events */}
       <View style={styles.selectedDateContainer}>
-        <Text style={[styles.selectedDateText, { color: isDark ? '#fff' : '#000' }]}>
+        <Text style={[styles.selectedDateText, { color: colors.text }]}>
           {new Date(selectedDate).getDate()} {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
         </Text>
       </View>
@@ -112,7 +113,7 @@ export default function EventScreen() {
       {/* Events List */}
       <ScrollView style={styles.eventsContainer} showsVerticalScrollIndicator={false}>
         {displayedEvents.length === 0 ? (
-          <Text style={[styles.noEventsText, { color: isDark ? '#666' : '#999' }]}>
+          <Text style={[styles.noEventsText, { color: colors.textSecondary }]}>
             No events for this date
           </Text>
         ) : (
@@ -122,17 +123,17 @@ export default function EventScreen() {
               style={[styles.eventItem, { borderLeftColor: getTagColor(event.tag) }]}
               onPress={() => router.push(`/event-detail?id=${event.id}`)}
             >
-              <Text style={[styles.eventTime, { color: isDark ? '#ccc' : '#666' }]}>
+              <Text style={[styles.eventTime, { color: colors.textSecondary }]}>
                 {event.allDay ? 'All day' : formatTime(event.startDateTime)}
               </Text>
               <View style={styles.eventContent}>
                 <View style={[styles.eventIndicator, { backgroundColor: getTagColor(event.tag) }]} />
                 <View style={styles.eventDetails}>
-                  <Text style={[styles.eventTitle, { color: isDark ? '#fff' : '#000' }]}>
+                  <Text style={[styles.eventTitle, { color: colors.text }]}>
                     {event.title}
                   </Text>
                   {!event.allDay && (
-                    <Text style={[styles.eventDuration, { color: isDark ? '#ccc' : '#666' }]}>
+                    <Text style={[styles.eventDuration, { color: colors.textSecondary }]}>
                       {formatTime(event.startDateTime)} - {formatTime(event.endDateTime)}
                     </Text>
                   )}
@@ -146,15 +147,15 @@ export default function EventScreen() {
       {/* Add Event Button */}
       <View style={[styles.addEventContainer, { paddingBottom: 30 }]}>
         <TouchableOpacity
-          style={[styles.addEventButton, { backgroundColor: isDark ? '#1a1a1a' : '#f0f0f0' }]}
+          style={[styles.addEventButton, { backgroundColor: colors.surfaceSecondary }]}
           onPress={() => router.push(`/set-event?date=${selectedDate}`)}
         >
-          <Text style={[styles.addEventText, { color: isDark ? '#ccc' : '#666' }]}>
+          <Text style={[styles.addEventText, { color: colors.textSecondary }]}>
             Add event on {formatDate(localSelectedDate)}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.fabButton, { backgroundColor: isDark ? '#2a2a2a' : '#007bff' }]}
+          style={[styles.fabButton, { backgroundColor: colors.primary }]}
           onPress={() => router.push(`/set-event?date=${localSelectedDate}`)}
         >
           <Ionicons name="add" size={24} color="#fff" />
@@ -173,9 +174,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 15,
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xl,
   },
   headerTitle: {
     fontSize: 26,
