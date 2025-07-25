@@ -86,7 +86,7 @@ export const BudgetOverviewCard: React.FC<BudgetOverviewCardProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[styles.title, { color: colors.primary }]}>
             {budget.period.toLowerCase().charAt(0).toUpperCase() + budget.period.toLowerCase().slice(1)} Budget
           </Text>
           <Text style={[styles.period, { color: colors.textSecondary }]}>

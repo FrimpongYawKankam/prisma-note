@@ -87,7 +87,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
     <ModernCard variant="elevated" padding="lg">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
+        <Text style={[styles.title, { color: colors.primary }]}>
           Quick Stats
         </Text>
         <TouchableOpacity 

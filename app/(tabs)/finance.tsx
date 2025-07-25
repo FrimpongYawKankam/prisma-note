@@ -53,6 +53,10 @@ export default function FinanceScreen() {
     router.push('/finance/create-budget');
   };
 
+  const handleEditBudget = () => {
+    router.push('/finance/edit-budget');
+  };
+
   const handleAddExpense = () => {
     router.push('/finance/add-expense');
   };
@@ -132,6 +136,20 @@ export default function FinanceScreen() {
             {/* Action Buttons */}
             <View style={styles.actionButtons}>
               <ModernButton
+                title="Edit Budget"
+                onPress={handleEditBudget}
+                variant="secondary"
+                leftIcon={
+                  <Ionicons 
+                    name="create-outline" 
+                    size={20} 
+                    color={colors.primary} 
+                  />
+                }
+                style={styles.actionButton}
+              />
+              
+              <ModernButton
                 title="Add Expense"
                 onPress={handleAddExpense}
                 variant="primary"
@@ -140,20 +158,6 @@ export default function FinanceScreen() {
                     name="add-circle-outline" 
                     size={20} 
                     color="white" 
-                  />
-                }
-                style={styles.actionButton}
-              />
-              
-              <ModernButton
-                title="View All Expenses"
-                onPress={handleViewAllExpenses}
-                variant="secondary"
-                leftIcon={
-                  <Ionicons 
-                    name="list-outline" 
-                    size={20} 
-                    color={colors.primary} 
                   />
                 }
                 style={styles.actionButton}

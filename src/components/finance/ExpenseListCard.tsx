@@ -56,7 +56,7 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
           color={colors.accent} 
         />
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>
+      <Text style={[styles.emptyTitle, { color: colors.primary }]}>
         No Expenses Yet
       </Text>
       <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
