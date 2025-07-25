@@ -2,10 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
-    Animated,
     FlatList,
     Keyboard,
+    KeyboardAvoidingView,
     Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -41,34 +44,22 @@ export function QuickAddExpense({
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const slideAnim = useRef(new Animated.Value(300)).current;
   const amountInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (visible) {
+      console.log('QuickAddExpense modal opening, categories:', categories.length);
       // Reset form
       setSelectedCategory(preselectedCategoryId || categories[0]?.id || '');
       setAmount('');
       setDescription('');
-      
-      // Animate in
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
 
-      // Auto-focus amount input after animation
-      setTimeout(() => {
-        amountInputRef.current?.focus();
-      }, 350);
-    } else {
-      // Animate out
-      Animated.timing(slideAnim, {
-        toValue: 300,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      // Auto-focus amount input after modal opens only if categories exist
+      if (categories.length > 0) {
+        setTimeout(() => {
+          amountInputRef.current?.focus();
+        }, 300);
+      }
     }
   }, [visible, preselectedCategoryId, categories]);
 
@@ -134,241 +125,317 @@ export function QuickAddExpense({
 
   if (!visible) return null;
 
+  // Show setup message if no categories available
+  if (categories.length === 0) {
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <KeyboardAvoidingView 
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableOpacity 
+            style={styles.backdrop} 
+            activeOpacity={1} 
+            onPress={onClose}
+          />
+          
+          <View 
+            style={[
+              styles.container,
+              { 
+                backgroundColor: colors.background,
+              }
+            ]}
+          >
+            <SafeAreaView style={styles.safeArea}>
+              {/* Header */}
+              <View style={styles.header}>
+                <TouchableOpacity onPress={onClose}>
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <Text style={[styles.title, { color: colors.text }]}>
+                  Add Expense
+                </Text>
+                <View style={{ width: 24 }} />
+              </View>
+
+              {/* Setup Required Message */}
+              <View style={styles.setupRequiredContainer}>
+                <Ionicons name="wallet-outline" size={48} color={colors.textSecondary} />
+                <Text style={[styles.setupRequiredTitle, { color: colors.text }]}>
+                  Setup Required
+                </Text>
+                <Text style={[styles.setupRequiredMessage, { color: colors.textSecondary }]}>
+                  Please set up your budget first to start adding expenses.
+                </Text>
+                <ModernButton
+                  title="Setup Budget"
+                  onPress={() => {
+                    onClose();
+                    // Could trigger budget setup here
+                  }}
+                  variant="primary"
+                  style={styles.setupButton}
+                />
+              </View>
+            </SafeAreaView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="none"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView 
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <TouchableOpacity 
           style={styles.backdrop} 
           activeOpacity={1} 
           onPress={onClose}
         />
         
-        <Animated.View 
+        <View 
           style={[
             styles.container,
             { 
               backgroundColor: colors.background,
-              transform: [{ translateY: slideAnim }],
-              paddingBottom: showKeyboard ? Spacing.lg : Spacing.xl,
             }
           ]}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-            <Text style={[styles.title, { color: colors.text }]}>
-              Add Expense
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
+          <SafeAreaView style={styles.safeArea}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onClose}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <Text style={[styles.title, { color: colors.text }]}>
+                Add Expense
+              </Text>
+              <View style={{ width: 24 }} />
+            </View>
 
-          {/* Amount Section */}
-          <View style={styles.amountSection}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-              Amount
-            </Text>
-            <View style={styles.amountContainer}>
-              <Text style={[styles.currencySymbol, { color: colors.text }]}>$</Text>
-              <TextInput
-                ref={amountInputRef}
-                style={[styles.amountInput, { color: colors.text }]}
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="0"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="numeric"
-                returnKeyType="next"
-                onSubmitEditing={() => {
-                  // Focus description or handle next action
-                }}
+            {/* Scrollable Content */}
+            <ScrollView 
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Amount Section */}
+              <View style={styles.amountSection}>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+                  Amount
+                </Text>
+                <View style={styles.amountContainer}>
+                  <Text style={[styles.currencySymbol, { color: colors.text }]}>$</Text>
+                  <TextInput
+                    ref={amountInputRef}
+                    style={[styles.amountInput, { color: colors.text }]}
+                    value={amount}
+                    onChangeText={setAmount}
+                    placeholder="0"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="numeric"
+                    returnKeyType="next"
+                    onSubmitEditing={() => {
+                      // Focus description or handle next action
+                    }}
+                  />
+                </View>
+                
+                {/* Quick Amount Buttons */}
+                <View style={styles.quickAmounts}>
+                  {QUICK_AMOUNTS.map(quickAmount => (
+                    <TouchableOpacity
+                      key={quickAmount}
+                      style={[
+                        styles.quickAmountButton,
+                        { 
+                          backgroundColor: amount === quickAmount.toString() 
+                            ? colors.primary + '20' 
+                            : colors.surface,
+                          borderColor: amount === quickAmount.toString() 
+                            ? colors.primary 
+                            : colors.border,
+                        }
+                      ]}
+                      onPress={() => handleQuickAmount(quickAmount)}
+                    >
+                      <Text style={[
+                        styles.quickAmountText,
+                        { 
+                          color: amount === quickAmount.toString() 
+                            ? colors.primary 
+                            : colors.text 
+                        }
+                      ]}>
+                        ${quickAmount}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Category Selection */}
+              <View style={styles.categorySection}>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+                  Category
+                </Text>
+                <FlatList
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={categories}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.categoryItem,
+                        {
+                          backgroundColor: selectedCategory === item.id 
+                            ? item.color + '20' 
+                            : colors.surface,
+                          borderColor: selectedCategory === item.id 
+                            ? item.color 
+                            : colors.border,
+                        }
+                      ]}
+                      onPress={() => setSelectedCategory(item.id)}
+                    >
+                      <View style={[styles.categoryIcon, { backgroundColor: item.color + '20' }]}>
+                        <Ionicons 
+                          name={item.icon as any} 
+                          size={20} 
+                          color={item.color} 
+                        />
+                      </View>
+                      <Text style={[
+                        styles.categoryName,
+                        { 
+                          color: selectedCategory === item.id 
+                            ? item.color 
+                            : colors.text 
+                        }
+                      ]}>
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  contentContainerStyle={styles.categoriesList}
+                />
+              </View>
+
+              {/* Description Section */}
+              <View style={styles.descriptionSection}>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+                  Description
+                </Text>
+                <TextInput
+                  style={[
+                    styles.descriptionInput,
+                    { 
+                      color: colors.text,
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    }
+                  ]}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="What did you spend on?"
+                  placeholderTextColor={colors.textSecondary}
+                  returnKeyType="done"
+                  onSubmitEditing={handleAddExpense}
+                />
+                
+                {/* Quick Description Buttons */}
+                {!showKeyboard && (
+                  <View style={styles.quickDescriptions}>
+                    {RECENT_DESCRIPTIONS.map(desc => (
+                      <TouchableOpacity
+                        key={desc}
+                        style={[
+                          styles.quickDescButton,
+                          { 
+                            backgroundColor: description === desc 
+                              ? colors.primary + '20' 
+                              : colors.surface,
+                            borderColor: description === desc 
+                              ? colors.primary 
+                              : colors.border,
+                          }
+                        ]}
+                        onPress={() => handleQuickDescription(desc)}
+                      >
+                        <Text style={[
+                          styles.quickDescText,
+                          { 
+                            color: description === desc 
+                              ? colors.primary 
+                              : colors.textSecondary 
+                          }
+                        ]}>
+                          {desc}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* Preview */}
+              {amount && selectedCategory && description && (
+                <ModernCard style={StyleSheet.flatten([styles.previewCard, { backgroundColor: colors.surface }])}>
+                  <View style={styles.previewContent}>
+                    <View style={styles.previewLeft}>
+                      <View style={[styles.previewIcon, { backgroundColor: getSelectedCategory()?.color + '20' }]}>
+                        <Ionicons 
+                          name={getSelectedCategory()?.icon as any} 
+                          size={16} 
+                          color={getSelectedCategory()?.color} 
+                        />
+                      </View>
+                      <View>
+                        <Text style={[styles.previewDescription, { color: colors.text }]}>
+                          {description}
+                        </Text>
+                        <Text style={[styles.previewCategory, { color: colors.textSecondary }]}>
+                          {getSelectedCategory()?.name}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.previewAmount, { color: colors.text }]}>
+                      {formatCurrency(amount)}
+                    </Text>
+                  </View>
+                </ModernCard>
+              )}
+            </ScrollView>
+
+            {/* Action Buttons - Fixed at bottom */}
+            <View style={[styles.actions, { backgroundColor: colors.background }]}>
+              <ModernButton
+                title="Add Expense"
+                onPress={handleAddExpense}
+                variant="primary"
+                disabled={!amount || !selectedCategory || !description.trim()}
+                style={styles.addButton}
               />
             </View>
-            
-            {/* Quick Amount Buttons */}
-            <View style={styles.quickAmounts}>
-              {QUICK_AMOUNTS.map(quickAmount => (
-                <TouchableOpacity
-                  key={quickAmount}
-                  style={[
-                    styles.quickAmountButton,
-                    { 
-                      backgroundColor: amount === quickAmount.toString() 
-                        ? colors.primary + '20' 
-                        : colors.surface,
-                      borderColor: amount === quickAmount.toString() 
-                        ? colors.primary 
-                        : colors.border,
-                    }
-                  ]}
-                  onPress={() => handleQuickAmount(quickAmount)}
-                >
-                  <Text style={[
-                    styles.quickAmountText,
-                    { 
-                      color: amount === quickAmount.toString() 
-                        ? colors.primary 
-                        : colors.text 
-                    }
-                  ]}>
-                    ${quickAmount}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Category Selection */}
-          <View style={styles.categorySection}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-              Category
-            </Text>
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={categories}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.categoryItem,
-                    {
-                      backgroundColor: selectedCategory === item.id 
-                        ? item.color + '20' 
-                        : colors.surface,
-                      borderColor: selectedCategory === item.id 
-                        ? item.color 
-                        : colors.border,
-                    }
-                  ]}
-                  onPress={() => setSelectedCategory(item.id)}
-                >
-                  <View style={[styles.categoryIcon, { backgroundColor: item.color + '20' }]}>
-                    <Ionicons 
-                      name={item.icon as any} 
-                      size={20} 
-                      color={item.color} 
-                    />
-                  </View>
-                  <Text style={[
-                    styles.categoryName,
-                    { 
-                      color: selectedCategory === item.id 
-                        ? item.color 
-                        : colors.text 
-                    }
-                  ]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              contentContainerStyle={styles.categoriesList}
-            />
-          </View>
-
-          {/* Description Section */}
-          <View style={styles.descriptionSection}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-              Description
-            </Text>
-            <TextInput
-              style={[
-                styles.descriptionInput,
-                { 
-                  color: colors.text,
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                }
-              ]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="What did you spend on?"
-              placeholderTextColor={colors.textSecondary}
-              returnKeyType="done"
-              onSubmitEditing={handleAddExpense}
-            />
-            
-            {/* Quick Description Buttons */}
-            {!showKeyboard && (
-              <View style={styles.quickDescriptions}>
-                {RECENT_DESCRIPTIONS.map(desc => (
-                  <TouchableOpacity
-                    key={desc}
-                    style={[
-                      styles.quickDescButton,
-                      { 
-                        backgroundColor: description === desc 
-                          ? colors.primary + '20' 
-                          : colors.surface,
-                        borderColor: description === desc 
-                          ? colors.primary 
-                          : colors.border,
-                      }
-                    ]}
-                    onPress={() => handleQuickDescription(desc)}
-                  >
-                    <Text style={[
-                      styles.quickDescText,
-                      { 
-                        color: description === desc 
-                          ? colors.primary 
-                          : colors.textSecondary 
-                      }
-                    ]}>
-                      {desc}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* Preview */}
-          {amount && selectedCategory && description && (
-            <ModernCard style={[styles.previewCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.previewContent}>
-                <View style={styles.previewLeft}>
-                  <View style={[styles.previewIcon, { backgroundColor: getSelectedCategory()?.color + '20' }]}>
-                    <Ionicons 
-                      name={getSelectedCategory()?.icon as any} 
-                      size={16} 
-                      color={getSelectedCategory()?.color} 
-                    />
-                  </View>
-                  <View>
-                    <Text style={[styles.previewDescription, { color: colors.text }]}>
-                      {description}
-                    </Text>
-                    <Text style={[styles.previewCategory, { color: colors.textSecondary }]}>
-                      {getSelectedCategory()?.name}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={[styles.previewAmount, { color: colors.text }]}>
-                  {formatCurrency(amount)}
-                </Text>
-              </View>
-            </ModernCard>
-          )}
-
-          {/* Action Buttons */}
-          <View style={styles.actions}>
-            <ModernButton
-              title="Add Expense"
-              onPress={handleAddExpense}
-              variant="primary"
-              disabled={!amount || !selectedCategory || !description.trim()}
-              style={styles.addButton}
-            />
-          </View>
-        </Animated.View>
-      </View>
+          </SafeAreaView>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -386,6 +453,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
     maxHeight: '90%',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
@@ -532,8 +608,33 @@ const styles = StyleSheet.create({
   },
   actions: {
     padding: Spacing.lg,
+    paddingTop: Spacing.base,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
   },
   addButton: {
     width: '100%',
+  },
+  setupRequiredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  setupRequiredTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: '600',
+    marginTop: Spacing.base,
+    textAlign: 'center',
+  },
+  setupRequiredMessage: {
+    fontSize: Typography.fontSize.base,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xl,
+    lineHeight: 22,
+  },
+  setupButton: {
+    paddingHorizontal: Spacing.xl,
   },
 });

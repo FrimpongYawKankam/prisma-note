@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
     FlatList,
     Modal,
+    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -212,7 +213,7 @@ export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverview
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowCurrencySelector(false)}>
               <Text style={[styles.modalCancel, { color: colors.primary }]}>Cancel</Text>
@@ -245,8 +246,10 @@ export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverview
                 )}
               </TouchableOpacity>
             )}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modalList}
           />
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
@@ -414,5 +417,8 @@ const styles = StyleSheet.create({
   },
   currencyCode: {
     fontSize: Typography.fontSize.sm,
+  },
+  modalList: {
+    paddingBottom: Spacing.xl,
   },
 });

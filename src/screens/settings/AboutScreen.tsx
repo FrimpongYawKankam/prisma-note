@@ -160,6 +160,9 @@ export default function AboutScreen() {
               <View style={[styles.techItem, { backgroundColor: colors.primary + '15' }]}>
                 <Text style={[styles.techText, { color: colors.primary }]}>SQL</Text>
               </View>
+              <View style={[styles.techItem, { backgroundColor: colors.primary + '15' }]}>
+                <Text style={[styles.techText, { color: colors.primary }]}>Render</Text>
+              </View>
             </View>
           </View>
         </View>

@@ -2,8 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -41,6 +44,7 @@ export default function Finance() {
   } = useFinanceData();
 
   const handleQuickExpense = (categoryId?: string) => {
+    console.log('handleQuickExpense called, budget:', !!budget, 'categories:', budget?.categories?.length || 0);
     setPreselectedCategory(categoryId);
     setShowQuickAdd(true);
   };
@@ -373,102 +377,114 @@ export default function Finance() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Finance
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Track your spending
-          </Text>
-        </View>
-        
-        <TouchableOpacity 
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          onPress={() => handleQuickExpense()}
-        >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        {[
-          { key: 'overview', label: 'Overview', icon: 'home-outline' },
-          { key: 'history', label: 'History', icon: 'list-outline' },
-          { key: 'analytics', label: 'Analytics', icon: 'analytics-outline' },
-        ].map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[
-              styles.tab,
-              activeTab === tab.key && { 
-                borderBottomColor: colors.primary,
-                borderBottomWidth: 2 
-              }
-            ]}
-            onPress={() => setActiveTab(tab.key as any)}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Finance
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+              Track your spending
+            </Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            onPress={() => handleQuickExpense()}
           >
-            <Ionicons 
-              name={tab.icon as any} 
-              size={20} 
-              color={activeTab === tab.key ? colors.primary : colors.textSecondary} 
-            />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === tab.key ? colors.primary : colors.textSecondary }
-            ]}>
-              {tab.label}
-            </Text>
+            <Ionicons name="add" size={24} color="#fff" />
           </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Content */}
-      {hasError ? (
-        <View style={styles.content}>
-          <ModernCard style={{ ...styles.errorCard, backgroundColor: colors.surface }}>
-            <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
-            <Text style={[styles.errorTitle, { color: colors.text }]}>
-              Something went wrong
-            </Text>
-            <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>
-              {budgetError || expensesError}
-            </Text>
-            <ModernButton
-              title="Try Again"
-              onPress={refreshData}
-              variant="primary"
-              style={styles.retryButton}
-            />
-          </ModernCard>
         </View>
-      ) : (
-        <FlatList
-          data={getSectionsData()}
-          keyExtractor={(item, index) => `${item.type}-${index}`}
-          renderItem={renderSection}
-          refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={refreshData}
-              tintColor={colors.primary}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-        />
-      )}
 
-      {/* Quick Add Expense Modal */}
-      <QuickAddExpense
-        visible={showQuickAdd}
-        onClose={() => setShowQuickAdd(false)}
-        categories={budget?.categories || []}
-        onAddExpense={handleAddExpense}
-        preselectedCategoryId={preselectedCategory}
-      />
+        {/* Tabs */}
+        <View style={styles.tabs}>
+          {[
+            { key: 'overview', label: 'Overview', icon: 'home-outline' },
+            { key: 'history', label: 'History', icon: 'list-outline' },
+            { key: 'analytics', label: 'Analytics', icon: 'analytics-outline' },
+          ].map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[
+                styles.tab,
+                activeTab === tab.key && { 
+                  borderBottomColor: colors.primary,
+                  borderBottomWidth: 2 
+                }
+              ]}
+              onPress={() => setActiveTab(tab.key as any)}
+            >
+              <Ionicons 
+                name={tab.icon as any} 
+                size={20} 
+                color={activeTab === tab.key ? colors.primary : colors.textSecondary} 
+              />
+              <Text style={[
+                styles.tabText,
+                { color: activeTab === tab.key ? colors.primary : colors.textSecondary }
+              ]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Content */}
+        {hasError ? (
+          <ScrollView 
+            style={styles.scrollContent}
+            contentContainerStyle={styles.scrollContentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <ModernCard style={{ ...styles.errorCard, backgroundColor: colors.surface }}>
+              <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
+              <Text style={[styles.errorTitle, { color: colors.text }]}>
+                Something went wrong
+              </Text>
+              <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>
+                {budgetError || expensesError}
+              </Text>
+              <ModernButton
+                title="Try Again"
+                onPress={refreshData}
+                variant="primary"
+                style={styles.retryButton}
+              />
+            </ModernCard>
+          </ScrollView>
+        ) : (
+          <FlatList
+            style={styles.scrollContent}
+            data={getSectionsData()}
+            keyExtractor={(item, index) => `${item.type}-${index}`}
+            renderItem={renderSection}
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading}
+                onRefresh={refreshData}
+                tintColor={colors.primary}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.content}
+            bounces={true}
+          />
+        )}
+
+        {/* Quick Add Expense Modal */}
+        <QuickAddExpense
+          visible={showQuickAdd}
+          onClose={() => setShowQuickAdd(false)}
+          categories={budget?.categories || []}
+          onAddExpense={handleAddExpense}
+          preselectedCategoryId={preselectedCategory}
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -476,6 +492,15 @@ export default function Finance() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
@@ -520,6 +545,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     padding: Spacing.lg,
+    paddingBottom: Spacing.xl, // Extra bottom padding for better scrolling
   },
   tabContent: {
     padding: Spacing.lg,
@@ -619,7 +645,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   historyContainer: {
-    minHeight: 600, // Ensure enough height for the nested FlatList
+    flex: 1,
+    minHeight: 400, // Ensure enough height for the nested FlatList
   },
   trendsSection: {
     marginTop: Spacing.base,
