@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import {
-    Budget,
-    CategoryBudget,
-    Currency,
-    Expense,
-    getCurrencyFromCode,
-    transformBackendCategoryToLegacy,
-    transformBackendExpenseToLegacy
+  Budget,
+  CategoryBudget,
+  Currency,
+  Expense,
+  getCurrencyFromCode,
+  transformBackendCategoryToLegacy,
+  transformBackendExpenseToLegacy
 } from '../types/finance';
 
 interface UseFinanceDataReturn {
@@ -63,7 +63,8 @@ export function useFinanceData(): UseFinanceDataReturn {
     getCategoryBreakdown: getBackendCategoryBreakdown,
     getSpendingTrends: getBackendSpendingTrends,
     assignCategoryToUser,
-    createCategory
+    createCategory,
+    getDefaultCategories
   } = useFinance();
 
   // Local state for computed values
@@ -71,7 +72,7 @@ export function useFinanceData(): UseFinanceDataReturn {
 
   // Transform backend data to legacy format for existing components
   const budget = useMemo((): Budget | null => {
-    if (!currentBudget || !userCategories.length) return null;
+    if (!currentBudget || !currentBudget.id) return null;
 
     // Get user's assigned categories
     const userCategoryIds = userCategories.map(uc => uc.categoryId);
@@ -85,8 +86,9 @@ export function useFinanceData(): UseFinanceDataReturn {
         : [];
       const spentAmount = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
       
-      // For now, distribute budget evenly across categories (this can be enhanced later)
-      const budgetAmount = currentBudget.totalBudget / userAssignedCategories.length;
+      // Find the user category allocation for this specific category
+      const userCategory = userCategories.find(uc => uc.categoryId === category.id);
+      const budgetAmount = userCategory?.allocatedBudget || 0;
 
       return transformBackendCategoryToLegacy(category, budgetAmount, spentAmount);
     });
@@ -94,9 +96,9 @@ export function useFinanceData(): UseFinanceDataReturn {
     return {
       id: currentBudget.id.toString(),
       month: new Date(currentBudget.startDate).toISOString().slice(0, 7),
-      totalAmount: currentBudget.totalBudget,
+      totalAmount: currentBudget.totalBudget || 0,
       categories: categoryBudgets,
-      currency: getCurrencyFromCode(currentBudget.currency)
+      currency: getCurrencyFromCode(currentBudget.currency || 'USD')
     };
   }, [currentBudget, userCategories, categories, backendExpenses]);
 
@@ -144,60 +146,128 @@ export function useFinanceData(): UseFinanceDataReturn {
     setCategorySpendingMap(newCategorySpending);
   }, [backendExpenses]);
 
+  // Helper function to find category by name
+  const findCategoryByName = useCallback(async (name: string) => {
+    return categories.find(cat => cat.name.toLowerCase() === name.toLowerCase());
+  }, [categories]);
+
   // Actions (adapted for backend)
   const initializeBudget = useCallback(async (totalAmount: number, currency: Currency, categories: CategoryBudget[]) => {
     try {
-      // Create budget for current month
+      // Validate inputs according to backend requirements
+      if (totalAmount < 0.01) {
+        throw new Error('Total amount must be at least 0.01');
+      }
+      
+      if (totalAmount > 9999999999.99) {
+        throw new Error('Total amount cannot exceed 9999999999.99');
+      }
+      
+      if (!currency.code || currency.code.length !== 3) {
+        throw new Error('Currency code must be exactly 3 characters');
+      }
+
+      // Create budget for current month with proper date validation
       const now = new Date();
       const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
       const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+      // Ensure dates meet backend validation (startDate: present/future, endDate: future)
+      if (startDate < new Date()) {
+        startDate.setTime(now.getTime()); // Use today if start date is in past
+      }
+
       const budgetData = {
-        totalBudget: totalAmount,  // Backend expects 'totalBudget'
-        currency: currency.code,
-        period: 'MONTHLY' as const,  // Backend requires period enum
+        totalBudget: Number(totalAmount.toFixed(2)),  // Ensure 2 decimal places
+        currency: currency.code.toUpperCase(),  // Backend requires uppercase
+        period: 'MONTHLY' as const,  // Backend enum value
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0]
       };
 
+      console.log('Creating budget with validated data:', budgetData);
       const newBudget = await createBudget(budgetData);
+      console.log('Budget created successfully:', newBudget);
 
-      // Create categories if they don't exist and assign them to user
+      // Get default categories from backend first
+      console.log('Fetching default categories from backend...');
+      const defaultCategories = await getDefaultCategories();
+      console.log('Default categories available:', defaultCategories.map(c => c.name));
+
+      // Map frontend category names to backend default categories
+      const categoryNameMapping: Record<string, string> = {
+        'Food': 'Food & Dining',
+        'Transport': 'Transportation', 
+        'Shopping': 'Shopping',
+        'Entertainment': 'Entertainment',
+        'Bills': 'Bills & Utilities'
+      };
+
+      // Assign categories to user with budget allocation
       for (const categoryData of categories) {
         try {
-          // Check if category already exists
-          const existingCategory = await findCategoryByName(categoryData.name);
-          
+          // Try to find matching default category first
+          const mappedName = categoryNameMapping[categoryData.name] || categoryData.name;
+          let matchedCategory = defaultCategories.find(cat => 
+            cat.name.toLowerCase() === mappedName.toLowerCase()
+          );
+
           let categoryId: number;
-          if (existingCategory) {
-            categoryId = existingCategory.id;
+          if (matchedCategory) {
+            categoryId = matchedCategory.id;
+            console.log(`Using default category: ${categoryData.name} -> ${matchedCategory.name} (ID: ${categoryId})`);
           } else {
-            // Create new category
-            const newCategory = await createCategory({
-              name: categoryData.name,
-              icon: categoryData.icon  // Backend only expects name and icon
-            });
-            categoryId = newCategory.id;
+            // Check existing categories if not in defaults
+            const existingCategory = await findCategoryByName(categoryData.name);
+            
+            if (existingCategory) {
+              categoryId = existingCategory.id;
+              console.log(`Using existing category: ${categoryData.name} (ID: ${categoryId})`);
+            } else {
+              // Create new custom category only if no match found
+              const newCategory = await createCategory({
+                name: categoryData.name,
+                icon: categoryData.icon
+              });
+              categoryId = newCategory.id;
+              console.log(`Created new custom category: ${categoryData.name} (ID: ${categoryId})`);
+            }
+          }
+
+          // Validate allocatedBudget according to backend requirements
+          const allocatedBudget = Number(categoryData.budgetAmount.toFixed(2));
+          if (allocatedBudget < 0.01) {
+            console.warn(`Skipping category ${categoryData.name}: allocated budget too small (${allocatedBudget})`);
+            continue;
           }
 
           // Assign category to user with budget allocation
-          await assignCategoryToUser({
+          const userCategoryData = {
             categoryId,
             budgetId: newBudget.id,
-            allocatedBudget: totalAmount / categories.length  // Distribute budget evenly
-          });
-        } catch (error) {
+            allocatedBudget,
+            isActive: true  // Optional field, defaults to true in backend
+          };
+          
+          console.log('Assigning category to user:', userCategoryData);
+          await assignCategoryToUser(userCategoryData);
+          console.log(`Successfully assigned category ${categoryData.name} with budget ${allocatedBudget}`);
+        } catch (error: any) {
           console.error(`Failed to setup category ${categoryData.name}:`, error);
-          // Continue with other categories
+          console.error('Error details:', error.response?.data);
+          // Continue with other categories instead of failing completely
         }
       }
 
+      console.log('Refreshing all data after budget initialization...');
       await refreshAll();
-    } catch (error) {
+      console.log('Budget initialization completed successfully');
+    } catch (error: any) {
       console.error('Failed to initialize budget:', error);
+      console.error('Error details:', error.response?.data);
       throw error;
     }
-  }, [createBudget, createCategory, assignCategoryToUser, refreshAll]);
+  }, [createBudget, createCategory, assignCategoryToUser, refreshAll, findCategoryByName, getDefaultCategories]);
 
   const updateBudget = useCallback(async (updates: Partial<Budget>) => {
     if (!currentBudget) return;
@@ -345,11 +415,6 @@ export function useFinanceData(): UseFinanceDataReturn {
         percentage: item.percentage
       }));
   }, [getCategoryBreakdown]);
-
-  // Helper function to find category by name
-  const findCategoryByName = useCallback(async (name: string) => {
-    return categories.find(cat => cat.name.toLowerCase() === name.toLowerCase());
-  }, [categories]);
 
   return {
     // Budget data

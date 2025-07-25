@@ -135,7 +135,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.error('Failed to load budgets:', error);
       // Don't set error for 403 cases - just means finance endpoints don't exist yet
       if (error.response?.status !== 403) {
-        setBudgetsError(error.message || 'Failed to load budgets');
+        setBudgetsError(error.response?.data?.message || error.message || 'Failed to load budgets');
       }
     } finally {
       setBudgetsLoading(false);
@@ -245,7 +245,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.error('Failed to load categories:', error);
       // Don't set error for 403 cases - just means finance endpoints don't exist yet
       if (error.response?.status !== 403) {
-        setCategoriesError(error.message || 'Failed to load categories');
+        setCategoriesError(error.response?.data?.message || error.message || 'Failed to load categories');
       }
       // Always ensure we have empty arrays as fallback
       setCategories([]);

@@ -4,7 +4,7 @@ import axiosInstance from '../utils/axiosInstance';
 export interface BudgetCreateRequest {
   totalBudget: number;  // Backend: BigDecimal (will be converted)
   currency: string;     // Backend: String (3 chars, uppercase)
-  period: 'WEEKLY' | 'MONTHLY' | 'YEARLY';  // Backend: BudgetPeriod enum
+  period: 'WEEKLY' | 'MONTHLY' | 'YEARLY';  // Backend: BudgetPeriod enum (NO QUARTERLY!)
   startDate: string;    // Backend: LocalDate (YYYY-MM-DD format)
   endDate: string;      // Backend: LocalDate (YYYY-MM-DD format)
 }
@@ -12,7 +12,7 @@ export interface BudgetCreateRequest {
 export interface BudgetUpdateRequest {
   totalBudget?: number;  // Backend: BigDecimal
   currency?: string;     // Backend: String (3 chars, uppercase)
-  period?: 'WEEKLY' | 'MONTHLY' | 'YEARLY';  // Backend: BudgetPeriod enum
+  period?: 'WEEKLY' | 'MONTHLY' | 'YEARLY';  // Backend: BudgetPeriod enum (NO QUARTERLY!)
   startDate?: string;    // Backend: LocalDate (YYYY-MM-DD format)
   endDate?: string;      // Backend: LocalDate (YYYY-MM-DD format)
 }

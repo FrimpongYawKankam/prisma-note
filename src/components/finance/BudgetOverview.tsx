@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  FlatList,
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    FlatList,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useFinanceData } from '../../hooks/useFinanceData';
@@ -35,14 +35,14 @@ export function BudgetOverview({ onSetupBudget, onQuickExpense }: BudgetOverview
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
 
   const handleGetStarted = () => {
-    // Initialize with default budget
+    // Initialize with default budget using backend default category names
     const defaultCurrency: Currency = { code: 'USD', symbol: '$', name: 'US Dollar' };
     const defaultCategories = [
-      { id: '1', name: 'Food', budgetAmount: 900, spentAmount: 0, icon: 'restaurant-outline', color: '#4CAF50' },
-      { id: '2', name: 'Transport', budgetAmount: 450, spentAmount: 0, icon: 'car-outline', color: '#FF9800' },
+      { id: '1', name: 'Food & Dining', budgetAmount: 900, spentAmount: 0, icon: 'restaurant-outline', color: '#4CAF50' },
+      { id: '2', name: 'Transportation', budgetAmount: 450, spentAmount: 0, icon: 'car-outline', color: '#FF9800' },
       { id: '3', name: 'Shopping', budgetAmount: 600, spentAmount: 0, icon: 'bag-outline', color: '#2196F3' },
       { id: '4', name: 'Entertainment', budgetAmount: 300, spentAmount: 0, icon: 'game-controller-outline', color: '#9C27B0' },
-      { id: '5', name: 'Bills', budgetAmount: 750, spentAmount: 0, icon: 'receipt-outline', color: '#F44336' },
+      { id: '5', name: 'Bills & Utilities', budgetAmount: 750, spentAmount: 0, icon: 'receipt-outline', color: '#F44336' },
     ];
     
     initializeBudget(3000, defaultCurrency, defaultCategories);
