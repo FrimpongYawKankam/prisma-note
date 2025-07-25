@@ -79,13 +79,13 @@ export default function CreateBudgetScreen() {
             text: 'OK',
             onPress: () => {
               setSuccessDialog(false);
-              router.back();
+              router.push('/(tabs)/finance');
             },
           },
         ]}
         onClose={() => {
           setSuccessDialog(false);
-          router.back();
+          router.push('/(tabs)/finance');
         }}
       />
 
@@ -108,7 +108,7 @@ export default function CreateBudgetScreen() {
         <View style={styles.header}>
           <ModernButton
             title=""
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/finance')}
             variant="ghost"
             leftIcon={<Ionicons name="arrow-back" size={24} color={colors.text} />}
             style={styles.backButton}
