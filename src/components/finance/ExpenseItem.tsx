@@ -1,291 +1,233 @@
+// 🏦 Expense Item Component
+// Individual expense row component
+
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React from 'react';
 import {
-    Alert,
-    Animated,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native';
+
 import { useTheme } from '../../context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
-import { Expense } from '../../types/finance';
-import { ModernCard } from '../ui/ModernCard';
+import { Category, Expense } from '../../types/finance';
 
 interface ExpenseItemProps {
   expense: Expense;
-  categoryInfo?: {
-    name: string;
-    icon: string;
-    color: string;
-  };
-  onEdit?: (expense: Expense) => void;
-  onDelete?: (expenseId: string) => void;
-  showCategory?: boolean;
+  categories: Category[];
+  onPress?: () => void;
+  showDate?: boolean;
 }
 
-export function ExpenseItem({ 
-  expense, 
-  categoryInfo, 
-  onEdit, 
-  onDelete, 
-  showCategory = true 
-}: ExpenseItemProps) {
+export const ExpenseItem: React.FC<ExpenseItemProps> = ({
+  expense,
+  categories,
+  onPress,
+  showDate = true,
+}) => {
   const { colors } = useTheme();
-  const [showActions, setShowActions] = useState(false);
-  const [slideAnim] = useState(new Animated.Value(0));
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
 
   const formatCurrency = (amount: number) => {
-    return `$${amount.toLocaleString(undefined, {
+    return `₵${amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
   };
 
-  const handleLongPress = () => {
-    if (!onEdit && !onDelete) return;
-    
-    setShowActions(!showActions);
-    Animated.timing(slideAnim, {
-      toValue: showActions ? 0 : 1,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const handleEdit = () => {
-    setShowActions(false);
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-    onEdit?.(expense);
-  };
-
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete Expense',
-      'Are you sure you want to delete this expense?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            setShowActions(false);
-            Animated.timing(slideAnim, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: false,
-            }).start();
-            onDelete?.(expense.id);
-          },
-        },
-      ]
-    );
-  };
-
-  const isToday = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
-
-  const isYesterday = (date: Date) => {
-    const yesterday = new Date();
+    const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    return date.toDateString() === yesterday.toDateString();
+
+    // Reset hours for comparison
+    today.setHours(0, 0, 0, 0);
+    yesterday.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+
+    if (date.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (date.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
+      });
+    }
   };
 
-  const getDateLabel = (date: Date) => {
-    if (isToday(date)) return 'Today';
-    if (isYesterday(date)) return 'Yesterday';
-    return formatDate(date);
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
-  return (
-    <ModernCard style={[styles.card, { backgroundColor: colors.surface }]}>
-      <TouchableOpacity
-        style={styles.content}
-        onLongPress={handleLongPress}
-        delayLongPress={500}
-        activeOpacity={0.7}
-      >
-        <View style={styles.mainContent}>
-          {/* Category Icon and Info */}
-          {showCategory && categoryInfo && (
-            <View style={[styles.categoryIcon, { backgroundColor: categoryInfo.color + '20' }]}>
-              <Ionicons 
-                name={categoryInfo.icon as any} 
-                size={20} 
-                color={categoryInfo.color} 
-              />
-            </View>
-          )}
+  const getCategory = () => {
+    return categories.find(cat => cat.id === expense.categoryId);
+  };
 
-          {/* Expense Details */}
-          <View style={styles.expenseDetails}>
-            <View style={styles.topRow}>
-              <Text style={[styles.description, { color: colors.text }]} numberOfLines={1}>
-                {expense.description || 'Expense'}
-              </Text>
-              <Text style={[styles.amount, { color: colors.text }]}>
-                {formatCurrency(expense.amount)}
-              </Text>
-            </View>
+  const getCategoryIcon = () => {
+    const category = getCategory();
+    if (!category) return 'help-circle-outline';
 
-            <View style={styles.bottomRow}>
-              {showCategory && categoryInfo && (
-                <Text style={[styles.category, { color: categoryInfo.color }]}>
-                  {categoryInfo.name}
-                </Text>
-              )}
-              <Text style={[styles.date, { color: colors.textSecondary }]}>
-                {getDateLabel(expense.date)}
-              </Text>
-            </View>
-          </View>
+    const iconMap: Record<string, string> = {
+      'Food & Dining': 'restaurant-outline',
+      'Transportation': 'car-outline',
+      'Shopping': 'bag-outline',
+      'Entertainment': 'game-controller-outline',
+      'Bills & Utilities': 'receipt-outline',
+      'Healthcare': 'medical-outline',
+      'Education': 'school-outline',
+      'Travel': 'airplane-outline',
+      'Business': 'briefcase-outline',
+      'Personal Care': 'person-outline',
+      'Other': 'ellipsis-horizontal-outline',
+    };
 
-          {/* Time indicator for recent expenses */}
-          {isToday(expense.date) && (
-            <View style={[styles.timeIndicator, { backgroundColor: '#4CAF50' }]} />
+    return iconMap[category.name] || 'ellipsis-horizontal-outline';
+  };
+
+  const getCategoryColor = () => {
+    const category = getCategory();
+    if (!category) return colors.textMuted;
+
+    const colorMap: Record<string, string> = {
+      'Food & Dining': colors.warning,
+      'Transportation': colors.primary,
+      'Shopping': colors.secondary,
+      'Entertainment': colors.accent,
+      'Bills & Utilities': colors.error,
+      'Healthcare': colors.success,
+      'Education': colors.primary,
+      'Travel': colors.accent,
+      'Business': colors.textSecondary,
+      'Personal Care': colors.secondary,
+      'Other': colors.textMuted,
+    };
+
+    return colorMap[category.name] || colors.textMuted;
+  };
+
+  const category = getCategory();
+
+  const content = (
+    <View style={styles.container}>
+      {/* Category Icon */}
+      <View style={[styles.iconContainer, { backgroundColor: `${getCategoryColor()}15` }]}>
+        <Ionicons 
+          name={getCategoryIcon() as keyof typeof Ionicons.glyphMap} 
+          size={24} 
+          color={getCategoryColor()} 
+        />
+      </View>
+
+      {/* Expense Details */}
+      <View style={styles.details}>
+        <View style={styles.mainInfo}>
+          <Text style={[styles.category, { color: colors.text }]}>
+            {category?.name || 'Unknown Category'}
+          </Text>
+          {expense.description && (
+            <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={1}>
+              {expense.description}
+            </Text>
           )}
         </View>
 
-        {/* Action Buttons */}
-        {(onEdit || onDelete) && (
-          <Animated.View 
-            style={[
-              styles.actionButtons,
-              {
-                height: slideAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 50],
-                }),
-                opacity: slideAnim,
-              }
-            ]}
-          >
-            <View style={styles.actionButtonsContent}>
-              {onEdit && (
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.primary + '20' }]}
-                  onPress={handleEdit}
-                >
-                  <Ionicons name="pencil-outline" size={16} color={colors.primary} />
-                  <Text style={[styles.actionButtonText, { color: colors.primary }]}>
-                    Edit
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {onDelete && (
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: '#F44336' + '20' }]}
-                  onPress={handleDelete}
-                >
-                  <Ionicons name="trash-outline" size={16} color="#F44336" />
-                  <Text style={[styles.actionButtonText, { color: '#F44336' }]}>
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </Animated.View>
+        {showDate && (
+          <View style={styles.timeInfo}>
+            <Text style={[styles.date, { color: colors.textTertiary }]}>
+              {formatDate(expense.date)}
+            </Text>
+            <Text style={[styles.time, { color: colors.textTertiary }]}>
+              {formatTime(expense.date)}
+            </Text>
+          </View>
         )}
-      </TouchableOpacity>
-    </ModernCard>
+      </View>
+
+      {/* Amount */}
+      <View style={styles.amountContainer}>
+        <Text style={[styles.amount, { color: colors.text }]}>
+          {formatCurrency(expense.amount)}
+        </Text>
+      </View>
+    </View>
   );
-}
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} style={styles.touchable}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return content;
+};
 
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: Spacing.sm,
-    overflow: 'hidden',
+  touchable: {
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
   },
-  content: {
-    padding: Spacing.base,
-  },
-  mainContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  categoryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.base,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.sm,
-  },
-  expenseDetails: {
-    flex: 1,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
-  description: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  amount: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: '700',
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  category: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: '500',
-  },
-  date: {
-    fontSize: Typography.fontSize.sm,
-  },
-  timeIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginLeft: Spacing.xs,
-  },
-  actionButtons: {
-    overflow: 'hidden',
-    marginTop: Spacing.xs,
-  },
-  actionButtonsContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  actionButton: {
+  container: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.base,
+    gap: Spacing.sm,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  details: {
+    flex: 1,
     gap: Spacing.xs,
   },
-  actionButtonText: {
+  mainInfo: {
+    gap: 2,
+  },
+  category: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium as any,
+    lineHeight: Typography.lineHeight.base,
+  },
+  description: {
     fontSize: Typography.fontSize.sm,
-    fontWeight: '500',
+    fontWeight: Typography.fontWeight.normal as any,
+    lineHeight: Typography.lineHeight.sm,
+  },
+  timeInfo: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  date: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.normal as any,
+    lineHeight: Typography.lineHeight.xs,
+  },
+  time: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.normal as any,
+    lineHeight: Typography.lineHeight.xs,
+  },
+  amountContainer: {
+    alignItems: 'flex-end',
+  },
+  amount: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.semiBold as any,
+    lineHeight: Typography.lineHeight.base,
   },
 });

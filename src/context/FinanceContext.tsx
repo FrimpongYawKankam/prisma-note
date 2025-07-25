@@ -1,750 +1,527 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import financeService, {
-    BudgetCreateRequest,
-    BudgetResponse,
-    BudgetUpdateRequest,
-    CategoryCreateRequest,
-    CategoryResponse,
-    ExpenseCreateRequest,
-    ExpenseResponse,
-    ExpenseUpdateRequest,
-    UserCategoryRequest,
-    UserCategoryResponse
-} from '../services/financeService';
-import { useAuth } from './AuthContext';
+// 🏦 PrismaNote Finance Context - New Simplified System
+// Global state management for finance module
 
-interface FinanceContextType {
-  // Budget State
-  budgets: BudgetResponse[];
-  currentBudget: BudgetResponse | null;
-  budgetsLoading: boolean;
-  budgetsError: string | null;
+import React, { createContext, useCallback, useContext, useEffect, useReducer, useState } from 'react';
+import financeService from '../services/financeService';
+import {
+  Budget,
+  BudgetSummary,
+  Category,
+  CreateBudgetRequest,
+  CreateExpenseRequest,
+  Expense,
+  FinanceErrorState,
+  FinanceLoadingState,
+  FinanceState,
+  UpdateBudgetRequest,
+  UpdateExpenseRequest
+} from '../types/finance';
 
-  // Category State
-  categories: CategoryResponse[];
-  userCategories: UserCategoryResponse[];
-  categoriesLoading: boolean;
-  categoriesError: string | null;
+// ===============================
+// CONTEXT DEFINITION
+// ===============================
 
-  // Expense State
-  expenses: ExpenseResponse[];
-  expensesLoading: boolean;
-  expensesError: string | null;
+interface FinanceContextType extends FinanceState {
+  // Budget actions
+  createBudget: (budgetData: CreateBudgetRequest) => Promise<Budget>;
+  updateBudget: (budgetData: UpdateBudgetRequest) => Promise<Budget>;
+  refreshBudget: () => Promise<void>;
 
-  // Analytics State
-  analyticsLoading: boolean;
-  analyticsError: string | null;
-
-  // Budget Operations
-  createBudget: (budgetData: BudgetCreateRequest) => Promise<BudgetResponse>;
-  updateBudget: (budgetId: number, budgetData: BudgetUpdateRequest) => Promise<BudgetResponse>;
-  deleteBudget: (budgetId: number) => Promise<void>;
-  refreshBudgets: () => Promise<void>;
-  setCurrentBudget: (budget: BudgetResponse | null) => void;
-
-  // Category Operations
-  createCategory: (categoryData: CategoryCreateRequest) => Promise<CategoryResponse>;
-  updateCategory: (categoryId: number, categoryData: Partial<CategoryCreateRequest>) => Promise<CategoryResponse>;
-  deleteCategory: (categoryId: number) => Promise<void>;
-  assignCategoryToUser: (userCategoryData: UserCategoryRequest) => Promise<UserCategoryResponse>;
-  removeUserCategory: (userCategoryId: number) => Promise<void>;
-  refreshCategories: () => Promise<void>;
-
-  // Expense Operations
-  createExpense: (expenseData: ExpenseCreateRequest) => Promise<ExpenseResponse>;
-  updateExpense: (expenseId: number, expenseData: ExpenseUpdateRequest) => Promise<ExpenseResponse>;
+  // Expense actions
+  addExpense: (expenseData: CreateExpenseRequest) => Promise<Expense>;
+  updateExpense: (expenseId: number, expenseData: UpdateExpenseRequest) => Promise<Expense>;
   deleteExpense: (expenseId: number) => Promise<void>;
-  getExpensesByCategory: (categoryId: number) => Promise<ExpenseResponse[]>;
-  getExpensesByDateRange: (startDate: string, endDate: string) => Promise<ExpenseResponse[]>;
-  searchExpenses: (query: string) => Promise<ExpenseResponse[]>;
   refreshExpenses: () => Promise<void>;
 
-  // Analytics Operations
-  getSpendingTrends: (period: 'day' | 'week' | 'month', startDate?: string, endDate?: string) => Promise<any[]>;
-  getCategoryBreakdown: (startDate?: string, endDate?: string) => Promise<any[]>;
-  getMonthlySpending: (year: number, month: number) => Promise<any>;
-  getTotalSpending: (startDate?: string, endDate?: string) => Promise<{ totalAmount: number }>;
-  getBudgetAnalytics: (budgetId: number, startDate: string, endDate: string) => Promise<any>;
-  getBudgetSummary: (budgetId: number) => Promise<any>;
-  getBudgetWarnings: (budgetId: number) => Promise<string[]>;
-  getBudgetSpendingTrends: (budgetId: number, months?: number) => Promise<any>;
-  getBudgetTopCategories: (budgetId: number, limit?: number) => Promise<any[]>;
-  getDefaultCategories: () => Promise<CategoryResponse[]>;
+  // Summary actions
+  refreshSummary: () => Promise<void>;
 
-  // Utility Operations
-  refreshAll: () => Promise<void>;
+  // Combined actions
+  refreshAllData: () => Promise<void>;
+  initializeFinanceData: () => Promise<void>;
+
+  // Utility actions
   clearErrors: () => void;
+  setError: (type: keyof FinanceErrorState, error: string) => void;
 }
+
+// ===============================
+// REDUCER FOR STATE MANAGEMENT
+// ===============================
+
+type FinanceAction =
+  // Loading actions
+  | { type: 'SET_LOADING'; payload: { key: keyof FinanceLoadingState; value: boolean } }
+  // Error actions
+  | { type: 'SET_ERROR'; payload: { key: keyof FinanceErrorState; value: string | null } }
+  | { type: 'CLEAR_ERRORS' }
+  // Data actions
+  | { type: 'SET_BUDGET'; payload: Budget | null }
+  | { type: 'SET_EXPENSES'; payload: Expense[] }
+  | { type: 'SET_SUMMARY'; payload: BudgetSummary | null }
+  | { type: 'SET_CATEGORIES'; payload: Category[] }
+  // Optimistic updates
+  | { type: 'ADD_EXPENSE_OPTIMISTIC'; payload: Expense }
+  | { type: 'UPDATE_EXPENSE_OPTIMISTIC'; payload: { id: number; expense: Expense } }
+  | { type: 'DELETE_EXPENSE_OPTIMISTIC'; payload: number }
+  // Bulk updates
+  | { type: 'SET_INITIAL_DATA'; payload: { budget: Budget | null; expenses: Expense[]; summary: BudgetSummary | null; categories: Category[] } };
+
+const initialState: FinanceState = {
+  budget: null,
+  expenses: [],
+  summary: null,
+  categories: [],
+  loading: {
+    budget: false,
+    expenses: false,
+    summary: false,
+    categories: false,
+    creatingBudget: false,
+    creatingExpense: false,
+    updatingBudget: false,
+    updatingExpense: false,
+    deletingExpense: false,
+  },
+  errors: {
+    budget: null,
+    expenses: null,
+    summary: null,
+    categories: null,
+    general: null,
+  },
+  hasActiveBudget: false,
+  isExpenseListEmpty: true,
+  topSpendingCategories: [],
+};
+
+function financeReducer(state: FinanceState, action: FinanceAction): FinanceState {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return {
+        ...state,
+        loading: {
+          ...state.loading,
+          [action.payload.key]: action.payload.value,
+        },
+      };
+
+    case 'SET_ERROR':
+      return {
+        ...state,
+        errors: {
+          ...state.errors,
+          [action.payload.key]: action.payload.value,
+        },
+      };
+
+    case 'CLEAR_ERRORS':
+      return {
+        ...state,
+        errors: {
+          budget: null,
+          expenses: null,
+          summary: null,
+          categories: null,
+          general: null,
+        },
+      };
+
+    case 'SET_BUDGET':
+      return {
+        ...state,
+        budget: action.payload,
+        hasActiveBudget: action.payload !== null && action.payload.isActive,
+      };
+
+    case 'SET_EXPENSES':
+      return {
+        ...state,
+        expenses: action.payload,
+        isExpenseListEmpty: action.payload.length === 0,
+      };
+
+    case 'SET_SUMMARY':
+      return {
+        ...state,
+        summary: action.payload,
+        topSpendingCategories: action.payload?.categoryBreakdown
+          .sort((a, b) => b.totalAmount - a.totalAmount)
+          .slice(0, 5) || [],
+      };
+
+    case 'SET_CATEGORIES':
+      return {
+        ...state,
+        categories: action.payload,
+      };
+
+    case 'ADD_EXPENSE_OPTIMISTIC':
+      return {
+        ...state,
+        expenses: [action.payload, ...state.expenses],
+        isExpenseListEmpty: false,
+      };
+
+    case 'UPDATE_EXPENSE_OPTIMISTIC':
+      return {
+        ...state,
+        expenses: state.expenses.map(expense =>
+          expense.id === action.payload.id ? action.payload.expense : expense
+        ),
+      };
+
+    case 'DELETE_EXPENSE_OPTIMISTIC':
+      const filteredExpenses = state.expenses.filter(expense => expense.id !== action.payload);
+      return {
+        ...state,
+        expenses: filteredExpenses,
+        isExpenseListEmpty: filteredExpenses.length === 0,
+      };
+
+    case 'SET_INITIAL_DATA':
+      return {
+        ...state,
+        budget: action.payload.budget,
+        expenses: action.payload.expenses,
+        summary: action.payload.summary,
+        categories: action.payload.categories,
+        hasActiveBudget: action.payload.budget !== null && action.payload.budget.isActive,
+        isExpenseListEmpty: action.payload.expenses.length === 0,
+        topSpendingCategories: action.payload.summary?.categoryBreakdown
+          .sort((a, b) => b.totalAmount - a.totalAmount)
+          .slice(0, 5) || [],
+      };
+
+    default:
+      return state;
+  }
+}
+
+// ===============================
+// CONTEXT CREATION
+// ===============================
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
+// ===============================
+// PROVIDER COMPONENT
+// ===============================
+
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Budget State
-  const [budgets, setBudgets] = useState<BudgetResponse[]>([]);
-  const [currentBudget, setCurrentBudgetState] = useState<BudgetResponse | null>(null);
-  const [budgetsLoading, setBudgetsLoading] = useState(false);
-  const [budgetsError, setBudgetsError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(financeReducer, initialState);
+  const [initialized, setInitialized] = useState(false);
 
-  // Category State
-  const [categories, setCategories] = useState<CategoryResponse[]>([]);
-  const [userCategories, setUserCategories] = useState<UserCategoryResponse[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
-  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  // ===============================
+  // HELPER FUNCTIONS
+  // ===============================
 
-  // Expense State
-  const [expenses, setExpenses] = useState<ExpenseResponse[]>([]);
-  const [expensesLoading, setExpensesLoading] = useState(false);
-  const [expensesError, setExpensesError] = useState<string | null>(null);
+  const setLoading = useCallback((key: keyof FinanceLoadingState, value: boolean) => {
+    dispatch({ type: 'SET_LOADING', payload: { key, value } });
+  }, []);
 
-  // Analytics State
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const setError = useCallback((key: keyof FinanceErrorState, error: string) => {
+    dispatch({ type: 'SET_ERROR', payload: { key, value: error } });
+  }, []);
 
-  const { isAuthenticated } = useAuth();
+  const clearErrors = useCallback(() => {
+    dispatch({ type: 'CLEAR_ERRORS' });
+  }, []);
 
-  // Load initial data when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      refreshAll();
-    } else {
-      // Clear data when not authenticated
-      setBudgets([]);
-      setCurrentBudgetState(null);
-      setCategories([]);
-      setUserCategories([]);
-      setExpenses([]);
-    }
-  }, [isAuthenticated]);
+  const handleApiError = useCallback((error: any, type: keyof FinanceErrorState) => {
+    const errorMessage = error.message || 'An unexpected error occurred';
+    setError(type, errorMessage);
+    console.error(`Finance ${type} error:`, error);
+  }, [setError]);
 
-  // Budget Operations
-  const loadBudgets = useCallback(async () => {
-    if (!isAuthenticated) return;
+  // ===============================
+  // BUDGET OPERATIONS
+  // ===============================
+
+  const createBudget = useCallback(async (budgetData: CreateBudgetRequest): Promise<Budget> => {
+    setLoading('creatingBudget', true);
+    clearErrors();
 
     try {
-      setBudgetsLoading(true);
-      setBudgetsError(null);
-
-      const [budgetsData, currentBudgetData] = await Promise.all([
-        financeService.getBudgets(),
-        financeService.getCurrentBudget()
-      ]);
-
-      setBudgets(budgetsData);
-      setCurrentBudgetState(currentBudgetData);
-    } catch (error: any) {
-      console.error('Failed to load budgets:', error);
-      // Don't set error for 403 cases - just means finance endpoints don't exist yet
-      if (error.response?.status !== 403) {
-        setBudgetsError(error.response?.data?.message || error.message || 'Failed to load budgets');
+      // Client-side validation
+      const validationErrors = financeService.validateBudgetData(budgetData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors[0]);
       }
-    } finally {
-      setBudgetsLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  const createBudget = useCallback(async (budgetData: BudgetCreateRequest): Promise<BudgetResponse> => {
-    try {
-      setBudgetsLoading(true);
-      setBudgetsError(null);
 
       const newBudget = await financeService.createBudget(budgetData);
-      
-      // Update local state
-      setBudgets(prev => [newBudget, ...prev]);
-      
-      // If this is the only budget or is current, set as current
-      if (budgets.length === 0 || isCurrentPeriod(newBudget)) {
-        setCurrentBudgetState(newBudget);
-      }
+      dispatch({ type: 'SET_BUDGET', payload: newBudget });
+
+      // Refresh summary after budget creation
+      await refreshSummary();
 
       return newBudget;
     } catch (error: any) {
-      console.error('Failed to create budget:', error);
-      setBudgetsError(error.message || 'Failed to create budget');
+      handleApiError(error, 'budget');
       throw error;
     } finally {
-      setBudgetsLoading(false);
+      setLoading('creatingBudget', false);
     }
-  }, [budgets.length]);
+  }, [setLoading, clearErrors, handleApiError]);
 
-  const updateBudget = useCallback(async (budgetId: number, budgetData: BudgetUpdateRequest): Promise<BudgetResponse> => {
+  const updateBudget = useCallback(async (budgetData: UpdateBudgetRequest): Promise<Budget> => {
+    setLoading('updatingBudget', true);
+    clearErrors();
+
     try {
-      setBudgetsLoading(true);
-      setBudgetsError(null);
+      const updatedBudget = await financeService.updateBudget(budgetData);
+      dispatch({ type: 'SET_BUDGET', payload: updatedBudget });
 
-      const updatedBudget = await financeService.updateBudget(budgetId, budgetData);
-      
-      // Update local state
-      setBudgets(prev => prev.map(budget => 
-        budget.id === budgetId ? updatedBudget : budget
-      ));
-
-      // Update current budget if it's the one being updated
-      if (currentBudget?.id === budgetId) {
-        setCurrentBudgetState(updatedBudget);
-      }
+      // Refresh summary after budget update
+      await refreshSummary();
 
       return updatedBudget;
     } catch (error: any) {
-      console.error('Failed to update budget:', error);
-      setBudgetsError(error.message || 'Failed to update budget');
+      handleApiError(error, 'budget');
       throw error;
     } finally {
-      setBudgetsLoading(false);
+      setLoading('updatingBudget', false);
     }
-  }, [currentBudget?.id]);
+  }, [setLoading, clearErrors, handleApiError]);
 
-  const deleteBudget = useCallback(async (budgetId: number): Promise<void> => {
+  const refreshBudget = useCallback(async (): Promise<void> => {
+    setLoading('budget', true);
+
     try {
-      setBudgetsLoading(true);
-      setBudgetsError(null);
+      const budget = await financeService.getCurrentBudget();
+      dispatch({ type: 'SET_BUDGET', payload: budget });
+    } catch (error: any) {
+      handleApiError(error, 'budget');
+    } finally {
+      setLoading('budget', false);
+    }
+  }, [setLoading, handleApiError]);
 
-      await financeService.deleteBudget(budgetId);
-      
-      // Update local state
-      setBudgets(prev => prev.filter(budget => budget.id !== budgetId));
+  // ===============================
+  // EXPENSE OPERATIONS
+  // ===============================
 
-      // Clear current budget if it's the one being deleted
-      if (currentBudget?.id === budgetId) {
-        setCurrentBudgetState(null);
+  const addExpense = useCallback(async (expenseData: CreateExpenseRequest): Promise<Expense> => {
+    setLoading('creatingExpense', true);
+    clearErrors();
+
+    try {
+      // Client-side validation
+      const validationErrors = financeService.validateExpenseData(expenseData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors[0]);
       }
-    } catch (error: any) {
-      console.error('Failed to delete budget:', error);
-      setBudgetsError(error.message || 'Failed to delete budget');
-      throw error;
-    } finally {
-      setBudgetsLoading(false);
-    }
-  }, [currentBudget?.id]);
-
-  const refreshBudgets = useCallback(async () => {
-    await loadBudgets();
-  }, [loadBudgets]);
-
-  const setCurrentBudget = useCallback((budget: BudgetResponse | null) => {
-    setCurrentBudgetState(budget);
-  }, []);
-
-  // Category Operations
-  const loadCategories = useCallback(async () => {
-    if (!isAuthenticated) return;
-
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-
-      const [categoriesData, userCategoriesData] = await Promise.all([
-        financeService.getCategories(),
-        financeService.getUserCategories()
-      ]);
-
-      // Ensure we always have arrays
-      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-      setUserCategories(Array.isArray(userCategoriesData) ? userCategoriesData : []);
-    } catch (error: any) {
-      console.error('Failed to load categories:', error);
-      // Don't set error for 403 cases - just means finance endpoints don't exist yet
-      if (error.response?.status !== 403) {
-        setCategoriesError(error.response?.data?.message || error.message || 'Failed to load categories');
-      }
-      // Always ensure we have empty arrays as fallback
-      setCategories([]);
-      setUserCategories([]);
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  const createCategory = useCallback(async (categoryData: CategoryCreateRequest): Promise<CategoryResponse> => {
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-
-      const newCategory = await financeService.createCategory(categoryData);
-      
-      // Update local state
-      setCategories(prev => [newCategory, ...prev]);
-
-      return newCategory;
-    } catch (error: any) {
-      console.error('Failed to create category:', error);
-      setCategoriesError(error.message || 'Failed to create category');
-      throw error;
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, []);
-
-  const updateCategory = useCallback(async (categoryId: number, categoryData: Partial<CategoryCreateRequest>): Promise<CategoryResponse> => {
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-
-      const updatedCategory = await financeService.updateCategory(categoryId, categoryData);
-      
-      // Update local state
-      setCategories(prev => prev.map(category => 
-        category.id === categoryId ? updatedCategory : category
-      ));
-
-      return updatedCategory;
-    } catch (error: any) {
-      console.error('Failed to update category:', error);
-      setCategoriesError(error.message || 'Failed to update category');
-      throw error;
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, []);
-
-  const deleteCategory = useCallback(async (categoryId: number): Promise<void> => {
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-
-      await financeService.deleteCategory(categoryId);
-      
-      // Update local state
-      setCategories(prev => prev.filter(category => category.id !== categoryId));
-      setUserCategories(prev => prev.filter(userCat => userCat.categoryId !== categoryId));
-    } catch (error: any) {
-      console.error('Failed to delete category:', error);
-      setCategoriesError(error.message || 'Failed to delete category');
-      throw error;
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, []);
-
-  const assignCategoryToUser = useCallback(async (userCategoryData: UserCategoryRequest): Promise<UserCategoryResponse> => {
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-
-      const userCategory = await financeService.assignCategoryToUser(userCategoryData);
-      
-      // Update local state
-      setUserCategories(prev => [userCategory, ...prev]);
-
-      return userCategory;
-    } catch (error: any) {
-      console.error('Failed to assign category to user:', error);
-      setCategoriesError(error.message || 'Failed to assign category to user');
-      throw error;
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, []);
-
-  const removeUserCategory = useCallback(async (userCategoryId: number): Promise<void> => {
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-
-      await financeService.removeUserCategory(userCategoryId);
-      
-      // Update local state
-      setUserCategories(prev => prev.filter(userCat => userCat.id !== userCategoryId));
-    } catch (error: any) {
-      console.error('Failed to remove user category:', error);
-      setCategoriesError(error.message || 'Failed to remove user category');
-      throw error;
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, []);
-
-  const refreshCategories = useCallback(async () => {
-    await loadCategories();
-  }, [loadCategories]);
-
-  // Expense Operations
-  const loadExpenses = useCallback(async () => {
-    if (!isAuthenticated) return;
-
-    try {
-      setExpensesLoading(true);
-      setExpensesError(null);
-
-      const expensesData = await financeService.getExpenses();
-      // Ensure we always have an array
-      setExpenses(Array.isArray(expensesData) ? expensesData : []);
-    } catch (error: any) {
-      console.error('Failed to load expenses:', error);
-      // Don't set error for 403 cases - just means finance endpoints don't exist yet
-      if (error.response?.status !== 403) {
-        setExpensesError(error.message || 'Failed to load expenses');
-      }
-      // Always ensure we have an empty array as fallback
-      setExpenses([]);
-    } finally {
-      setExpensesLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  const createExpense = useCallback(async (expenseData: ExpenseCreateRequest): Promise<ExpenseResponse> => {
-    try {
-      setExpensesLoading(true);
-      setExpensesError(null);
 
       const newExpense = await financeService.createExpense(expenseData);
       
-      // Update local state with optimistic update
-      setExpenses(prev => [newExpense, ...prev]);
+      // Optimistic update
+      dispatch({ type: 'ADD_EXPENSE_OPTIMISTIC', payload: newExpense });
+
+      // Refresh budget and summary data in the background
+      setTimeout(async () => {
+        try {
+          const { budget, summary } = await financeService.refreshBudgetData();
+          dispatch({ type: 'SET_BUDGET', payload: budget });
+          dispatch({ type: 'SET_SUMMARY', payload: summary });
+        } catch (error) {
+          console.warn('Failed to refresh budget data after expense creation:', error);
+        }
+      }, 100);
 
       return newExpense;
     } catch (error: any) {
-      console.error('Failed to create expense:', error);
-      setExpensesError(error.message || 'Failed to create expense');
+      handleApiError(error, 'expenses');
       throw error;
     } finally {
-      setExpensesLoading(false);
+      setLoading('creatingExpense', false);
     }
-  }, []);
+  }, [setLoading, clearErrors, handleApiError]);
 
-  const updateExpense = useCallback(async (expenseId: number, expenseData: ExpenseUpdateRequest): Promise<ExpenseResponse> => {
+  const updateExpense = useCallback(async (expenseId: number, expenseData: UpdateExpenseRequest): Promise<Expense> => {
+    setLoading('updatingExpense', true);
+    clearErrors();
+
     try {
-      setExpensesLoading(true);
-      setExpensesError(null);
-
       const updatedExpense = await financeService.updateExpense(expenseId, expenseData);
       
-      // Update local state
-      setExpenses(prev => prev.map(expense => 
-        expense.id === expenseId ? updatedExpense : expense
-      ));
+      // Optimistic update
+      dispatch({ type: 'UPDATE_EXPENSE_OPTIMISTIC', payload: { id: expenseId, expense: updatedExpense } });
+
+      // Refresh budget and summary data in the background
+      setTimeout(async () => {
+        try {
+          const { budget, summary } = await financeService.refreshBudgetData();
+          dispatch({ type: 'SET_BUDGET', payload: budget });
+          dispatch({ type: 'SET_SUMMARY', payload: summary });
+        } catch (error) {
+          console.warn('Failed to refresh budget data after expense update:', error);
+        }
+      }, 100);
 
       return updatedExpense;
     } catch (error: any) {
-      console.error('Failed to update expense:', error);
-      setExpensesError(error.message || 'Failed to update expense');
+      handleApiError(error, 'expenses');
       throw error;
     } finally {
-      setExpensesLoading(false);
+      setLoading('updatingExpense', false);
     }
-  }, []);
+  }, [setLoading, clearErrors, handleApiError]);
 
   const deleteExpense = useCallback(async (expenseId: number): Promise<void> => {
-    try {
-      setExpensesLoading(true);
-      setExpensesError(null);
+    setLoading('deletingExpense', true);
+    clearErrors();
 
+    try {
       await financeService.deleteExpense(expenseId);
       
-      // Update local state
-      setExpenses(prev => prev.filter(expense => expense.id !== expenseId));
-    } catch (error: any) {
-      console.error('Failed to delete expense:', error);
-      setExpensesError(error.message || 'Failed to delete expense');
-      throw error;
-    } finally {
-      setExpensesLoading(false);
-    }
-  }, []);
+      // Optimistic update
+      dispatch({ type: 'DELETE_EXPENSE_OPTIMISTIC', payload: expenseId });
 
-  const getExpensesByCategory = useCallback(async (categoryId: number): Promise<ExpenseResponse[]> => {
-    try {
-      setExpensesError(null);
-      return await financeService.getExpensesByCategory(categoryId);
-    } catch (error: any) {
-      console.error('Failed to get expenses by category:', error);
-      setExpensesError(error.message || 'Failed to get expenses by category');
-      throw error;
-    }
-  }, []);
-
-  const getExpensesByDateRange = useCallback(async (startDate: string, endDate: string): Promise<ExpenseResponse[]> => {
-    try {
-      setExpensesError(null);
-      return await financeService.getExpensesByDateRange(startDate, endDate);
-    } catch (error: any) {
-      console.error('Failed to get expenses by date range:', error);
-      setExpensesError(error.message || 'Failed to get expenses by date range');
-      throw error;
-    }
-  }, []);
-
-  const searchExpenses = useCallback(async (query: string): Promise<ExpenseResponse[]> => {
-    try {
-      setExpensesError(null);
-      return await financeService.searchExpenses(query);
-    } catch (error: any) {
-      console.error('Failed to search expenses:', error);
-      setExpensesError(error.message || 'Failed to search expenses');
-      throw error;
-    }
-  }, []);
-
-  const refreshExpenses = useCallback(async () => {
-    await loadExpenses();
-  }, [loadExpenses]);
-
-  // Analytics Operations
-  const getSpendingTrends = useCallback(async (period: 'day' | 'week' | 'month', startDate?: string, endDate?: string) => {
-    try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-      
-      return await financeService.getSpendingTrends(period, startDate, endDate);
-    } catch (error: any) {
-      console.error('Failed to get spending trends:', error);
-      setAnalyticsError(error.message || 'Failed to get spending trends');
-      throw error;
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, []);
-
-  const getCategoryBreakdown = useCallback(async (startDate?: string, endDate?: string) => {
-    try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-      
-      return await financeService.getCategoryBreakdown(startDate, endDate);
-    } catch (error: any) {
-      console.error('Failed to get category breakdown:', error);
-      setAnalyticsError(error.message || 'Failed to get category breakdown');
-      throw error;
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, []);
-
-  const getMonthlySpending = useCallback(async (year: number, month: number) => {
-    try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-      
-      // Calculate start and end dates for the month
-      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-      
-      const expensesData = await financeService.getExpensesByDateRange(startDate, endDate);
-      const totalAmount = expensesData.reduce((sum, expense) => sum + expense.amount, 0);
-      
-      // Group by categories
-      const categoryBreakdown = expensesData.reduce((acc: any[], expense) => {
-        const existing = acc.find(item => item.categoryId === expense.categoryId);
-        if (existing) {
-          existing.amount += expense.amount;
-        } else {
-          acc.push({
-            categoryId: expense.categoryId,
-            categoryName: expense.categoryName || 'Unknown',
-            amount: expense.amount
-          });
+      // Refresh budget and summary data in the background
+      setTimeout(async () => {
+        try {
+          const { budget, summary } = await financeService.refreshBudgetData();
+          dispatch({ type: 'SET_BUDGET', payload: budget });
+          dispatch({ type: 'SET_SUMMARY', payload: summary });
+        } catch (error) {
+          console.warn('Failed to refresh budget data after expense deletion:', error);
         }
-        return acc;
-      }, []);
-      
-      return {
-        month: new Date(year, month - 1).toLocaleString('default', { month: 'long' }),
-        totalAmount,
-        categoryBreakdown
-      };
+      }, 100);
+
     } catch (error: any) {
-      console.error('Failed to get monthly spending:', error);
-      setAnalyticsError(error.message || 'Failed to get monthly spending');
+      handleApiError(error, 'expenses');
       throw error;
     } finally {
-      setAnalyticsLoading(false);
+      setLoading('deletingExpense', false);
     }
-  }, []);
+  }, [setLoading, clearErrors, handleApiError]);
 
-  const getTotalSpending = useCallback(async (startDate?: string, endDate?: string) => {
+  const refreshExpenses = useCallback(async (): Promise<void> => {
+    setLoading('expenses', true);
+
     try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-      
-      // Note: This method doesn't exist in financeService, implementing basic logic
-      const expensesData = await financeService.getExpensesByDateRange(startDate || '', endDate || '');
-      const totalAmount = expensesData.reduce((sum, expense) => sum + expense.amount, 0);
-      return { totalAmount };
+      const expenses = await financeService.getExpenses();
+      dispatch({ type: 'SET_EXPENSES', payload: expenses });
     } catch (error: any) {
-      console.error('Failed to get total spending:', error);
-      setAnalyticsError(error.message || 'Failed to get total spending');
-      throw error;
+      handleApiError(error, 'expenses');
     } finally {
-      setAnalyticsLoading(false);
+      setLoading('expenses', false);
     }
-  }, []);
+  }, [setLoading, handleApiError]);
 
-  const getBudgetAnalytics = useCallback(async (budgetId: number, startDate: string, endDate: string) => {
+  // ===============================
+  // SUMMARY OPERATIONS
+  // ===============================
+
+  const refreshSummary = useCallback(async (): Promise<void> => {
+    setLoading('summary', true);
+
     try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-      
-      return await financeService.getBudgetAnalytics(budgetId, startDate, endDate);
+      const summary = await financeService.getBudgetSummary();
+      dispatch({ type: 'SET_SUMMARY', payload: summary });
     } catch (error: any) {
-      console.error('Failed to get budget analytics:', error);
-      setAnalyticsError(error.message || 'Failed to get budget analytics');
-      throw error;
+      handleApiError(error, 'summary');
     } finally {
-      setAnalyticsLoading(false);
+      setLoading('summary', false);
     }
-  }, []);
+  }, [setLoading, handleApiError]);
 
-  const getBudgetSummary = useCallback(async (budgetId: number) => {
+  // ===============================
+  // COMBINED OPERATIONS
+  // ===============================
+
+  const refreshAllData = useCallback(async (): Promise<void> => {
+    setLoading('budget', true);
+    setLoading('expenses', true);
+    setLoading('summary', true);
+    clearErrors();
+
     try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
+      const { budget, expenses, summary } = await financeService.getFinanceOverview();
       
-      return await financeService.getBudgetSummary(budgetId);
+      // Update all data at once
+      dispatch({
+        type: 'SET_INITIAL_DATA',
+        payload: {
+          budget,
+          expenses,
+          summary,
+          categories: state.categories, // Keep existing categories
+        },
+      });
     } catch (error: any) {
-      console.error('Failed to get budget summary:', error);
-      setAnalyticsError(error.message || 'Failed to get budget summary');
-      throw error;
+      handleApiError(error, 'general');
     } finally {
-      setAnalyticsLoading(false);
+      setLoading('budget', false);
+      setLoading('expenses', false);
+      setLoading('summary', false);
     }
-  }, []);
+  }, [setLoading, clearErrors, handleApiError, state.categories]);
 
-  const getBudgetWarnings = useCallback(async (budgetId: number) => {
+  const initializeFinanceData = useCallback(async (): Promise<void> => {
+    if (initialized) return;
+
+    setLoading('budget', true);
+    setLoading('expenses', true);
+    setLoading('summary', true);
+    setLoading('categories', true);
+
     try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
+      const { budget, expenses, summary, categories } = await financeService.getFinanceOverview();
       
-      return await financeService.getBudgetWarnings(budgetId);
+      dispatch({
+        type: 'SET_INITIAL_DATA',
+        payload: { budget, expenses, summary, categories },
+      });
+
+      setInitialized(true);
     } catch (error: any) {
-      console.error('Failed to get budget warnings:', error);
-      setAnalyticsError(error.message || 'Failed to get budget warnings');
-      // Return empty array instead of throwing for warnings
-      return [];
+      handleApiError(error, 'general');
     } finally {
-      setAnalyticsLoading(false);
+      setLoading('budget', false);
+      setLoading('expenses', false);
+      setLoading('summary', false);
+      setLoading('categories', false);
     }
-  }, []);
+  }, [initialized, setLoading, handleApiError]);
 
-  const getBudgetSpendingTrends = useCallback(async (budgetId: number, months: number = 6) => {
-    try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-      
-      return await financeService.getBudgetSpendingTrends(budgetId, months);
-    } catch (error: any) {
-      console.error('Failed to get budget spending trends:', error);
-      setAnalyticsError(error.message || 'Failed to get budget spending trends');
-      throw error;
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, []);
+  // ===============================
+  // INITIALIZATION EFFECT
+  // ===============================
 
-  const getBudgetTopCategories = useCallback(async (budgetId: number, limit: number = 5) => {
-    try {
-      setAnalyticsLoading(true);
-      setAnalyticsError(null);
-      
-      return await financeService.getBudgetTopCategories(budgetId, limit);
-    } catch (error: any) {
-      console.error('Failed to get budget top categories:', error);
-      setAnalyticsError(error.message || 'Failed to get budget top categories');
-      throw error;
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, []);
+  useEffect(() => {
+    initializeFinanceData();
+  }, [initializeFinanceData]);
 
-  const getDefaultCategories = useCallback(async () => {
-    try {
-      setCategoriesLoading(true);
-      setCategoriesError(null);
-      
-      return await financeService.getDefaultCategories();
-    } catch (error: any) {
-      console.error('Failed to get default categories:', error);
-      setCategoriesError(error.message || 'Failed to get default categories');
-      throw error;
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, []);
-
-  // Utility Operations
-  const refreshAll = useCallback(async () => {
-    await Promise.all([
-      loadBudgets(),
-      loadCategories(),
-      loadExpenses()
-    ]);
-  }, [loadBudgets, loadCategories, loadExpenses]);
-
-  const clearErrors = useCallback(() => {
-    setBudgetsError(null);
-    setCategoriesError(null);
-    setExpensesError(null);
-    setAnalyticsError(null);
-  }, []);
-
-  // Helper function to determine if a budget is for the current period
-  const isCurrentPeriod = (budget: BudgetResponse): boolean => {
-    const now = new Date();
-    const budgetStart = new Date(budget.startDate);
-    const budgetEnd = new Date(budget.endDate);
-    return now >= budgetStart && now <= budgetEnd;
-  };
+  // ===============================
+  // CONTEXT VALUE
+  // ===============================
 
   const contextValue: FinanceContextType = {
-    // Budget State
-    budgets,
-    currentBudget,
-    budgetsLoading,
-    budgetsError,
+    // State
+    ...state,
 
-    // Category State
-    categories,
-    userCategories,
-    categoriesLoading,
-    categoriesError,
-
-    // Expense State
-    expenses,
-    expensesLoading,
-    expensesError,
-
-    // Analytics State
-    analyticsLoading,
-    analyticsError,
-
-    // Budget Operations
+    // Budget actions
     createBudget,
     updateBudget,
-    deleteBudget,
-    refreshBudgets,
-    setCurrentBudget,
+    refreshBudget,
 
-    // Category Operations
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    assignCategoryToUser,
-    removeUserCategory,
-    refreshCategories,
-
-    // Expense Operations
-    createExpense,
+    // Expense actions
+    addExpense,
     updateExpense,
     deleteExpense,
-    getExpensesByCategory,
-    getExpensesByDateRange,
-    searchExpenses,
     refreshExpenses,
 
-    // Analytics Operations
-    getSpendingTrends,
-    getCategoryBreakdown,
-    getMonthlySpending,
-    getTotalSpending,
-    getBudgetAnalytics,
-    getBudgetSummary,
-    getBudgetWarnings,
-    getBudgetSpendingTrends,
-    getBudgetTopCategories,
-    getDefaultCategories,
+    // Summary actions
+    refreshSummary,
 
-    // Utility Operations
-    refreshAll,
-    clearErrors
+    // Combined actions
+    refreshAllData,
+    initializeFinanceData,
+
+    // Utility actions
+    clearErrors,
+    setError,
   };
 
   return (
@@ -754,10 +531,99 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
+// ===============================
+// HOOK FOR CONSUMING CONTEXT
+// ===============================
+
 export const useFinance = (): FinanceContextType => {
   const context = useContext(FinanceContext);
   if (context === undefined) {
     throw new Error('useFinance must be used within a FinanceProvider');
   }
   return context;
+};
+
+// ===============================
+// ADDITIONAL HOOKS
+// ===============================
+
+/**
+ * Hook for budget-specific operations
+ */
+export const useBudget = () => {
+  const { budget, loading, errors, createBudget, updateBudget, refreshBudget } = useFinance();
+  
+  return {
+    budget,
+    isLoading: loading.budget || loading.creatingBudget || loading.updatingBudget,
+    error: errors.budget,
+    createBudget,
+    updateBudget,
+    refreshBudget,
+    hasActiveBudget: budget !== null && budget.isActive,
+  };
+};
+
+/**
+ * Hook for expense-specific operations
+ */
+export const useExpenses = () => {
+  const { 
+    expenses, 
+    loading, 
+    errors, 
+    addExpense, 
+    updateExpense, 
+    deleteExpense, 
+    refreshExpenses,
+    isExpenseListEmpty,
+  } = useFinance();
+  
+  return {
+    expenses,
+    isEmpty: isExpenseListEmpty,
+    isLoading: loading.expenses || loading.creatingExpense || loading.updatingExpense || loading.deletingExpense,
+    error: errors.expenses,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    refreshExpenses,
+  };
+};
+
+/**
+ * Hook for summary and analytics
+ */
+export const useBudgetSummary = () => {
+  const { 
+    summary, 
+    topSpendingCategories, 
+    loading, 
+    errors, 
+    refreshSummary,
+  } = useFinance();
+  
+  return {
+    summary,
+    topSpendingCategories,
+    isLoading: loading.summary,
+    error: errors.summary,
+    refreshSummary,
+    hasData: summary !== null,
+  };
+};
+
+/**
+ * Hook for categories
+ */
+export const useCategories = () => {
+  const { categories, loading, errors } = useFinance();
+  
+  return {
+    categories,
+    isLoading: loading.categories,
+    error: errors.categories,
+    getCategoryById: (id: number) => categories.find(cat => cat.id === id),
+    getCategoryByName: (name: string) => categories.find(cat => cat.name.toLowerCase() === name.toLowerCase()),
+  };
 };
