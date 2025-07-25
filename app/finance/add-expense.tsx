@@ -141,15 +141,6 @@ export default function AddExpenseScreen() {
         onClose={() => setErrorDialog(false)}
       />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.primary }]}>Add Expense</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -159,6 +150,14 @@ export default function AddExpenseScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color={colors.primary} />
+            </TouchableOpacity>
+            <Text style={[styles.title, { color: colors.primary }]}>Add Expense</Text>
+            <View style={{ width: 24 }} />
+          </View>
           <ModernCard style={styles.formCard}>
             {/* Amount Input */}
             <View style={styles.formSection}>
@@ -291,20 +290,20 @@ export default function AddExpenseScreen() {
               )}
             </View>
           </ModernCard>
-        </ScrollView>
 
-        {/* Submit Button */}
-        <View style={styles.submitContainer}>
-          <ModernButton
-            title="Add Expense"
-            onPress={handleSubmit}
-            loading={loading}
-            variant="primary"
-            leftIcon={
-              <Ionicons name="add-circle-outline" size={20} color="white" />
-            }
-          />
-        </View>
+          {/* Submit Button */}
+          <View style={styles.submitContainer}>
+            <ModernButton
+              title="Add Expense"
+              onPress={handleSubmit}
+              loading={loading}
+              variant="primary"
+              leftIcon={
+                <Ionicons name="add-circle-outline" size={20} color="white" />
+              }
+            />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -320,9 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.lg,
-    paddingBottom: Spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    paddingBottom: Spacing.xl,
   },
   title: {
     fontSize: Typography.fontSize.xl,
@@ -335,11 +332,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.base,
     paddingTop: Spacing.base,
-    paddingBottom: Spacing.base,
+    paddingBottom: Spacing.xl, // Extra bottom padding for submit button
   },
   formCard: {
+    marginHorizontal: Spacing.base,
     marginBottom: Spacing.base,
   },
   formSection: {
@@ -398,10 +395,8 @@ const styles = StyleSheet.create({
   },
   submitContainer: {
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.base,
   },
   dateButton: {
     flexDirection: 'row',

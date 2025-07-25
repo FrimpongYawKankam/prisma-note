@@ -67,16 +67,6 @@ export default function FinanceScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.primary }]}>
-          Finance
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Track your budget and expenses
-        </Text>
-      </View>
-      
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
@@ -90,6 +80,15 @@ export default function FinanceScreen() {
           />
         }
       >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.primary }]}>
+            Finance
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            Track your budget and expenses
+          </Text>
+        </View>
         {!hasActiveBudget ? (
           // No Budget State
           <View style={styles.content}>
@@ -180,7 +179,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
   title: {
