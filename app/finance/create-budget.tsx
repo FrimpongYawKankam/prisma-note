@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
     ScrollView,
     StyleSheet,
     Text,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
+import { ModernDialog } from '../../src/components/ui/ModernDialog';
 import { useFinance } from '../../src/context/FinanceContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../src/styles/tokens';
@@ -32,12 +32,18 @@ export default function CreateBudgetScreen() {
     period: 'MONTHLY' as BudgetPeriod,
   });
 
+  // Dialog states
+  const [successDialog, setSuccessDialog] = useState(false);
+  const [errorDialog, setErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleCreateBudget = async () => {
     try {
       // Basic validation
       const amount = parseFloat(formData.totalBudget);
       if (isNaN(amount) || amount <= 0) {
-        Alert.alert('Error', 'Please enter a valid budget amount');
+        setErrorMessage('Please enter a valid budget amount');
+        setErrorDialog(true);
         return;
       }
 
@@ -54,18 +60,49 @@ export default function CreateBudgetScreen() {
         endDate,
       });
 
-      Alert.alert(
-        'Success!', 
-        'Your budget has been created successfully.',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      setSuccessDialog(true);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create budget');
+      setErrorMessage(error.message || 'Failed to create budget');
+      setErrorDialog(true);
     }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      {/* Success Dialog */}
+      <ModernDialog
+        visible={successDialog}
+        title="Success!"
+        message="Your budget has been created successfully."
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => {
+              setSuccessDialog(false);
+              router.back();
+            },
+          },
+        ]}
+        onClose={() => {
+          setSuccessDialog(false);
+          router.back();
+        }}
+      />
+
+      {/* Error Dialog */}
+      <ModernDialog
+        visible={errorDialog}
+        title="Error"
+        message={errorMessage}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setErrorDialog(false),
+          },
+        ]}
+        onClose={() => setErrorDialog(false)}
+      />
+
       {/* Header */}
       <View style={styles.header}>
         <ModernButton

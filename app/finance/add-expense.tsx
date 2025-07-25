@@ -6,7 +6,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -19,6 +18,7 @@ import {
 
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
+import { ModernDialog } from '../../src/components/ui/ModernDialog';
 import { ModernInput } from '../../src/components/ui/ModernInput';
 import { useFinance } from '../../src/context/FinanceContext';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -39,6 +39,9 @@ export default function AddExpenseScreen() {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [successDialog, setSuccessDialog] = useState(false);
+  const [errorDialog, setErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [errors, setErrors] = useState({
     amount: '',
@@ -87,12 +90,11 @@ export default function AddExpenseScreen() {
         date: formData.date.toISOString().split('T')[0], // Convert Date to string
       });
 
-      Alert.alert('Success', 'Expense added successfully!', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      setSuccessDialog(true);
     } catch (error) {
       console.error('Failed to add expense:', error);
-      Alert.alert('Error', 'Failed to add expense. Please try again.');
+      setErrorMessage('Failed to add expense. Please try again.');
+      setErrorDialog(true);
     } finally {
       setLoading(false);
     }
@@ -105,6 +107,40 @@ export default function AddExpenseScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Success Dialog */}
+      <ModernDialog
+        visible={successDialog}
+        title="Success"
+        message="Expense added successfully!"
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => {
+              setSuccessDialog(false);
+              router.back();
+            },
+          },
+        ]}
+        onClose={() => {
+          setSuccessDialog(false);
+          router.back();
+        }}
+      />
+
+      {/* Error Dialog */}
+      <ModernDialog
+        visible={errorDialog}
+        title="Error"
+        message={errorMessage}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: () => setErrorDialog(false),
+          },
+        ]}
+        onClose={() => setErrorDialog(false)}
+      />
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -138,10 +174,13 @@ export default function AddExpenseScreen() {
                 }}
                 keyboardType="numeric"
                 error={errors.amount}
+                inputStyle={styles.amountInput}
                 leftIcon={
-                  <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>
-                    ₵
-                  </Text>
+                  <View style={styles.currencyContainer}>
+                    <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>
+                      ₵
+                    </Text>
+                  </View>
                 }
               />
             </View>
@@ -311,9 +350,24 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium as any,
     marginBottom: Spacing.sm,
   },
+  amountInput: {
+    textAlign: 'left',
+    paddingVertical: 0, // Remove extra padding
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  currencyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 24, // Match input text line height
+    paddingBottom: 1, // Fine-tune vertical alignment
+  },
   currencySymbol: {
     fontSize: Typography.fontSize.base,
     fontWeight: Typography.fontWeight.medium as any,
+    lineHeight: Typography.lineHeight.base,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   errorText: {
     fontSize: Typography.fontSize.sm,
