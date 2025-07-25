@@ -1,7 +1,11 @@
 // Quick test script to verify events backend integration
 const axios = require('axios');
 
-const BASE_URL = 'http://10.40.32.231:8080';
+const baseURL = 'https://prismanote-backend.onrender.com';
+const testUser = {
+  "email": "jeremyboatengoa@gmail.com",
+  "password": "Test123="
+};
 
 const testEvents = async () => {
   try {
@@ -9,10 +13,7 @@ const testEvents = async () => {
     
     // First login to get token
     console.log('\n1. Logging in...');
-    const loginResponse = await axios.post(`${BASE_URL}/api/auth/login`, {
-      email: 'boatengjoa9@gmail.com',
-      password: 'Test1233='
-    });
+    const loginResponse = await axios.post(`${baseURL}/api/auth/login`, testUser);
     
     const token = loginResponse.data.token;
     console.log('✅ Login successful, token received');
@@ -24,7 +25,7 @@ const testEvents = async () => {
     
     // Test creating an event
     console.log('\n2. Creating a test event...');
-    const createResponse = await axios.post(`${BASE_URL}/api/events`, {
+    const createResponse = await axios.post(`${baseURL}/api/events`, {
       title: 'Test Event from Backend Integration',
       description: 'This event was created to test the frontend-backend integration.',
       startDateTime: '2025-07-20T10:00:00',
@@ -38,7 +39,7 @@ const testEvents = async () => {
     
     // Test getting all events
     console.log('\n3. Fetching all events...');
-    const eventsResponse = await axios.get(`${BASE_URL}/api/events`, { headers });
+    const eventsResponse = await axios.get(`${baseURL}/api/events`, { headers });
     
     console.log(`✅ Found ${eventsResponse.data.length} events`);
     eventsResponse.data.forEach((event, index) => {
@@ -47,13 +48,13 @@ const testEvents = async () => {
     
     // Test getting event by ID
     console.log('\n4. Fetching event by ID...');
-    const eventByIdResponse = await axios.get(`${BASE_URL}/api/events/${eventId}`, { headers });
+    const eventByIdResponse = await axios.get(`${baseURL}/api/events/${eventId}`, { headers });
     
     console.log('✅ Event retrieved by ID:', eventByIdResponse.data);
     
     // Test updating the event
     console.log('\n5. Updating the test event...');
-    const updateResponse = await axios.put(`${BASE_URL}/api/events/${eventId}`, {
+    const updateResponse = await axios.put(`${baseURL}/api/events/${eventId}`, {
       title: 'Updated Test Event',
       description: 'This content has been updated via the API test.',
       startDateTime: '2025-07-20T14:00:00',
@@ -66,13 +67,13 @@ const testEvents = async () => {
     
     // Test updating event tag specifically
     console.log('\n6. Updating event tag only...');
-    const updateTagResponse = await axios.patch(`${BASE_URL}/api/events/${eventId}/tag?tag=LOW`, null, { headers });
+    const updateTagResponse = await axios.patch(`${baseURL}/api/events/${eventId}/tag?tag=LOW`, null, { headers });
     
     console.log('✅ Event tag updated successfully:', updateTagResponse.data);
     
     // Test getting events by tag
     console.log('\n7. Fetching events by tag (LOW)...');
-    const eventsByTagResponse = await axios.get(`${BASE_URL}/api/events/tag/LOW`, { headers });
+    const eventsByTagResponse = await axios.get(`${baseURL}/api/events/tag/LOW`, { headers });
     
     console.log(`✅ Found ${eventsByTagResponse.data.length} events with LOW tag`);
     eventsByTagResponse.data.forEach((event, index) => {
@@ -84,7 +85,7 @@ const testEvents = async () => {
     
     // First create another event that might overlap
     console.log('   Creating another event for overlap testing...');
-    const overlapEventResponse = await axios.post(`${BASE_URL}/api/events`, {
+    const overlapEventResponse = await axios.post(`${baseURL}/api/events`, {
       title: 'Overlapping Event',
       description: 'This event overlaps with the test event.',
       startDateTime: '2025-07-20T14:30:00',
@@ -97,7 +98,7 @@ const testEvents = async () => {
     console.log('   ✅ Overlap event created:', overlapEventResponse.data);
     
     // Now test overlapping query
-    const overlappingResponse = await axios.get(`${BASE_URL}/api/events/overlapping`, {
+    const overlappingResponse = await axios.get(`${baseURL}/api/events/overlapping`, {
       headers,
       params: {
         startDateTime: '2025-07-20T13:00:00',
@@ -112,7 +113,7 @@ const testEvents = async () => {
     
     // Test getting events with date range filter
     console.log('\n9. Testing events with date range filter...');
-    const dateRangeResponse = await axios.get(`${BASE_URL}/api/events`, {
+    const dateRangeResponse = await axios.get(`${baseURL}/api/events`, {
       headers,
       params: {
         from: '2025-07-20T00:00:00',
@@ -124,15 +125,15 @@ const testEvents = async () => {
     
     // Test removing event tag
     console.log('\n10. Removing event tag...');
-    await axios.delete(`${BASE_URL}/api/events/${eventId}/tag`, { headers });
+    await axios.delete(`${baseURL}/api/events/${eventId}/tag`, { headers });
     
     // Verify tag was removed
-    const verifyTagRemovalResponse = await axios.get(`${BASE_URL}/api/events/${eventId}`, { headers });
+    const verifyTagRemovalResponse = await axios.get(`${baseURL}/api/events/${eventId}`, { headers });
     console.log('✅ Event tag removed, new tag:', verifyTagRemovalResponse.data.tag);
     
     // Test creating an all-day event
     console.log('\n11. Creating an all-day event...');
-    const allDayEventResponse = await axios.post(`${BASE_URL}/api/events`, {
+    const allDayEventResponse = await axios.post(`${baseURL}/api/events`, {
       title: 'All Day Test Event',
       description: 'This is an all-day event.',
       startDateTime: '2025-07-21T00:00:00',
@@ -147,7 +148,7 @@ const testEvents = async () => {
     // Test error handling - try to get non-existent event
     console.log('\n12. Testing error handling (non-existent event)...');
     try {
-      await axios.get(`${BASE_URL}/api/events/99999`, { headers });
+      await axios.get(`${baseURL}/api/events/99999`, { headers });
     } catch (error) {
       console.log('✅ Correctly handled non-existent event:', error.response.status, 'NOT FOUND');
     }
@@ -155,7 +156,7 @@ const testEvents = async () => {
     // Test error handling - invalid date format
     console.log('\n13. Testing error handling (invalid date)...');
     try {
-      await axios.post(`${BASE_URL}/api/events`, {
+      await axios.post(`${baseURL}/api/events`, {
         title: 'Invalid Date Event',
         description: 'This should fail.',
         startDateTime: 'invalid-date',
@@ -171,20 +172,20 @@ const testEvents = async () => {
     console.log('\n14. Cleaning up - deleting test events...');
     
     console.log('   Deleting main test event...');
-    await axios.delete(`${BASE_URL}/api/events/${eventId}`, { headers });
+    await axios.delete(`${baseURL}/api/events/${eventId}`, { headers });
     console.log('   ✅ Main test event deleted');
     
     console.log('   Deleting overlap test event...');
-    await axios.delete(`${BASE_URL}/api/events/${overlapEventId}`, { headers });
+    await axios.delete(`${baseURL}/api/events/${overlapEventId}`, { headers });
     console.log('   ✅ Overlap test event deleted');
     
     console.log('   Deleting all-day test event...');
-    await axios.delete(`${BASE_URL}/api/events/${allDayEventId}`, { headers });
+    await axios.delete(`${baseURL}/api/events/${allDayEventId}`, { headers });
     console.log('   ✅ All-day test event deleted');
     
     // Verify cleanup
     console.log('\n15. Verifying cleanup...');
-    const finalEventsResponse = await axios.get(`${BASE_URL}/api/events`, { headers });
+    const finalEventsResponse = await axios.get(`${baseURL}/api/events`, { headers });
     console.log(`✅ Final event count: ${finalEventsResponse.data.length} events remaining`);
     
     console.log('\n🎉 All event tests passed! Events backend integration is working correctly.');

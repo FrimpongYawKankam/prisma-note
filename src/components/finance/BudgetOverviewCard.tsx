@@ -65,7 +65,7 @@ export const BudgetOverviewCard: React.FC<BudgetOverviewCardProps> = ({
   const isOverBudget = summary ? summary.totalSpent > budget.totalBudget : false;
 
   const getTotalExpenses = () => {
-    if (!summary) return 0;
+    if (!summary || !summary.categoryBreakdown || !Array.isArray(summary.categoryBreakdown)) return 0;
     return summary.categoryBreakdown.reduce((total, category) => total + category.transactionCount, 0);
   };
 
@@ -152,7 +152,7 @@ export const BudgetOverviewCard: React.FC<BudgetOverviewCardProps> = ({
             </View>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: colors.text }]}>
-                {summary.categoryBreakdown.length}
+                {(summary?.categoryBreakdown && Array.isArray(summary.categoryBreakdown)) ? summary.categoryBreakdown.length : 0}
               </Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                 Categories

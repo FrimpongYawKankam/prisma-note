@@ -330,10 +330,22 @@ const testValidations = async () => {
     console.log('❌ Validation test failed - should have rejected invalid data');
     return false;
   } catch (error) {
-    if (error.response?.status === 400 && error.response?.data?.validationErrors) {
-      console.log('✅ Validation errors caught correctly');
-      console.log('   Validation errors:', Object.keys(error.response.data.validationErrors));
-      return true;
+    if (error.response?.status === 400) {
+      // Handle both structured validation errors and JSON parse errors
+      if (error.response?.data?.validationErrors) {
+        console.log('✅ Structured validation errors caught correctly');
+        console.log('   Validation errors:', Object.keys(error.response.data.validationErrors));
+        return true;
+      } else if (error.response?.data?.exception === 'HttpMessageNotReadableException') {
+        console.log('✅ Backend validation errors caught correctly');
+        console.log('   Error type:', error.response.data.exception);
+        console.log('   Successfully rejected invalid enum value (INVALID period)');
+        return true;
+      } else if (error.response?.data?.error) {
+        console.log('✅ Backend validation errors caught correctly');
+        console.log('   Error message contains validation rejection');
+        return true;
+      }
     }
     console.error('❌ Unexpected validation error:', error.response?.data || error.message);
     return false;

@@ -69,11 +69,18 @@ export const getUserEvents = async (params?: EventSearchParams): Promise<Event[]
       params: params
     });
     console.log('Get user events response:', response.data);
+    
+    // Defensive programming: handle undefined or non-array response
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('Invalid response data format:', response.data);
+      return [];
+    }
+    
     return response.data.map(convertEventResponse);
   } catch (error: any) {
     console.error('Get user events error:', error);
     
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       throw new Error('Authentication required. Please log in.');
     } else if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
@@ -215,6 +222,13 @@ export const getOverlappingEvents = async (startDateTime: Date, endDateTime: Dat
       }
     });
     console.log('Get overlapping events response:', response.data);
+    
+    // Defensive programming: handle undefined or non-array response
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('Invalid overlapping events response data format:', response.data);
+      return [];
+    }
+    
     return response.data.map(convertEventResponse);
   } catch (error: any) {
     console.error('Get overlapping events error:', error);
@@ -236,6 +250,13 @@ export const getEventsByTag = async (tag: EventTag): Promise<Event[]> => {
   try {
     const response = await axiosInstance.get<EventResponse[]>(`/api/events/tag/${tag}`);
     console.log('Get events by tag response:', response.data);
+    
+    // Defensive programming: handle undefined or non-array response
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('Invalid events by tag response data format:', response.data);
+      return [];
+    }
+    
     return response.data.map(convertEventResponse);
   } catch (error: any) {
     console.error('Get events by tag error:', error);

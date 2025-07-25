@@ -47,9 +47,10 @@ axiosInstance.interceptors.response.use(
       code: error.code
     });
     
-    if (error.response?.status === 401) {
-      // Token expired or invalid, clear storage
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Token expired, invalid, or forbidden - clear storage
       await AsyncStorage.multiRemove(['jwt_token', 'refresh_token', 'user']);
+      console.log('🔓 Cleared authentication data due to invalid/expired token');
     }
     return Promise.reject(error);
   }

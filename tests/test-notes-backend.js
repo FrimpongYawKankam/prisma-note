@@ -1,7 +1,11 @@
 // Quick test script to verify notes backend integration
 const axios = require('axios');
 
-const BASE_URL = 'http://10.40.32.231:8080';
+const baseURL = 'https://prismanote-backend.onrender.com';
+const testUser = {
+  "email": "jeremyboatengoa@gmail.com",
+  "password": "Test123="
+};
 
 const testNotes = async () => {
   try {
@@ -9,17 +13,14 @@ const testNotes = async () => {
     
     // First login to get token
     console.log('\n1. Logging in...');
-    const loginResponse = await axios.post(`${BASE_URL}/api/auth/login`, {
-      email: 'boatengjoa9@gmail.com',
-      password: 'Test1233='
-    });
+    const loginResponse = await axios.post(`${baseURL}/api/auth/login`, testUser);
     
     const token = loginResponse.data.token;
     console.log('✅ Login successful, token received');
     
     // Test creating a note
     console.log('\n2. Creating a test note...');
-    const createResponse = await axios.post(`${BASE_URL}/api/notes`, {
+    const createResponse = await axios.post(`${baseURL}/api/notes`, {
       title: 'Test Note from Frontend Integration',
       content: 'This note was created to test the frontend-backend integration.'
     }, {
@@ -34,7 +35,7 @@ const testNotes = async () => {
     
     // Test getting all notes
     console.log('\n3. Fetching all notes...');
-    const notesResponse = await axios.get(`${BASE_URL}/api/notes`, {
+    const notesResponse = await axios.get(`${baseURL}/api/notes`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -47,7 +48,7 @@ const testNotes = async () => {
     
     // Test updating the note
     console.log('\n4. Updating the test note...');
-    const updateResponse = await axios.put(`${BASE_URL}/api/notes/${noteId}`, {
+    const updateResponse = await axios.put(`${baseURL}/api/notes/${noteId}`, {
       title: 'Updated Test Note',
       content: 'This content has been updated via the API test.'
     }, {
@@ -61,7 +62,7 @@ const testNotes = async () => {
     
     // Test searching notes
     console.log('\n5. Searching notes...');
-    const searchResponse = await axios.get(`${BASE_URL}/api/notes/search?keyword=test`, {
+    const searchResponse = await axios.get(`${baseURL}/api/notes/search?keyword=test`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -71,7 +72,7 @@ const testNotes = async () => {
     
     // Clean up - delete the test note
     console.log('\n6. Cleaning up - deleting test note...');
-    await axios.delete(`${BASE_URL}/api/notes/${noteId}`, {
+    await axios.delete(`${baseURL}/api/notes/${noteId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

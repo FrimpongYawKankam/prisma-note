@@ -34,13 +34,14 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
   };
 
   const getTopCategory = () => {
-    if (summary.categoryBreakdown.length === 0) return null;
+    if (!summary.categoryBreakdown || !Array.isArray(summary.categoryBreakdown) || summary.categoryBreakdown.length === 0) return null;
     return summary.categoryBreakdown.reduce((prev, current) => 
       prev.totalAmount > current.totalAmount ? prev : current
     );
   };
 
   const getTotalExpenses = () => {
+    if (!summary.categoryBreakdown || !Array.isArray(summary.categoryBreakdown)) return 0;
     return summary.categoryBreakdown.reduce((total, category) => total + category.transactionCount, 0);
   };
 
@@ -128,7 +129,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
       </View>
 
       {/* Additional Insights */}
-      {summary.categoryBreakdown.length > 0 && (
+      {summary.categoryBreakdown && Array.isArray(summary.categoryBreakdown) && summary.categoryBreakdown.length > 0 && (
         <View style={styles.insights}>
           <Text style={[styles.insightsTitle, { color: colors.text }]}>
             Spending Insights
@@ -136,7 +137,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
           
           {/* Top 3 Categories */}
           <View style={styles.topCategories}>
-            {summary.categoryBreakdown
+            {summary.categoryBreakdown && Array.isArray(summary.categoryBreakdown) && summary.categoryBreakdown
               .sort((a, b) => b.totalAmount - a.totalAmount)
               .slice(0, 3)
               .map((category, index) => (

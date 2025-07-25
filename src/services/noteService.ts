@@ -1,13 +1,10 @@
-import axiosInstance from '../utils/axiosInstance';
 import {
   CreateNoteRequest,
-  UpdateNoteRequest,
-  NoteResponse,
   Note,
-  ApiError,
-  SearchParams,
-  CountResponse
+  NoteResponse,
+  UpdateNoteRequest
 } from '../types/api';
+import axiosInstance from '../utils/axiosInstance';
 
 // Utility function to convert backend date strings to Date objects
 const convertNoteResponse = (noteResponse: NoteResponse): Note => ({
@@ -50,11 +47,18 @@ export const getUserNotes = async (): Promise<Note[]> => {
   try {
     const response = await axiosInstance.get<NoteResponse[]>('/api/notes');
     console.log('Get user notes response:', response.data);
+    
+    // Defensive programming: handle undefined or non-array response
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('Invalid notes response data format:', response.data);
+      return [];
+    }
+    
     return response.data.map(convertNoteResponse);
   } catch (error: any) {
     console.error('Get user notes error:', error);
     
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       throw new Error('Authentication required. Please log in.');
     } else if (error.response?.data?.message) {
       throw new Error(error.response.data.message);
@@ -153,6 +157,13 @@ export const searchNotes = async (keyword: string): Promise<Note[]> => {
       params: { keyword }
     });
     console.log('Search notes response:', response.data);
+    
+    // Defensive programming: handle undefined or non-array response
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('Invalid search notes response data format:', response.data);
+      return [];
+    }
+    
     return response.data.map(convertNoteResponse);
   } catch (error: any) {
     console.error('Search notes error:', error);
@@ -199,6 +210,13 @@ export const getTrashedNotes = async (): Promise<Note[]> => {
   try {
     const response = await axiosInstance.get<NoteResponse[]>('/api/notes/trash');
     console.log('Get trashed notes response:', response.data);
+    
+    // Defensive programming: handle undefined or non-array response
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('Invalid trashed notes response data format:', response.data);
+      return [];
+    }
+    
     return response.data.map(convertNoteResponse);
   } catch (error: any) {
     console.error('Get trashed notes error:', error);
@@ -298,6 +316,13 @@ export const searchTrashedNotes = async (keyword: string): Promise<Note[]> => {
       params: { keyword: keyword.trim() }
     });
     console.log('Search trashed notes response:', response.data);
+    
+    // Defensive programming: handle undefined or non-array response
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('Invalid search trashed notes response data format:', response.data);
+      return [];
+    }
+    
     return response.data.map(convertNoteResponse);
   } catch (error: any) {
     console.error('Search trashed notes error:', error);

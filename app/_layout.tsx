@@ -48,9 +48,9 @@ function AppContent() {
   return (
     <>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <AuthProvider>
-        <TaskStatsProvider>
-          <SafeAreaProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <TaskStatsProvider>
             <NotesProvider>
               <EventsProvider>
                 <TasksProvider>
@@ -61,9 +61,9 @@ function AppContent() {
                 </TasksProvider>
               </EventsProvider>
             </NotesProvider>
-          </SafeAreaProvider>
-        </TaskStatsProvider>
-      </AuthProvider>
+          </TaskStatsProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
     </>
   );
 }

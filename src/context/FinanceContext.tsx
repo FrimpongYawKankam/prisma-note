@@ -145,9 +145,9 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
       return {
         ...state,
         summary: action.payload,
-        topSpendingCategories: action.payload?.categoryBreakdown
-          .sort((a, b) => b.totalAmount - a.totalAmount)
-          .slice(0, 5) || [],
+        topSpendingCategories: (action.payload?.categoryBreakdown && Array.isArray(action.payload.categoryBreakdown))
+          ? action.payload.categoryBreakdown.sort((a, b) => b.totalAmount - a.totalAmount).slice(0, 5)
+          : [],
       };
 
     case 'SET_CATEGORIES':
@@ -188,9 +188,9 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
         categories: action.payload.categories,
         hasActiveBudget: action.payload.budget !== null && action.payload.budget.isActive,
         isExpenseListEmpty: action.payload.expenses.length === 0,
-        topSpendingCategories: action.payload.summary?.categoryBreakdown
-          .sort((a, b) => b.totalAmount - a.totalAmount)
-          .slice(0, 5) || [],
+        topSpendingCategories: (action.payload.summary?.categoryBreakdown && Array.isArray(action.payload.summary.categoryBreakdown))
+          ? action.payload.summary.categoryBreakdown.sort((a, b) => b.totalAmount - a.totalAmount).slice(0, 5)
+          : [],
       };
 
     default:
