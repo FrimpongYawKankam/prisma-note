@@ -49,7 +49,7 @@ export default function AllExpensesScreen() {
   };
 
   const formatAmount = (amount: number) => {
-    return `GHS ${amount.toFixed(2)}`;
+    return `₵ ${amount.toFixed(2)}`;
   };
 
   const formatDate = (dateString: string) => {

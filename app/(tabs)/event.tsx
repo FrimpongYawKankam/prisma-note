@@ -73,7 +73,7 @@ export default function EventScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>
           Events
         </Text>
         <View style={styles.dateIndicator}>
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
   headerTitle: {

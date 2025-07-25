@@ -2,6 +2,7 @@
 // Comprehensive expense management with category selection
 
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -27,14 +28,17 @@ import { CategoryId, FIXED_CATEGORIES } from '../../src/types/finance';
 export default function AddExpenseScreen() {
   const router = useRouter();
   const { theme, colors } = useTheme();
-  const { addExpense, loading } = useFinance();
+  const { addExpense } = useFinance();
 
   const [formData, setFormData] = useState({
     amount: '',
     description: '',
     categoryId: null as CategoryId | null,
-    date: new Date().toISOString().split('T')[0], // Today's date
+    date: new Date(), // Use Date object for picker
   });
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [errors, setErrors] = useState({
     amount: '',
@@ -74,12 +78,13 @@ export default function AddExpenseScreen() {
       return;
     }
 
+    setLoading(true);
     try {
       await addExpense({
         amount: parseFloat(formData.amount),
         description: formData.description.trim(),
         categoryId: formData.categoryId!,
-        date: formData.date,
+        date: formData.date.toISOString().split('T')[0], // Convert Date to string
       });
 
       Alert.alert('Success', 'Expense added successfully!', [
@@ -88,6 +93,8 @@ export default function AddExpenseScreen() {
     } catch (error) {
       console.error('Failed to add expense:', error);
       Alert.alert('Error', 'Failed to add expense. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,9 +108,9 @@ export default function AddExpenseScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Add Expense</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Add Expense</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -119,7 +126,7 @@ export default function AddExpenseScreen() {
           <ModernCard style={styles.formCard}>
             {/* Amount Input */}
             <View style={styles.formSection}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.primary }]}>
                 Amount
               </Text>
               <ModernInput
@@ -133,7 +140,7 @@ export default function AddExpenseScreen() {
                 error={errors.amount}
                 leftIcon={
                   <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>
-                    GHS
+                    ₵
                   </Text>
                 }
               />
@@ -141,7 +148,7 @@ export default function AddExpenseScreen() {
 
             {/* Description Input */}
             <View style={styles.formSection}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.primary }]}>
                 Description
               </Text>
               <ModernInput
@@ -158,7 +165,7 @@ export default function AddExpenseScreen() {
 
             {/* Category Selection */}
             <View style={styles.formSection}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.primary }]}>
                 Category
               </Text>
               {errors.categoryId ? (
@@ -207,16 +214,42 @@ export default function AddExpenseScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Date
               </Text>
-              <ModernInput
-                placeholder="YYYY-MM-DD"
-                value={formData.date}
-                onChangeText={(value) => {
-                  setFormData(prev => ({ ...prev, date: value }));
-                }}
-                leftIcon={
-                  <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
-                }
-              />
+              <TouchableOpacity
+                style={[
+                  styles.dateButton,
+                  {
+                    backgroundColor: colors.surfaceSecondary,
+                    borderColor: colors.border,
+                  }
+                ]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+                <Text style={[styles.dateButtonText, { color: colors.text }]}>
+                  {formData.date.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+              
+              {showDatePicker && (
+                <DateTimePicker
+                  value={formData.date}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(Platform.OS === 'ios');
+                    if (selectedDate) {
+                      setFormData(prev => ({ ...prev, date: selectedDate }));
+                    }
+                  }}
+                  maximumDate={new Date()} // Can't select future dates
+                />
+              )}
             </View>
           </ModernCard>
         </ScrollView>
@@ -226,7 +259,7 @@ export default function AddExpenseScreen() {
           <ModernButton
             title="Add Expense"
             onPress={handleSubmit}
-            loading={loading.expenses}
+            loading={loading}
             variant="primary"
             leftIcon={
               <Ionicons name="add-circle-outline" size={20} color="white" />
@@ -247,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.base,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
@@ -315,5 +348,19 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderRadius: BorderRadius.base,
+    gap: Spacing.sm,
+  },
+  dateButtonText: {
+    flex: 1,
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium as any,
   },
 });

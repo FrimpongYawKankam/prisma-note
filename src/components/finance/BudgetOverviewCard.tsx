@@ -31,7 +31,13 @@ export const BudgetOverviewCard: React.FC<BudgetOverviewCardProps> = ({
   const { colors } = useTheme();
 
   const formatCurrency = (amount: number) => {
-    return `${budget.currency === 'GHS' ? '₵' : budget.currency} ${amount.toLocaleString('en-US', {
+    const currencySymbol = budget.currency === 'GHS' ? '₵' : 
+                          budget.currency === 'USD' ? '$' :
+                          budget.currency === 'EUR' ? '€' :
+                          budget.currency === 'GBP' ? '£' : 
+                          budget.currency;
+    
+    return `${currencySymbol} ${amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
