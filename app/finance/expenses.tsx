@@ -48,17 +48,27 @@ export default function AllExpensesScreen() {
     return FIXED_CATEGORIES.find(cat => cat.id === categoryId) || FIXED_CATEGORIES[10]; // Default to 'Other'
   };
 
-  const formatAmount = (amount: number) => {
+  const formatAmount = (amount: number | undefined) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '₵ 0.00';
+    }
     return `₵ ${amount.toFixed(2)}`;
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) {
+      return 'No date';
+    }
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch {
+      return 'Invalid date';
+    }
   };
 
   const getFilteredAndSortedExpenses = () => {
@@ -246,15 +256,18 @@ export default function AllExpensesScreen() {
                 {filteredExpenses.length} expense{filteredExpenses.length !== 1 ? 's' : ''}
               </Text>
               <Text style={[styles.summaryAmount, { color: colors.primary }]}>
-                Total: {formatAmount(filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0))}
+                Total: {formatAmount(filteredExpenses.reduce((sum, exp) => {
+                  const amount = exp?.amount || 0;
+                  return sum + amount;
+                }, 0))}
               </Text>
             </ModernCard>
 
             {/* Expense Items */}
-            {filteredExpenses.map((expense) => {
+            {filteredExpenses.map((expense, index) => {
               const category = getCategoryInfo(expense.categoryId);
               return (
-                <ModernCard key={expense.id} style={styles.expenseCard}>
+                <ModernCard key={expense?.id?.toString() || `expense-${index}`} style={styles.expenseCard}>
                   <View style={styles.expenseItem}>
                     <View style={styles.expenseLeft}>
                       <Text style={styles.categoryIcon}>{category.icon}</Text>

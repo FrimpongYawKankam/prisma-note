@@ -25,6 +25,7 @@ import { Spacing, Typography } from '../../src/styles/tokens';
 
 // Import finance components
 import {
+  BudgetDateDisplay,
   BudgetOverviewCard,
   EmptyStateCard,
   ExpenseListCard,
@@ -33,11 +34,26 @@ import {
 
 export default function FinanceScreen() {
   const router = useRouter();
-  const { theme, colors } = useTheme();
+  const { colors } = useTheme();
   const { refreshAllData, loading } = useFinance();
   const { budget, hasActiveBudget } = useBudget();
   const { summary, hasData: hasSummaryData } = useBudgetSummary();
   const { expenses, isEmpty: isExpenseListEmpty } = useExpenses();
+
+  // Debug logging to understand the issue
+  React.useEffect(() => {
+    console.log('🔍 Finance Screen Debug:', {
+      budget: budget ? 'EXISTS' : 'NULL',
+      hasActiveBudget,
+      budgetId: budget?.id,
+      budgetAmount: budget?.totalBudget,
+      budgetPeriod: budget?.period,
+      budgetIsActive: budget?.isActive,
+      summary: summary ? 'EXISTS' : 'NULL',
+      hasSummaryData,
+      expensesCount: expenses?.length || 0
+    });
+  }, [budget, hasActiveBudget, summary, hasSummaryData, expenses]);
 
   const isRefreshing = loading.budget || loading.expenses || loading.summary;
 
@@ -93,6 +109,15 @@ export default function FinanceScreen() {
             Track your budget and expenses
           </Text>
         </View>
+        {/* Always show Budget Date Range */}
+        <View style={styles.content}>
+          <BudgetDateDisplay
+            startDate={budget?.startDate}
+            endDate={budget?.endDate}
+            period={budget?.period?.toLowerCase() || 'monthly'}
+          />
+        </View>
+
         {!hasActiveBudget ? (
           // No Budget State
           <View style={styles.content}>
@@ -116,7 +141,7 @@ export default function FinanceScreen() {
             />
 
             {/* Quick Stats */}
-            {hasSummaryData && (
+            {hasSummaryData && summary && (
               <QuickStatsCard
                 summary={summary!}
                 onViewAnalytics={handleViewAnalytics}
@@ -125,7 +150,7 @@ export default function FinanceScreen() {
 
             {/* Recent Expenses */}
             <ExpenseListCard
-              expenses={expenses.slice(0, 5)} // Show only 5 most recent
+              expenses={(expenses && Array.isArray(expenses)) ? expenses.slice(0, 5) : []} // Show only 5 most recent
               isEmpty={isExpenseListEmpty}
               onAddExpense={handleAddExpense}
               onViewAll={handleViewAllExpenses}

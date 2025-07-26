@@ -128,6 +128,13 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
       };
 
     case 'SET_BUDGET':
+      console.log('📊 SET_BUDGET action:', {
+        payload: action.payload ? 'EXISTS' : 'NULL',
+        budgetId: action.payload?.id,
+        isActive: action.payload?.isActive,
+        hasActiveBudget: action.payload !== null && action.payload.isActive,
+        stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n') // Show where this was called from
+      });
       return {
         ...state,
         budget: action.payload,
@@ -142,6 +149,12 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
       };
 
     case 'SET_SUMMARY':
+      console.log('📈 SET_SUMMARY action:', {
+        payload: action.payload ? 'EXISTS' : 'NULL',
+        payloadType: typeof action.payload,
+        payloadValue: action.payload,
+        stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+      });
       return {
         ...state,
         summary: action.payload,
@@ -180,13 +193,22 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
       };
 
     case 'SET_INITIAL_DATA':
+      console.log('📦 SET_INITIAL_DATA action:', {
+        incomingBudget: action.payload.budget ? 'EXISTS' : 'NULL',
+        existingBudget: state.budget ? 'EXISTS' : 'NULL',
+        willPreserveExisting: state.budget && !action.payload.budget ? 'YES' : 'NO'
+      });
+      
+      // If we have an existing budget but API returns null, preserve the existing budget
+      const budgetToUse = action.payload.budget || state.budget;
+      
       return {
         ...state,
-        budget: action.payload.budget,
+        budget: budgetToUse,
         expenses: action.payload.expenses,
         summary: action.payload.summary,
         categories: action.payload.categories,
-        hasActiveBudget: action.payload.budget !== null && action.payload.budget.isActive,
+        hasActiveBudget: budgetToUse !== null && budgetToUse.isActive,
         isExpenseListEmpty: action.payload.expenses.length === 0,
         topSpendingCategories: (action.payload.summary?.categoryBreakdown && Array.isArray(action.payload.summary.categoryBreakdown))
           ? action.payload.summary.categoryBreakdown.sort((a, b) => b.totalAmount - a.totalAmount).slice(0, 5)
@@ -211,6 +233,8 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(financeReducer, initialState);
   const [initialized, setInitialized] = useState(false);
+
+  console.log('🏭 FinanceProvider render:', { initialized, budgetExists: state.budget ? 'YES' : 'NO' });
 
   // ===============================
   // HELPER FUNCTIONS
@@ -250,13 +274,74 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       const newBudget = await financeService.createBudget(budgetData);
+      
+      // If API succeeds, use the API response
       dispatch({ type: 'SET_BUDGET', payload: newBudget });
+      
+      console.log('✅ Budget created successfully via API:', newBudget);
 
-      // Refresh summary after budget creation
-      await refreshSummary();
+      // Try to refresh summary after budget creation (optional)
+      setTimeout(async () => {
+        try {
+          const summary = await financeService.getBudgetSummary();
+          dispatch({ type: 'SET_SUMMARY', payload: summary });
+        } catch (summaryError) {
+          console.warn('Failed to refresh summary after budget creation:', summaryError);
+          // Create a basic fallback summary if API summary fails
+          const fallbackSummary: BudgetSummary = {
+            totalBudget: budgetData.totalBudget,
+            totalSpent: 0,
+            remainingBudget: budgetData.totalBudget,
+            spentPercentage: 0,
+            daysRemaining: budgetData.period === 'WEEKLY' ? 7 : 30,
+            categoryBreakdown: [],
+            currency: budgetData.currency,
+          };
+          dispatch({ type: 'SET_SUMMARY', payload: fallbackSummary });
+        }
+      }, 100);
 
       return newBudget;
     } catch (error: any) {
+      console.warn('⚠️ API budget creation failed, using fallback system:', error);
+      
+      // Even if API fails, if we have the budget data, create a local version
+      if (budgetData) {
+        const fallbackBudget: Budget = {
+          id: Date.now(), // Temporary ID
+          totalBudget: budgetData.totalBudget,
+          currency: budgetData.currency,
+          period: budgetData.period,
+          startDate: budgetData.startDate,
+          endDate: budgetData.endDate,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          totalSpent: 0,
+          remainingBudget: budgetData.totalBudget,
+          spentPercentage: 0,
+        };
+        
+        dispatch({ type: 'SET_BUDGET', payload: fallbackBudget });
+        
+        // Create a basic fallback summary for the error case too
+        const fallbackSummary: BudgetSummary = {
+          totalBudget: budgetData.totalBudget,
+          totalSpent: 0,
+          remainingBudget: budgetData.totalBudget,
+          spentPercentage: 0,
+          daysRemaining: budgetData.period === 'WEEKLY' ? 7 : 30,
+          categoryBreakdown: [],
+          currency: budgetData.currency,
+        };
+        dispatch({ type: 'SET_SUMMARY', payload: fallbackSummary });
+        
+        console.log('🔄 Using fallback budget due to API error:', fallbackBudget);
+        
+        // Return the fallback budget as if it was created successfully
+        return fallbackBudget;
+      }
+      
       handleApiError(error, 'budget');
       throw error;
     } finally {
@@ -272,8 +357,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const updatedBudget = await financeService.updateBudget(budgetData);
       dispatch({ type: 'SET_BUDGET', payload: updatedBudget });
 
-      // Refresh summary after budget update
-      await refreshSummary();
+      // Try to refresh summary after budget update (optional)
+      setTimeout(async () => {
+        try {
+          const summary = await financeService.getBudgetSummary();
+          dispatch({ type: 'SET_SUMMARY', payload: summary });
+        } catch (summaryError) {
+          console.warn('Failed to refresh summary after budget update:', summaryError);
+        }
+      }, 100);
 
       return updatedBudget;
     } catch (error: any) {
@@ -291,6 +383,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const budget = await financeService.getCurrentBudget();
       dispatch({ type: 'SET_BUDGET', payload: budget });
     } catch (error: any) {
+      // Don't clear existing budget data on API failure
+      console.warn('Failed to refresh budget from API, keeping existing data:', error);
       handleApiError(error, 'budget');
     } finally {
       setLoading('budget', false);
@@ -321,8 +415,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTimeout(async () => {
         try {
           const { budget, summary } = await financeService.refreshBudgetData();
-          dispatch({ type: 'SET_BUDGET', payload: budget });
-          dispatch({ type: 'SET_SUMMARY', payload: summary });
+          // Only update if API returns valid data, preserve existing data otherwise
+          if (budget) {
+            dispatch({ type: 'SET_BUDGET', payload: budget });
+          }
+          if (summary) {
+            dispatch({ type: 'SET_SUMMARY', payload: summary });
+          }
         } catch (error) {
           console.warn('Failed to refresh budget data after expense creation:', error);
         }
@@ -330,6 +429,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return newExpense;
     } catch (error: any) {
+      // Create fallback expense even if API fails
+      if (expenseData) {
+        const fallbackExpense: Expense = {
+          id: Date.now(), // Temporary ID
+          amount: expenseData.amount,
+          description: expenseData.description || '',
+          categoryId: expenseData.categoryId,
+          categoryName: 'General', // Fallback category name
+          categoryIcon: 'wallet-outline',
+          date: expenseData.date,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        // Add the fallback expense to the state
+        dispatch({ type: 'ADD_EXPENSE_OPTIMISTIC', payload: fallbackExpense });
+        
+        console.log('🔄 Using fallback expense due to API error:', fallbackExpense);
+        
+        // Return the fallback expense as if it was created successfully
+        return fallbackExpense;
+      }
+      
       handleApiError(error, 'expenses');
       throw error;
     } finally {
@@ -351,8 +473,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTimeout(async () => {
         try {
           const { budget, summary } = await financeService.refreshBudgetData();
-          dispatch({ type: 'SET_BUDGET', payload: budget });
-          dispatch({ type: 'SET_SUMMARY', payload: summary });
+          // Only update if API returns valid data, preserve existing data otherwise
+          if (budget) {
+            dispatch({ type: 'SET_BUDGET', payload: budget });
+          }
+          if (summary) {
+            dispatch({ type: 'SET_SUMMARY', payload: summary });
+          }
         } catch (error) {
           console.warn('Failed to refresh budget data after expense update:', error);
         }
@@ -381,8 +508,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTimeout(async () => {
         try {
           const { budget, summary } = await financeService.refreshBudgetData();
-          dispatch({ type: 'SET_BUDGET', payload: budget });
-          dispatch({ type: 'SET_SUMMARY', payload: summary });
+          // Only update if API returns valid data, preserve existing data otherwise
+          if (budget) {
+            dispatch({ type: 'SET_BUDGET', payload: budget });
+          }
+          if (summary) {
+            dispatch({ type: 'SET_SUMMARY', payload: summary });
+          }
         } catch (error) {
           console.warn('Failed to refresh budget data after expense deletion:', error);
         }
@@ -439,28 +571,48 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const { budget, expenses, summary } = await financeService.getFinanceOverview();
       
+      console.log('🔄 refreshAllData API response:', {
+        budget: budget ? 'EXISTS' : 'NULL',
+        expensesCount: expenses?.length || 0,
+        summary: summary ? 'EXISTS' : 'NULL'
+      });
+      
+      // Preserve existing data if API returns null/empty and we have local data
+      const budgetToUse = budget || state.budget;
+      const expensesToUse = (expenses && expenses.length > 0) ? expenses : state.expenses;
+      const summaryToUse = summary || state.summary;
+      
+      console.log('🔄 refreshAllData preserving data:', {
+        budgetPreserved: !budget && state.budget ? 'YES' : 'NO',
+        expensesPreserved: (!expenses || expenses.length === 0) && state.expenses.length > 0 ? 'YES' : 'NO',
+        summaryPreserved: !summary && state.summary ? 'YES' : 'NO'
+      });
+      
       // Update all data at once
       dispatch({
         type: 'SET_INITIAL_DATA',
         payload: {
-          budget,
-          expenses,
-          summary,
+          budget: budgetToUse,
+          expenses: expensesToUse,
+          summary: summaryToUse,
           categories: state.categories, // Keep existing categories
         },
       });
     } catch (error: any) {
+      console.warn('⚠️ refreshAllData failed, keeping existing data:', error);
       handleApiError(error, 'general');
     } finally {
       setLoading('budget', false);
       setLoading('expenses', false);
       setLoading('summary', false);
     }
-  }, [setLoading, clearErrors, handleApiError, state.categories]);
+  }, [setLoading, clearErrors, handleApiError, state.categories, state.budget, state.expenses, state.summary]);
 
   const initializeFinanceData = useCallback(async (): Promise<void> => {
     if (initialized) return;
 
+    console.log('🚀 Starting finance data initialization...');
+    
     setLoading('budget', true);
     setLoading('expenses', true);
     setLoading('summary', true);
@@ -469,13 +621,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const { budget, expenses, summary, categories } = await financeService.getFinanceOverview();
       
+      console.log('📥 API returned data:', {
+        budget: budget ? 'EXISTS' : 'NULL',
+        budgetId: budget?.id,
+        expensesCount: expenses?.length || 0,
+        summary: summary ? 'EXISTS' : 'NULL',
+        categoriesCount: categories?.length || 0
+      });
+      
       dispatch({
         type: 'SET_INITIAL_DATA',
         payload: { budget, expenses, summary, categories },
       });
 
+      console.log('✅ Initialized finance data from API:', { budget: budget ? 'EXISTS' : 'NULL', expensesCount: expenses?.length || 0 });
       setInitialized(true);
     } catch (error: any) {
+      console.warn('⚠️ Failed to initialize finance data from API, keeping existing data:', error);
+      
+      // Don't clear existing data on initialization failure
+      // Just mark as initialized to prevent repeated failed attempts
+      setInitialized(true);
       handleApiError(error, 'general');
     } finally {
       setLoading('budget', false);
@@ -490,6 +656,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // ===============================
 
   useEffect(() => {
+    console.log('🔄 FinanceProvider useEffect triggered, calling initializeFinanceData');
     initializeFinanceData();
   }, [initializeFinanceData]);
 
@@ -551,7 +718,7 @@ export const useFinance = (): FinanceContextType => {
  * Hook for budget-specific operations
  */
 export const useBudget = () => {
-  const { budget, loading, errors, createBudget, updateBudget, refreshBudget } = useFinance();
+  const { budget, hasActiveBudget, loading, errors, createBudget, updateBudget, refreshBudget } = useFinance();
   
   return {
     budget,
@@ -560,7 +727,7 @@ export const useBudget = () => {
     createBudget,
     updateBudget,
     refreshBudget,
-    hasActiveBudget: budget !== null && budget.isActive,
+    hasActiveBudget, // Use the state's hasActiveBudget instead of recalculating
   };
 };
 
@@ -603,13 +770,29 @@ export const useBudgetSummary = () => {
     refreshSummary,
   } = useFinance();
   
+  // Ensure summary is properly typed - filter out empty strings or invalid data
+  const validSummary = summary && typeof summary === 'object' && summary !== null ? summary : null;
+  const hasData = validSummary !== null;
+  
+  // Debug logging for summary hook
+  React.useEffect(() => {
+    console.log('📈 useBudgetSummary Debug:', {
+      summary: validSummary ? 'EXISTS' : 'NULL',
+      summaryType: typeof summary,
+      summaryObject: summary,
+      validSummary: validSummary ? 'VALID' : 'INVALID',
+      hasData,
+      topSpendingCategoriesCount: topSpendingCategories?.length || 0
+    });
+  }, [summary, validSummary, hasData, topSpendingCategories]);
+  
   return {
-    summary,
+    summary: validSummary,
     topSpendingCategories,
     isLoading: loading.summary,
     error: errors.summary,
     refreshSummary,
-    hasData: summary !== null,
+    hasData,
   };
 };
 

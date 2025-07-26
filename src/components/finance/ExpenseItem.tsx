@@ -4,10 +4,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { useTheme } from '../../context/ThemeContext';
@@ -29,43 +29,55 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
 }) => {
   const { colors } = useTheme();
 
-  const formatCurrency = (amount: number) => {
+  // Safety check for invalid expense object
+  if (!expense || typeof expense !== 'object') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.description, { color: colors.textMuted }]}>
+          Invalid expense data
+        </Text>
+      </View>
+    );
+  }
+
+  const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '₵0.00';
+    }
     return `₵${amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    // Reset hours for comparison
-    today.setHours(0, 0, 0, 0);
-    yesterday.setHours(0, 0, 0, 0);
-    date.setHours(0, 0, 0, 0);
-
-    if (date.getTime() === today.getTime()) {
-      return 'Today';
-    } else if (date.getTime() === yesterday.getTime()) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) {
+      return 'No date';
+    }
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
+        year: 'numeric',
       });
+    } catch {
+      return 'Invalid date';
     }
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+  const formatTime = (dateString: string | undefined) => {
+    if (!dateString) {
+      return 'No time';
+    }
+    try {
+      return new Date(dateString).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch {
+      return 'Invalid time';
+    }
   };
 
   const getCategory = () => {

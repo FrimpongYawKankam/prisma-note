@@ -5,14 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { ModernCard } from '../../src/components/ui/ModernCard';
@@ -32,6 +32,22 @@ export default function AnalyticsScreen() {
   const { expenses, isEmpty: isExpenseListEmpty } = useExpenses();
 
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month');
+
+  // Debug logging for analytics screen
+  React.useEffect(() => {
+    console.log('📊 Analytics Screen Debug:', {
+      budget: budget ? 'EXISTS' : 'NULL',
+      budgetId: budget?.id,
+      budgetAmount: budget?.totalBudget,
+      hasActiveBudget,
+      summary: summary ? 'EXISTS' : 'NULL',
+      summaryTotalSpent: summary?.totalSpent,
+      summaryTotalBudget: summary?.totalBudget,
+      hasSummaryData,
+      expensesCount: expenses?.length || 0,
+      isExpenseListEmpty
+    });
+  }, [budget, hasActiveBudget, summary, hasSummaryData, expenses, isExpenseListEmpty]);
 
   const handleRefresh = async () => {
     try {
@@ -66,7 +82,14 @@ export default function AnalyticsScreen() {
         return expenses;
     }
 
-    return expenses.filter(expense => new Date(expense.date) >= filterDate);
+    return expenses.filter(expense => {
+      try {
+        return new Date(expense.date) >= filterDate;
+      } catch (error) {
+        console.warn('Invalid expense date:', expense.date, error);
+        return false;
+      }
+    });
   };
 
   const getCategoryBreakdown = () => {
@@ -94,20 +117,21 @@ export default function AnalyticsScreen() {
       .slice(0, 8); // Top 8 categories
   };
 
-  const getSpendingTrend = () => {
-    const filteredExpenses = getFilteredExpenses();
-    const dailySpending = new Map<string, number>();
+  // TODO: Implement spending trend visualization
+  // const getSpendingTrend = () => {
+  //   const filteredExpenses = getFilteredExpenses();
+  //   const dailySpending = new Map<string, number>();
 
-    filteredExpenses.forEach(expense => {
-      const dateKey = expense.date;
-      const existing = dailySpending.get(dateKey) || 0;
-      dailySpending.set(dateKey, existing + expense.amount);
-    });
+  //   filteredExpenses.forEach(expense => {
+  //     const dateKey = expense.date;
+  //     const existing = dailySpending.get(dateKey) || 0;
+  //     dailySpending.set(dateKey, existing + expense.amount);
+  //   });
 
-    return Array.from(dailySpending.entries())
-      .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-      .slice(-7); // Last 7 days
-  };
+  //   return Array.from(dailySpending.entries())
+  //     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+  //     .slice(-7); // Last 7 days
+  // };
 
   const getTotalSpending = () => {
     return getFilteredExpenses().reduce((sum, expense) => sum + expense.amount, 0);
@@ -123,7 +147,7 @@ export default function AnalyticsScreen() {
   };
 
   const categoryBreakdown = getCategoryBreakdown();
-  const spendingTrend = getSpendingTrend();
+  // const spendingTrend = getSpendingTrend(); // TODO: Implement spending trend visualization
   const totalSpending = getTotalSpending();
   const averageDaily = getAverageDaily();
   const maxCategoryAmount = Math.max(...categoryBreakdown.map(cat => cat.total), 1);
@@ -215,10 +239,10 @@ export default function AnalyticsScreen() {
                 Transactions
               </Text>
             </View>
-            {hasActiveBudget && hasSummaryData && (
+            {hasActiveBudget && hasSummaryData && budget && summary && (
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: colors.primary }]}>
-                  {formatAmount(budget!.totalBudget - summary!.totalSpent)}
+                  {formatAmount((budget.totalBudget || 0) - (summary.totalSpent || 0))}
                 </Text>
                 <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                   Remaining
@@ -229,16 +253,16 @@ export default function AnalyticsScreen() {
         </ModernCard>
 
         {/* Budget Progress */}
-        {hasActiveBudget && hasSummaryData && (
+        {hasActiveBudget && hasSummaryData && budget && summary && (
           <ModernCard style={styles.budgetCard}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Budget Progress</Text>
             <View style={styles.budgetProgress}>
               <View style={styles.budgetInfo}>
                 <Text style={[styles.budgetAmount, { color: colors.text }]}>
-                  {formatAmount(summary!.totalSpent)} / {formatAmount(budget!.totalBudget)}
+                  {formatAmount(summary.totalSpent || 0)} / {formatAmount(budget.totalBudget || 0)}
                 </Text>
                 <Text style={[styles.budgetPercentage, { color: colors.textSecondary }]}>
-                  {((summary!.totalSpent / budget!.totalBudget) * 100).toFixed(1)}% used
+                  {budget.totalBudget > 0 ? (((summary.totalSpent || 0) / budget.totalBudget) * 100).toFixed(1) : 0}% used
                 </Text>
               </View>
               <View style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}>
@@ -246,8 +270,8 @@ export default function AnalyticsScreen() {
                   style={[
                     styles.progressFill,
                     {
-                      width: `${Math.min((summary!.totalSpent / budget!.totalBudget) * 100, 100)}%`,
-                      backgroundColor: summary!.totalSpent > budget!.totalBudget ? colors.error : colors.primary,
+                      width: `${budget.totalBudget > 0 ? Math.min(((summary.totalSpent || 0) / budget.totalBudget) * 100, 100) : 0}%`,
+                      backgroundColor: (summary.totalSpent || 0) > budget.totalBudget ? colors.error : colors.primary,
                     }
                   ]}
                 />

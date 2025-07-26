@@ -2,17 +2,17 @@
 // API service layer for budget and expense management
 
 import {
-  Budget,
-  BudgetSummary,
-  Category,
-  CategoryBreakdown,
-  CreateBudgetRequest,
-  CreateExpenseRequest,
-  Expense,
-  FIXED_CATEGORIES,
-  UpdateBudgetRequest,
-  UpdateExpenseRequest,
-  ValidationError
+    Budget,
+    BudgetSummary,
+    Category,
+    CategoryBreakdown,
+    CreateBudgetRequest,
+    CreateExpenseRequest,
+    Expense,
+    FIXED_CATEGORIES,
+    UpdateBudgetRequest,
+    UpdateExpenseRequest,
+    ValidationError
 } from '../types/finance';
 import axiosInstance from '../utils/axiosInstance';
 
@@ -56,7 +56,28 @@ class FinanceService {
   async createBudget(budgetData: CreateBudgetRequest): Promise<Budget> {
     try {
       const response = await axiosInstance.post(`${this.baseUrl}/budget`, budgetData);
-      return response.data as Budget;
+      const apiData = response.data;
+      
+      console.log('🔄 API createBudget response:', apiData);
+      
+      // Transform API response to match our Budget interface
+      const budget: Budget = {
+        id: apiData.id || Date.now(), // Use API id or fallback to timestamp
+        totalBudget: apiData.amount || budgetData.totalBudget,
+        currency: apiData.currency || budgetData.currency,
+        period: apiData.period || budgetData.period,
+        startDate: budgetData.startDate, // Use original request data
+        endDate: budgetData.endDate,     // Use original request data
+        isActive: true, // Assume newly created budget is active
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        totalSpent: 0, // Default values for calculated fields
+        remainingBudget: apiData.amount || budgetData.totalBudget,
+        spentPercentage: 0,
+      };
+      
+      console.log('✅ Transformed budget:', budget);
+      return budget;
     } catch (error: any) {
       console.error('Failed to create budget:', error);
       throw this.handleApiError(error);
@@ -70,7 +91,28 @@ class FinanceService {
   async updateBudget(budgetData: UpdateBudgetRequest): Promise<Budget> {
     try {
       const response = await axiosInstance.put(`${this.baseUrl}/budget`, budgetData);
-      return response.data as Budget;
+      const apiData = response.data;
+      
+      console.log('🔄 API updateBudget response:', apiData);
+      
+      // Transform API response to match our Budget interface
+      const budget: Budget = {
+        id: apiData.id || Date.now(),
+        totalBudget: apiData.amount || budgetData.totalBudget || 0,
+        currency: apiData.currency || budgetData.currency || 'USD',
+        period: apiData.period || budgetData.period || 'MONTHLY',
+        startDate: budgetData.startDate || new Date().toISOString(),
+        endDate: budgetData.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        totalSpent: 0,
+        remainingBudget: apiData.amount || budgetData.totalBudget || 0,
+        spentPercentage: 0,
+      };
+      
+      console.log('✅ Transformed updated budget:', budget);
+      return budget;
     } catch (error: any) {
       console.error('Failed to update budget:', error);
       throw this.handleApiError(error);
@@ -169,7 +211,15 @@ class FinanceService {
   async getBudgetSummary(): Promise<BudgetSummary | null> {
     try {
       const response = await axiosInstance.get(`${this.baseUrl}/summary`);
-      return response.data as BudgetSummary;
+      
+      // Validate response data - API might return empty string instead of null
+      const data = response.data;
+      if (!data || data === "" || typeof data !== 'object') {
+        console.log('📊 getBudgetSummary: Invalid response data, returning null');
+        return null;
+      }
+      
+      return data as BudgetSummary;
     } catch (error: any) {
       if (error.response?.status === 204 || error.response?.status === 404) {
         return null; // No budget or summary available
@@ -206,7 +256,7 @@ class FinanceService {
     try {
       const budget = await this.getCurrentBudget();
       return budget !== null && budget.isActive;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

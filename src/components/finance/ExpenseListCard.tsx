@@ -40,6 +40,11 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
   const { colors } = useTheme();
   const { categories } = useCategories();
 
+  // Filter out any undefined/null expenses, with safety check for undefined expenses array
+  const validExpenses = (expenses && Array.isArray(expenses)) 
+    ? expenses.filter(expense => expense && typeof expense === 'object')
+    : [];
+
   const renderExpenseItem = ({ item }: { item: Expense }) => (
     <ExpenseItem 
       expense={item} 
@@ -128,14 +133,14 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
           renderEmptyState()
         ) : (
           <FlatList
-            data={expenses}
+            data={validExpenses}
             renderItem={renderExpenseItem}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item?.id?.toString() || Math.random().toString()}
             ItemSeparatorComponent={renderSeparator}
             showsVerticalScrollIndicator={false}
-            scrollEnabled={expenses.length > 3}
+            scrollEnabled={validExpenses.length > 3}
             style={{ maxHeight }}
-            contentContainerStyle={expenses.length <= 3 ? { flexGrow: 1 } : undefined}
+            contentContainerStyle={validExpenses.length <= 3 ? { flexGrow: 1 } : undefined}
           />
         )}
       </View>

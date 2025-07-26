@@ -1,18 +1,19 @@
 // 🏦 Edit Budget Screen
-// Simple budget editing form
+// Simple budget editing form with date selection and notes integration
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ModernDatePicker } from '../../src/components/ui/DatePicker';
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
 import { ModernDialog } from '../../src/components/ui/ModernDialog';
@@ -33,6 +34,14 @@ export default function EditBudgetScreen() {
     period: 'MONTHLY' as BudgetPeriod,
   });
 
+  // Date selection state
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    return date;
+  });
+
   // Dialog states
   const [successDialog, setSuccessDialog] = useState(false);
   const [errorDialog, setErrorDialog] = useState(false);
@@ -46,8 +55,27 @@ export default function EditBudgetScreen() {
         currency: budget.currency,
         period: budget.period,
       });
+      
+      // Set dates from budget if available
+      if (budget.startDate) {
+        setStartDate(new Date(budget.startDate));
+      }
+      if (budget.endDate) {
+        setEndDate(new Date(budget.endDate));
+      }
     }
   }, [budget]);
+
+  // Update end date when period changes
+  useEffect(() => {
+    const newEndDate = new Date(startDate);
+    if (formData.period === 'WEEKLY') {
+      newEndDate.setDate(newEndDate.getDate() + 7);
+    } else {
+      newEndDate.setMonth(newEndDate.getMonth() + 1);
+    }
+    setEndDate(newEndDate);
+  }, [startDate, formData.period]);
 
   const handleUpdateBudget = async () => {
     try {
@@ -59,14 +87,35 @@ export default function EditBudgetScreen() {
         return;
       }
 
+      // Validate date range
+      if (endDate <= startDate) {
+        setErrorMessage('End date must be after start date');
+        setErrorDialog(true);
+        return;
+      }
+
+      // Format dates for API
+      const formattedStartDate = startDate.toISOString().split('T')[0];
+      const formattedEndDate = endDate.toISOString().split('T')[0];
+
       await updateBudget({
         totalBudget: amount,
         currency: formData.currency,
         period: formData.period,
+        startDate: formattedStartDate,
+        endDate: formattedEndDate,
+      });
+
+      console.log('✅ Budget updated successfully:', {
+        amount,
+        currency: formData.currency,
+        period: formData.period,
+        dateRange: `${formattedStartDate} to ${formattedEndDate}`
       });
 
       setSuccessDialog(true);
     } catch (error: any) {
+      console.error('❌ Failed to update budget:', error);
       setErrorMessage(error.message || 'Failed to update budget');
       setErrorDialog(true);
     }
@@ -106,11 +155,11 @@ export default function EditBudgetScreen() {
       {/* Success Dialog */}
       <ModernDialog
         visible={successDialog}
-        title="Success!"
-        message="Your budget has been updated successfully."
+        title="Budget Updated Successfully! ✅"
+        message="Your budget changes have been saved and are now active."
         buttons={[
           {
-            text: 'OK',
+            text: 'Go to Finance',
             onPress: () => {
               setSuccessDialog(false);
               router.push('/(tabs)/finance');
@@ -228,6 +277,31 @@ export default function EditBudgetScreen() {
                 />
               ))}
             </View>
+          </View>
+
+          {/* Date Selection */}
+          <View style={styles.dateSection}>
+            <ModernDatePicker
+              label="Start Date"
+              value={startDate}
+              onDateChange={setStartDate}
+              minimumDate={new Date()}
+            />
+            
+            <ModernDatePicker
+              label="End Date"
+              value={endDate}
+              onDateChange={setEndDate}
+              minimumDate={new Date(startDate.getTime() + 24 * 60 * 60 * 1000)} // Next day
+            />
+          </View>
+
+          {/* Info */}
+          <View style={[styles.infoBox, { backgroundColor: `${colors.primary}10` }]}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.primary }]}>
+              Budget period: {startDate.toLocaleDateString()} to {endDate.toLocaleDateString()}
+            </Text>
           </View>
         </ModernCard>
 
@@ -349,6 +423,22 @@ const styles = StyleSheet.create({
   },
   periodButton: {
     flex: 1,
+  },
+  dateSection: {
+    gap: Spacing.base,
+    marginBottom: Spacing.lg,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.base,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: Typography.fontSize.sm,
   },
   updateButton: {
     marginTop: Spacing.base,
