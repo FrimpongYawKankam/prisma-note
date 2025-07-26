@@ -5,11 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -102,7 +102,7 @@ export default function CreateBudgetScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       {/* Success Dialog */}
       <ModernDialog
         visible={successDialog}
@@ -137,17 +137,21 @@ export default function CreateBudgetScreen() {
         onClose={() => setErrorDialog(false)}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <ModernButton
             title=""
-            onPress={() => router.push('/(tabs)/finance')}
+            onPress={() => router.back()}
             variant="ghost"
             leftIcon={<Ionicons name="arrow-back" size={24} color={colors.text} />}
             style={styles.backButton}
           />
-          <Text style={[styles.title, { color: colors.text }]}>Create Budget</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>Create Budget</Text>
           <View style={styles.placeholder} />
         </View>
         <ModernCard variant="elevated" padding="lg" style={styles.formCard}>
@@ -187,7 +191,7 @@ export default function CreateBudgetScreen() {
                   key={currency}
                   title={currency}
                   onPress={() => setFormData(prev => ({ ...prev, currency }))}
-                  variant={formData.currency === currency ? 'primary' : 'secondary'}
+                  variant={formData.currency === currency ? 'primary' : 'ghost'}
                   style={styles.currencyButton}
                 />
               ))}
@@ -205,7 +209,7 @@ export default function CreateBudgetScreen() {
                   key={period}
                   title={period === 'WEEKLY' ? 'Weekly' : 'Monthly'}
                   onPress={() => setFormData(prev => ({ ...prev, period }))}
-                  variant={formData.period === period ? 'primary' : 'secondary'}
+                  variant={formData.period === period ? 'primary' : 'ghost'}
                   style={styles.periodButton}
                 />
               ))}
@@ -257,6 +261,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: Spacing.xl,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,7 +284,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: Spacing.xl,
   },
   formCard: {
     marginHorizontal: Spacing.base,
@@ -345,5 +351,6 @@ const styles = StyleSheet.create({
   createButton: {
     marginTop: Spacing.lg,
     marginHorizontal: Spacing.base,
+    marginBottom: Spacing.lg,
   },
 });
