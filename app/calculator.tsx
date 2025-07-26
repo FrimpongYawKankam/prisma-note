@@ -9,7 +9,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  Vibration,
+  View
 } from 'react-native';
 import { ModernDialog } from '../src/components/ui/ModernDialog';
 import { useTheme } from '../src/context/ThemeContext';
@@ -18,9 +19,9 @@ const { width, height } = Dimensions.get('window');
 
 const scientificButtons = [
   ['(', ')', 'ans', 'π', 'e', 'C'],
-  ['x²', '√', 'ln', 'log₁₀', '^', '!'],
+  ['x²', '√', 'ln', 'log', '^', '!'],
   ['sin', 'cos', 'tan', 'deg', 'rad', '1/x'],
-  ['exp', 'mod', 'abs', 'rand', 'EE', 'mc'],
+  ['m+', 'm-', 'mr', 'mc', 'EE', 'mod'],
 ];
 
 const basicButtons = [
@@ -31,6 +32,97 @@ const basicButtons = [
   ['SCI', '0', '.', '='],
 ];
 
+// Safe math evaluator to replace eval()
+class SafeMathEvaluator {
+  private angleMode: 'deg' | 'rad' = 'deg';
+  
+  setAngleMode(mode: 'deg' | 'rad') {
+    this.angleMode = mode;
+  }
+  
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
+  }
+  
+  private toDegrees(radians: number): number {
+    return radians * (180 / Math.PI);
+  }
+  
+  private factorial(n: number): number {
+    if (n < 0 || !Number.isInteger(n)) throw new Error('Factorial requires non-negative integer');
+    if (n > 170) throw new Error('Factorial too large');
+    let result = 1;
+    for (let i = 2; i <= n; i++) {
+      result *= i;
+    }
+    return result;
+  }
+  
+  evaluate(expression: string): number {
+    // Remove spaces
+    expression = expression.replace(/\s/g, '');
+    
+    // Replace mathematical constants and functions
+    expression = expression
+      .replace(/π/g, Math.PI.toString())
+      .replace(/e(?![0-9])/g, Math.E.toString())
+      .replace(/÷/g, '/')
+      .replace(/×/g, '*')
+      .replace(/−/g, '-')
+      .replace(/--/g, '+');
+    
+    // Handle scientific functions
+    expression = this.replaceFunctions(expression);
+    
+    // Validate expression contains only allowed characters
+    if (!/^[0-9+\-*/.()√π\s]+$/.test(expression.replace(/Math\.\w+\([^)]*\)/g, '1'))) {
+      throw new Error('Invalid characters in expression');
+    }
+    
+    try {
+      // Use Function constructor instead of eval for better safety
+      const result = new Function('return ' + expression)();
+      return Number(result);
+    } catch (error) {
+      throw new Error('Invalid expression');
+    }
+  }
+  
+  private replaceFunctions(expression: string): string {
+    // Handle factorial
+    expression = expression.replace(/(\d+(?:\.\d+)?)!/g, (match, num) => {
+      try {
+        return this.factorial(parseFloat(num)).toString();
+      } catch {
+        throw new Error('Invalid factorial');
+      }
+    });
+    
+    // Handle power operations
+    expression = expression.replace(/([^*+\-/^]+)\^([^*+\-/^]+)/g, 'Math.pow($1,$2)');
+    expression = expression.replace(/([^*+\-/²]+)²/g, 'Math.pow($1,2)');
+    
+    // Handle square root
+    expression = expression.replace(/√\(([^)]+)\)/g, 'Math.sqrt($1)');
+    expression = expression.replace(/√([0-9.]+)/g, 'Math.sqrt($1)');
+    
+    // Handle trigonometric functions
+    const angleConvert = this.angleMode === 'deg' ? 'Math.PI/180*' : '';
+    expression = expression.replace(/sin\(([^)]+)\)/g, `Math.sin(${angleConvert}$1)`);
+    expression = expression.replace(/cos\(([^)]+)\)/g, `Math.cos(${angleConvert}$1)`);
+    expression = expression.replace(/tan\(([^)]+)\)/g, `Math.tan(${angleConvert}$1)`);
+    
+    // Handle logarithms
+    expression = expression.replace(/ln\(([^)]+)\)/g, 'Math.log($1)');
+    expression = expression.replace(/log\(([^)]+)\)/g, 'Math.log10($1)');
+    
+    // Handle reciprocal
+    expression = expression.replace(/1\/([^*+\-/]+)/g, '(1/($1))');
+    
+    return expression;
+  }
+}
+
 export default function CalculatorScreen() {
   const { theme, colors } = useTheme();
   const router = useRouter();
@@ -40,6 +132,7 @@ export default function CalculatorScreen() {
   const [isScientific, setIsScientific] = useState(false);
   const [ans, setAns] = useState('0');
   const [memory, setMemory] = useState('0');
+  const [angleMode, setAngleMode] = useState<'deg' | 'rad'>('deg');
   const [showCursor, setShowCursor] = useState(true);
   const [dialog, setDialog] = useState<{
     visible: boolean;
@@ -54,6 +147,7 @@ export default function CalculatorScreen() {
   const animation = useRef(new Animated.Value(0)).current;
   const buttonAnimations = useRef<{ [key: string]: Animated.Value }>({}).current;
   const cursorAnimation = useRef(new Animated.Value(1)).current;
+  const mathEvaluator = useRef(new SafeMathEvaluator()).current;
 
   const showDialog = (title: string, message: string) => {
     setDialog({
@@ -86,8 +180,11 @@ export default function CalculatorScreen() {
     blinkCursor();
   }, []);
 
-  // Button press animation
+  // Button press animation with haptic feedback
   const animateButtonPress = (buttonKey: string) => {
+    // Add haptic feedback for better UX
+    Vibration.vibrate(50);
+    
     if (!buttonAnimations[buttonKey]) {
       buttonAnimations[buttonKey] = new Animated.Value(0);
     }
@@ -106,33 +203,21 @@ export default function CalculatorScreen() {
     ]).start();
   };
 
-  // Live calculation preview
+  // Live calculation preview with improved error handling
   useEffect(() => {
     if (expression && expression !== '' && !expression.endsWith('=')) {
       try {
-        let evalExpression = expression
-          .replace(/÷/g, '/')
-          .replace(/×/g, '*')
-          .replace(/−/g, '-')
-          .replace(/π/g, Math.PI.toString())
-          .replace(/e(?![0-9])/g, Math.E.toString())
-          .replace(/√\(([^)]+)\)/g, 'Math.sqrt($1)')
-          .replace(/sin\(([^)]+)\)/g, 'Math.sin($1)')
-          .replace(/cos\(([^)]+)\)/g, 'Math.cos($1)')
-          .replace(/tan\(([^)]+)\)/g, 'Math.tan($1)')
-          .replace(/ln\(([^)]+)\)/g, 'Math.log($1)')
-          .replace(/log\(([^)]+)\)/g, 'Math.log10($1)')
-          .replace(/([^)]+)²/g, 'Math.pow($1, 2)')
-          .replace(/--/g, '+'); // Fix double negatives
+        mathEvaluator.setAngleMode(angleMode);
         
-        // Only evaluate if expression seems complete
-        if (!/[+\-×÷]$/.test(expression)) {
-          const evaluated = eval(evalExpression);
+        // Only evaluate if expression seems complete (doesn't end with operator)
+        if (!/[+\-×÷^]$/.test(expression) && !expression.includes('(') || 
+            (expression.includes('(') && expression.split('(').length === expression.split(')').length)) {
+          const evaluated = mathEvaluator.evaluate(expression);
           if (isFinite(evaluated) && !isNaN(evaluated)) {
             const roundedResult = Math.round(evaluated * 1000000000) / 1000000000;
             setResult(roundedResult.toString());
           } else {
-            setResult(''); // Display nothing for NaN or infinite results
+            setResult('');
           }
         } else {
           setResult('');
@@ -143,7 +228,7 @@ export default function CalculatorScreen() {
     } else {
       setResult('');
     }
-  }, [expression]);
+  }, [expression, angleMode]);
 
   useEffect(() => {
     Animated.timing(animation, {
@@ -152,6 +237,28 @@ export default function CalculatorScreen() {
       useNativeDriver: true,
     }).start();
   }, [isScientific]);
+
+  // Input validation helper
+  const isValidInput = (currentExpression: string, newInput: string): boolean => {
+    const lastChar = currentExpression.slice(-1);
+    const operators = ['+', '−', '×', '÷', '^'];
+    
+    // Don't allow consecutive operators
+    if (operators.includes(lastChar) && operators.includes(newInput)) {
+      return false;
+    }
+    
+    // Don't allow multiple decimal points in the same number
+    if (newInput === '.') {
+      const parts = currentExpression.split(/[+\-×÷^()]/);
+      const lastPart = parts[parts.length - 1];
+      if (lastPart.includes('.')) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
 
   const handlePress = (val: string) => {
     // Trigger button animation
@@ -166,15 +273,8 @@ export default function CalculatorScreen() {
       }
     } else if (val === '=') {
       try {
-        let evalExpression = expression
-          .replace(/÷/g, '/')
-          .replace(/×/g, '*')
-          .replace(/−/g, '-')
-          .replace(/π/g, Math.PI.toString())
-          .replace(/e(?![0-9])/g, Math.E.toString())
-          .replace(/--/g, '+'); // Fix double negatives
-        
-        const evaluated = eval(evalExpression);
+        mathEvaluator.setAngleMode(angleMode);
+        const evaluated = mathEvaluator.evaluate(expression);
         
         if (isNaN(evaluated)) {
           showDialog('Error', 'Result is undefined');
@@ -183,13 +283,13 @@ export default function CalculatorScreen() {
           showDialog('Error', 'Result is infinite');
           setResult('');
         } else {
-          const roundedResult = Math.round(evaluated * 1000000000) / 1000000000; // Round to 9 decimal places
+          const roundedResult = Math.round(evaluated * 1000000000) / 1000000000;
           setResult(String(roundedResult));
           setAns(String(roundedResult));
-          setHistory(prev => [`${expression} = ${roundedResult}`, ...prev.slice(0, 9)]); // Keep only last 10 entries
+          setHistory(prev => [`${expression} = ${roundedResult}`, ...prev.slice(0, 9)]);
         }
-      } catch {
-        showDialog('Error', 'Invalid Expression');
+      } catch (error) {
+        showDialog('Error', error instanceof Error ? error.message : 'Invalid Expression');
         setResult('');
       }
     } else if (val === 'ans') {
@@ -207,11 +307,8 @@ export default function CalculatorScreen() {
     } else if (val === '%') {
       if (expression) {
         try {
-          const evaluated = eval(expression
-            .replace(/÷/g, '/')
-            .replace(/×/g, '*')
-            .replace(/−/g, '-')
-            .replace(/--/g, '+')); // Fix double negatives
+          mathEvaluator.setAngleMode(angleMode);
+          const evaluated = mathEvaluator.evaluate(expression);
           
           if (isNaN(evaluated) || !isFinite(evaluated)) {
             showDialog('Error', 'Invalid Expression');
@@ -222,28 +319,91 @@ export default function CalculatorScreen() {
           showDialog('Error', 'Invalid Expression');
         }
       }
+    } else if (val === 'C') {
+      setExpression('');
+      setResult('');
     } else if (val === 'x²') {
       if (expression) {
         setExpression(prev => `(${prev})²`);
       }
     } else if (val === '√') {
-      setExpression(prev => `√(${prev})`);
+      setExpression(prev => prev ? `√(${prev})` : '√(');
     } else if (val === 'sin') {
-      setExpression(prev => `sin(${prev})`);
+      setExpression(prev => prev ? `sin(${prev})` : 'sin(');
     } else if (val === 'cos') {
-      setExpression(prev => `cos(${prev})`);
+      setExpression(prev => prev ? `cos(${prev})` : 'cos(');
     } else if (val === 'tan') {
-      setExpression(prev => `tan(${prev})`);
+      setExpression(prev => prev ? `tan(${prev})` : 'tan(');
     } else if (val === 'ln') {
-      setExpression(prev => `ln(${prev})`);
-    } else if (val === 'log₁₀') {
-      setExpression(prev => `log(${prev})`);
+      setExpression(prev => prev ? `ln(${prev})` : 'ln(');
+    } else if (val === 'log') {
+      setExpression(prev => prev ? `log(${prev})` : 'log(');
+    } else if (val === '^') {
+      setExpression(prev => prev + '^');
+    } else if (val === '!') {
+      if (expression) {
+        setExpression(prev => prev + '!');
+      }
+    } else if (val === '1/x') {
+      if (expression) {
+        setExpression(prev => `1/(${prev})`);
+      } else {
+        setExpression('1/');
+      }
+    } else if (val === 'deg') {
+      setAngleMode('deg');
+      showDialog('Mode Changed', 'Angle mode set to degrees');
+    } else if (val === 'rad') {
+      setAngleMode('rad');
+      showDialog('Mode Changed', 'Angle mode set to radians');
+    } else if (val === 'm+') {
+      if (result) {
+        try {
+          const currentMemory = parseFloat(memory);
+          const currentResult = parseFloat(result);
+          setMemory((currentMemory + currentResult).toString());
+          showDialog('Memory', `Added ${result} to memory`);
+        } catch {
+          showDialog('Error', 'Cannot add to memory');
+        }
+      }
+    } else if (val === 'm-') {
+      if (result) {
+        try {
+          const currentMemory = parseFloat(memory);
+          const currentResult = parseFloat(result);
+          setMemory((currentMemory - currentResult).toString());
+          showDialog('Memory', `Subtracted ${result} from memory`);
+        } catch {
+          showDialog('Error', 'Cannot subtract from memory');
+        }
+      }
+    } else if (val === 'mr') {
+      setExpression(prev => prev + memory);
+      showDialog('Memory', `Recalled: ${memory}`);
+    } else if (val === 'mc') {
+      setMemory('0');
+      showDialog('Memory', 'Memory cleared');
+    } else if (val === 'mod') {
+      setExpression(prev => prev + '%');
+    } else if (val === 'EE') {
+      setExpression(prev => prev + 'e');
     } else if (val === 'π') {
       setExpression(prev => prev + 'π');
     } else if (val === 'e') {
       setExpression(prev => prev + 'e');
     } else {
-      setExpression(prev => prev + val);
+      // Apply input validation for basic inputs
+      if (['+', '−', '×', '÷', '^', '.'].includes(val)) {
+        if (isValidInput(expression, val)) {
+          setExpression(prev => prev + val);
+        } else {
+          // Provide feedback for invalid input
+          Vibration.vibrate([100, 50, 100]);
+        }
+      } else {
+        setExpression(prev => prev + val);
+      }
     }
   };
 
@@ -260,7 +420,10 @@ export default function CalculatorScreen() {
     const isOperator = /[÷×−+]/.test(label);
     const isEquals = label === '=';
     const isSpecial = ['AC', '⌫', '±', '%'].includes(label);
-    const isScientificFunc = ['sin', 'cos', 'tan', 'ln', 'log₁₀', 'x²', 'x³', '√', 'π', 'e', '(', ')', 'ans', 'C', '^', '!', 'deg', 'rad', '1/x', 'exp', 'mod', 'abs', 'rand', 'EE', 'mc'].includes(label);
+    const isScientificFunc = ['sin', 'cos', 'tan', 'ln', 'log', 'x²', '√', 'π', 'e', '(', ')', 'ans', 'C', '^', '!', 'deg', 'rad', '1/x', 'mod', 'EE'].includes(label);
+    const isMemoryFunc = ['m+', 'm-', 'mr', 'mc'].includes(label);
+    const isActiveMode = (label === 'deg' && angleMode === 'deg') || (label === 'rad' && angleMode === 'rad');
+    const hasMemory = parseFloat(memory) !== 0 && ['mr', 'mc'].includes(label);
     
     // Initialize animation value if it doesn't exist
     if (!buttonAnimations[label]) {
@@ -268,9 +431,9 @@ export default function CalculatorScreen() {
     }
     
     const buttonStyle = isScientificMode ? {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
+      width: Math.min(50, width * 0.12),
+      height: Math.min(50, width * 0.12),
+      borderRadius: Math.min(25, width * 0.06),
     } : {};
     
     return (
@@ -303,7 +466,10 @@ export default function CalculatorScreen() {
             isOperator && { backgroundColor: colors.primary },
             isSpecial && { backgroundColor: theme === 'dark' ? '#505050' : '#a6a6a6' },
             isScientificFunc && { backgroundColor: theme === 'dark' ? '#404040' : '#d4d4d2' },
-            !isOperator && !isEquals && !isSpecial && !isScientificFunc && { backgroundColor: theme === 'dark' ? '#333333' : '#e0e0e0' }
+            isMemoryFunc && { backgroundColor: theme === 'dark' ? '#2a4d3a' : '#b8e6c4' },
+            isActiveMode && { backgroundColor: colors.primary },
+            hasMemory && { backgroundColor: theme === 'dark' ? '#3a5f3a' : '#90ee90' },
+            !isOperator && !isEquals && !isSpecial && !isScientificFunc && !isMemoryFunc && { backgroundColor: theme === 'dark' ? '#333333' : '#e0e0e0' }
           ]}
           onPress={() => handlePress(label)}
           onLongPress={(label === 'AC' || label === '⌫') ? handleLongPressDelete : undefined}
@@ -312,7 +478,10 @@ export default function CalculatorScreen() {
             styles.buttonText,
             isScientificMode && { fontSize: 14 },
             (isSpecial || (isScientificFunc && !isOperator && !isEquals)) && { color: theme === 'dark' ? '#fff' : '#000' },
-            !isOperator && !isEquals && !isSpecial && !isScientificFunc && { color: theme === 'dark' ? '#fff' : '#000' }
+            isMemoryFunc && { color: theme === 'dark' ? '#90ee90' : '#006400' },
+            isActiveMode && { color: '#fff', fontWeight: 'bold' },
+            hasMemory && { color: theme === 'dark' ? '#fff' : '#000', fontWeight: 'bold' },
+            !isOperator && !isEquals && !isSpecial && !isScientificFunc && !isMemoryFunc && { color: theme === 'dark' ? '#fff' : '#000' }
           ]}>
             {label}
           </Text>
@@ -358,6 +527,18 @@ export default function CalculatorScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.displayContainer}>
+          {/* Status indicators */}
+          <View style={styles.statusContainer}>
+            <Text style={[styles.statusText, { color: colors.text }]}>
+              {angleMode.toUpperCase()}
+            </Text>
+            {parseFloat(memory) !== 0 && (
+              <Text style={[styles.statusText, { color: colors.primary }]}>
+                M: {memory}
+              </Text>
+            )}
+          </View>
+          
           <View style={styles.expressionContainer}>
             <Text style={[styles.expression, { color: theme === 'dark' ? '#fff' : '#000' }]}>
               {expression || '0'}
@@ -405,12 +586,33 @@ export default function CalculatorScreen() {
           <Text style={[styles.historyTitle, { color: theme === 'dark' ? '#fff' : '#000' }]}>History</Text>
           <ScrollView style={styles.historyScroll}>
             {history.map((entry, idx) => (
-              <Text key={idx} style={[styles.historyText, { color: theme === 'dark' ? '#999' : '#666' }]}>{entry}</Text>
+              <TouchableOpacity 
+                key={idx} 
+                onPress={() => {
+                  const parts = entry.split(' = ');
+                  if (parts.length === 2) {
+                    setExpression(parts[0]);
+                    showDialog('History', 'Expression loaded from history');
+                  }
+                }}
+                style={styles.historyItem}
+              >
+                <Text style={[styles.historyText, { color: theme === 'dark' ? '#999' : '#666' }]}>
+                  {entry}
+                </Text>
+              </TouchableOpacity>
             ))}
+            {history.length === 0 && (
+              <Text style={[styles.emptyHistoryText, { color: theme === 'dark' ? '#666' : '#999' }]}>
+                No calculations yet
+              </Text>
+            )}
           </ScrollView>
-          <TouchableOpacity onPress={clearHistory} style={styles.clearHistoryButton}>
-            <Text style={styles.clearHistoryText}>Clear History</Text>
-          </TouchableOpacity>
+          <View style={styles.historyActions}>
+            <TouchableOpacity onPress={clearHistory} style={styles.clearHistoryButton}>
+              <Text style={styles.clearHistoryText}>Clear History</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
@@ -455,6 +657,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     minHeight: 120,
   },
+  statusContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 10,
+    paddingHorizontal: 5,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
   expressionContainer: {
     flexDirection: 'row',
     alignItems: 'center'
@@ -485,9 +699,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   button: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: Math.min(70, width * 0.18),
+    height: Math.min(70, width * 0.18),
+    borderRadius: Math.min(35, width * 0.09),
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 3,
@@ -495,12 +709,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
+    margin: 2,
   },
   tinyButton: {
     // Remove override styling for scientific mode
   },
   buttonText: {
-    fontSize: 24,
+    fontSize: Math.min(24, width * 0.06),
     color: '#fff',
     fontWeight: '400',
   },
@@ -538,10 +753,25 @@ const styles = StyleSheet.create({
   historyScroll: {
     maxHeight: 120,
   },
+  historyItem: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginVertical: 1,
+  },
   historyText: {
     marginVertical: 2,
     fontSize: 14,
     fontFamily: 'monospace',
+  },
+  emptyHistoryText: {
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginVertical: 10,
+  },
+  historyActions: {
+    alignItems: 'flex-end',
+    marginTop: 10,
   },
   clearHistoryButton: {
     marginTop: 10,

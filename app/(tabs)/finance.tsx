@@ -3,12 +3,15 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Modal,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,6 +42,9 @@ export default function FinanceScreen() {
   const { budget, hasActiveBudget } = useBudget();
   const { summary, hasData: hasSummaryData } = useBudgetSummary();
   const { expenses, isEmpty: isExpenseListEmpty } = useExpenses();
+  
+  // State for dropdown menu
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // Debug logging to understand the issue
   React.useEffect(() => {
@@ -85,6 +91,15 @@ export default function FinanceScreen() {
     router.push('/finance/analytics');
   };
 
+  const handleCalculator = () => {
+    setShowDropdown(false);
+    router.push('/calculator');
+  };
+
+  const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -102,12 +117,69 @@ export default function FinanceScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.primary }]}>
-            Finance
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Track your budget and expenses
-          </Text>
+          <View style={styles.headerContent}>
+            <View style={styles.headerText}>
+              <Text style={[styles.title, { color: colors.primary }]}>
+                Finance
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                Track your budget and expenses
+              </Text>
+            </View>
+            
+            {/* Dropdown Menu */}
+            <View style={styles.menuContainer}>
+              <TouchableOpacity
+                onPress={toggleDropdown}
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name="ellipsis-vertical" 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
+              </TouchableOpacity>
+              
+              {/* Dropdown Modal */}
+              <Modal
+                visible={showDropdown}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowDropdown(false)}
+              >
+                <Pressable 
+                  style={styles.modalOverlay}
+                  onPress={() => setShowDropdown(false)}
+                >
+                  <View style={styles.dropdownContainer}>
+                    <View style={[styles.dropdown, { 
+                      backgroundColor: colors.surface,
+                      shadowColor: colors.text,
+                    }]}>
+                      <TouchableOpacity
+                        onPress={handleCalculator}
+                        style={[styles.dropdownItem, { 
+                          borderBottomColor: colors.border 
+                        }]}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons 
+                          name="calculator-outline" 
+                          size={20} 
+                          color={colors.primary} 
+                          style={styles.dropdownIcon}
+                        />
+                        <Text style={[styles.dropdownText, { color: colors.text }]}>
+                          Calculator
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Pressable>
+              </Modal>
+            </View>
+          </View>
         </View>
         {/* Always show Budget Date Range */}
         <View style={styles.content}>
@@ -210,6 +282,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
+  },
+  menuContainer: {
+    position: 'relative',
+    marginLeft: Spacing.base,
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  dropdownContainer: {
+    marginTop: 80,
+    marginRight: Spacing.base,
+  },
+  dropdown: {
+    borderRadius: 12,
+    minWidth: 150,
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    borderBottomWidth: 0,
+  },
+  dropdownIcon: {
+    marginRight: Spacing.sm,
+  },
+  dropdownText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium as any,
   },
   title: {
     fontSize: Typography.fontSize['3xl'],
