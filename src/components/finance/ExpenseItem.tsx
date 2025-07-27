@@ -4,10 +4,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 import { useTheme } from '../../context/ThemeContext';
@@ -112,14 +112,14 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
     const colorMap: Record<string, string> = {
       'Food & Dining': colors.warning,
       'Transportation': colors.primary,
-      'Shopping': colors.secondary,
+      'Shopping': colors.accent,
       'Entertainment': colors.accent,
       'Bills & Utilities': colors.error,
       'Healthcare': colors.success,
       'Education': colors.primary,
       'Travel': colors.accent,
       'Business': colors.textSecondary,
-      'Personal Care': colors.secondary,
+      'Personal Care': colors.accent,
       'Other': colors.textMuted,
     };
 

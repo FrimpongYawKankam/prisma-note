@@ -44,7 +44,11 @@ export const ModernDatePicker: React.FC<DatePickerProps> = ({
   const { colors } = useTheme();
   const [showPicker, setShowPicker] = useState(false);
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | undefined | null) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return placeholder;
+    }
+    
     if (mode === 'date') {
       return date.toLocaleDateString('en-US', {
         year: 'numeric',

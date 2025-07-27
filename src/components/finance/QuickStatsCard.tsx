@@ -64,8 +64,8 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
       icon: 'receipt-outline',
       label: 'Total Expenses',
       value: getTotalExpenses().toString(),
-      color: colors.secondary,
-      backgroundColor: `${colors.secondary}15`,
+      color: colors.primary,
+      backgroundColor: `${colors.primary}15`,
     },
     {
       icon: 'trending-up-outline',

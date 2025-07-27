@@ -94,7 +94,7 @@ export const SimpleBudgetPlanner: React.FC<SimpleBudgetPlannerProps> = ({
             <ModernButton
               key={period.key}
               title={period.label}
-              variant={selectedPeriod === period.key ? 'primary' : 'secondary'}
+              variant={selectedPeriod === period.key ? 'primary' : 'ghost'}
               onPress={() => setSelectedPeriod(period.key)}
               leftIcon={
                 <Ionicons 
@@ -132,7 +132,7 @@ export const SimpleBudgetPlanner: React.FC<SimpleBudgetPlannerProps> = ({
       <ModernButton
         title="Create Actual Budget"
         onPress={onCreateBudget}
-        variant="secondary"
+        variant="ghost"
         leftIcon={<Ionicons name="add-circle-outline" size={16} color={colors.primary} />}
         style={styles.createButton}
       />

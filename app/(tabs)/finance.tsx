@@ -235,7 +235,7 @@ export default function FinanceScreen() {
               <ModernButton
                 title="Edit Budget"
                 onPress={handleEditBudget}
-                variant="secondary"
+                variant="ghost"
                 leftIcon={
                   <Ionicons 
                     name="create-outline" 

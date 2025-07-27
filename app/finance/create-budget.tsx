@@ -42,8 +42,8 @@ export default function CreateBudgetScreen() {
   };
 
   // Date selection state
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(() => {
+  const [startDate, setStartDate] = useState<Date>(() => new Date());
+  const [endDate, setEndDate] = useState<Date>(() => {
     const date = new Date();
     date.setMonth(date.getMonth() + 1);
     return date;
@@ -56,6 +56,8 @@ export default function CreateBudgetScreen() {
 
   // Update end date when period changes
   useEffect(() => {
+    if (!startDate || !(startDate instanceof Date)) return;
+    
     const newEndDate = new Date(startDate);
     if (formData.period === 'WEEKLY') {
       newEndDate.setDate(newEndDate.getDate() + 7);
@@ -71,6 +73,13 @@ export default function CreateBudgetScreen() {
       const amount = parseFloat(formData.totalBudget);
       if (isNaN(amount) || amount <= 0) {
         setErrorMessage('Please enter a valid budget amount');
+        setErrorDialog(true);
+        return;
+      }
+
+      // Validate dates exist and are valid
+      if (!startDate || !endDate || !(startDate instanceof Date) || !(endDate instanceof Date)) {
+        setErrorMessage('Please select valid start and end dates');
         setErrorDialog(true);
         return;
       }
@@ -154,9 +163,9 @@ export default function CreateBudgetScreen() {
         <View style={styles.header}>
           <ModernButton
             title=""
-            onPress={() => router.back()}
+            onPress={() =>  router.push('/(tabs)/finance')}
             variant="ghost"
-            leftIcon={<Ionicons name="arrow-back" size={24} color={colors.text} />}
+            leftIcon={<Ionicons name="arrow-back" size={24} color={colors.primary} />}
             style={styles.backButton}
           />
           <Text style={[styles.title, { color: colors.primary }]}>Create Budget</Text>
@@ -247,7 +256,7 @@ export default function CreateBudgetScreen() {
           <View style={[styles.infoBox, { backgroundColor: `${colors.primary}10` }]}>
             <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
             <Text style={[styles.infoText, { color: colors.primary }]}>
-              Your budget will be active from {startDate.toLocaleDateString()} to {endDate.toLocaleDateString()}.
+              Your budget will be active from {startDate?.toLocaleDateString() || 'N/A'} to {endDate?.toLocaleDateString() || 'N/A'}.
             </Text>
           </View>
         </ModernCard>

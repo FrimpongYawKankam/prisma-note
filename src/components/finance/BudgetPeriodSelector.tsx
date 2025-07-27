@@ -57,7 +57,7 @@ export const BudgetPeriodSelector: React.FC<BudgetPeriodSelectorProps> = ({
           <ModernButton
             key={period.key}
             title={period.label}
-            variant={selectedPeriod === period.key ? 'primary' : 'secondary'}
+            variant={selectedPeriod === period.key ? 'primary' : 'ghost'}
             onPress={() => onPeriodChange(period.key)}
             disabled={disabled}
             leftIcon={

@@ -38,7 +38,7 @@ export const EmptyStateCard: React.FC<EmptyStateCardProps> = ({
       case 'budget':
         return colors.primary;
       case 'expenses':
-        return colors.secondary;
+        return colors.accent;
       default:
         return colors.accent;
     }

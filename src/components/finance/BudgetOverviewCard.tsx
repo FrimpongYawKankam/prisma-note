@@ -194,7 +194,7 @@ export const BudgetOverviewCard: React.FC<BudgetOverviewCardProps> = ({
         <ModernButton
           title="Analytics"
           onPress={onViewAnalytics}
-          variant="secondary"
+          variant="ghost"
           leftIcon={
             <Ionicons 
               name="analytics-outline" 
