@@ -12,7 +12,7 @@ export default function AboutScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
         {/* Header with Back Button and Title */}
         <View style={styles.headerContainer}>
           <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
@@ -21,9 +21,6 @@ export default function AboutScreen() {
               Back
             </Text>
           </TouchableOpacity>
-          <Text style={[styles.header, { color: isDark ? '#fff' : '#000' }]}>
-            About
-          </Text>
         </View>
         
         {/* App Info Section */}
@@ -57,10 +54,10 @@ export default function AboutScreen() {
             <Text style={[styles.descriptionText, { color: isDark ? '#fff' : '#000' }]}>
               PrismaNote is designed to end the era of juggling multiple productivity apps. 
               We've created a unified platform that seamlessly integrates note-taking, 
-              task management, event scheduling, and essential tools.
+              task management, event scheduling, finance tracking, and essential tools.
             </Text>
             <Text style={[styles.descriptionText, { color: isDark ? '#fff' : '#000' }]}>
-              Why switch between 3-4 different apps when you can have everything in one place? 
+              Why switch between 4-5 different apps when you can have everything in one place? 
               PrismaNote brings together all your productivity needs with a beautiful, 
               intuitive interface that adapts to your workflow.
             </Text>
@@ -111,6 +108,20 @@ export default function AboutScreen() {
               </Text>
               <Text style={[styles.featureText, { color: isDark ? '#aaa' : '#666' }]}>
                 Seamless calendar integration with smart notifications
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.featureCard, { backgroundColor: isDark ? '#1a1a1a' : '#f8f9fa' }]}>
+            <View style={[styles.featureIconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="wallet-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.featureContent}>
+              <Text style={[styles.featureTitle, { color: isDark ? '#fff' : '#000' }]}>
+                Finance Management
+              </Text>
+              <Text style={[styles.featureText, { color: isDark ? '#aaa' : '#666' }]}>
+                Budget tracking, expense monitoring, and financial insights
               </Text>
             </View>
           </View>

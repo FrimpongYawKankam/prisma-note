@@ -31,7 +31,7 @@ export default function HelpScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView 
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 16 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header with Back Button */}
@@ -112,6 +112,54 @@ export default function HelpScreen() {
           </ModernCard>
         </View>
 
+        {/* Finance Management Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Finance Management
+          </Text>
+          <ModernCard style={styles.helpCard}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="create-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.helpContent}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
+                Creating Your Budget
+              </Text>
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                Go to the Finance tab and tap "Create Budget" to set up your monthly or weekly budget limits.
+              </Text>
+            </View>
+          </ModernCard>
+          
+          <ModernCard style={styles.helpCard}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.helpContent}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
+                Adding Expenses
+              </Text>
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                Track your spending by adding expenses with categories, amounts, and descriptions.
+              </Text>
+            </View>
+          </ModernCard>
+          
+          <ModernCard style={styles.helpCard}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="analytics-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.helpContent}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
+                Financial Analytics
+              </Text>
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                View detailed charts and insights about your spending patterns and budget performance.
+              </Text>
+            </View>
+          </ModernCard>
+        </View>
+
         {/* App Features Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -141,6 +189,20 @@ export default function HelpScreen() {
               </Text>
               <Text style={[styles.helpText, { color: colors.textSecondary }]}>
                 Access the calculator from the settings option for quick calculations.
+              </Text>
+            </View>
+          </ModernCard>
+          
+          <ModernCard style={styles.helpCard}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
+              <Ionicons name="wallet-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.helpContent}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>
+                Finance Management
+              </Text>
+              <Text style={[styles.helpText, { color: colors.textSecondary }]}>
+                Create budgets, track expenses, and monitor your financial health with comprehensive analytics.
               </Text>
             </View>
           </ModernCard>
