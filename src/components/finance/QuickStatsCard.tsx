@@ -12,7 +12,7 @@ import {
 
 import { useTheme } from '../../context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
-import { BudgetSummary } from '../../types/finance';
+import { BudgetSummary, FIXED_CATEGORIES } from '../../types/finance';
 import { ModernCard } from '../ui/ModernCard';
 
 interface QuickStatsCardProps {
@@ -31,6 +31,10 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
+  };
+
+  const getCategoryInfo = (categoryId: number) => {
+    return FIXED_CATEGORIES.find(cat => cat.id === categoryId) || FIXED_CATEGORIES[10]; // Default to 'Other'
   };
 
   const getTopCategory = () => {
@@ -77,7 +81,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
     {
       icon: 'pie-chart-outline',
       label: 'Top Category',
-      value: topCategory ? topCategory.categoryName : 'None',
+      value: topCategory ? getCategoryInfo(topCategory.categoryId).name : 'None',
       color: colors.warning,
       backgroundColor: `${colors.warning}15`,
     },
@@ -149,7 +153,7 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
                   </View>
                   <View style={styles.categoryInfo}>
                     <Text style={[styles.categoryName, { color: colors.text }]}>
-                      {category.categoryName}
+                      {getCategoryInfo(category.categoryId).name}
                     </Text>
                     <View style={styles.categoryAmount}>
                       <Text style={[styles.categoryValue, { color: colors.textSecondary }]}>

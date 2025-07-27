@@ -510,10 +510,10 @@ export default function CalculatorScreen() {
           <Ionicons 
             name="arrow-back" 
             size={24} 
-            color={colors.text} 
+            color={colors.primary} 
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Calculator</Text>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>Calculator</Text>
         <View style={styles.headerSpacer} />
       </View>
 

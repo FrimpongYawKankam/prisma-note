@@ -11,7 +11,6 @@ import {
     View,
 } from 'react-native';
 
-import { useCategories } from '../../context/FinanceContext';
 import { useTheme } from '../../context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
 import { Expense } from '../../types/finance';
@@ -38,7 +37,6 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
   maxHeight = 300,
 }) => {
   const { colors } = useTheme();
-  const { categories } = useCategories();
 
   // Filter out any undefined/null expenses, with safety check for undefined expenses array
   const validExpenses = (expenses && Array.isArray(expenses)) 
@@ -48,7 +46,6 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
   const renderExpenseItem = ({ item }: { item: Expense }) => (
     <ExpenseItem 
       expense={item} 
-      categories={categories}
     />
   );
 
@@ -93,7 +90,7 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
     <ModernCard variant="elevated" padding="none">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
+        <Text style={[styles.title, { color: colors.primary }]}>
           {title}
         </Text>
         <View style={styles.headerActions}>

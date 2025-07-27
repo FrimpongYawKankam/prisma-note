@@ -12,18 +12,16 @@ import {
 
 import { useTheme } from '../../context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
-import { Category, Expense } from '../../types/finance';
+import { Expense, FIXED_CATEGORIES } from '../../types/finance';
 
 interface ExpenseItemProps {
   expense: Expense;
-  categories: Category[];
   onPress?: () => void;
   showDate?: boolean;
 }
 
 export const ExpenseItem: React.FC<ExpenseItemProps> = ({
   expense,
-  categories = [], // Default to empty array if undefined
   onPress,
   showDate = true,
 }) => {
@@ -38,11 +36,6 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
         </Text>
       </View>
     );
-  }
-
-  // Safety check for categories
-  if (!categories || !Array.isArray(categories)) {
-    console.warn('ExpenseItem: categories prop is not a valid array', categories);
   }
 
   const formatCurrency = (amount: number | undefined) => {
@@ -85,16 +78,14 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
     }
   };
 
-  const getCategory = () => {
-    if (!categories || !Array.isArray(categories)) {
-      return null;
-    }
-    return categories.find(cat => cat.id === expense.categoryId);
+  // Get category info from FIXED_CATEGORIES using categoryId (more reliable than API categoryName)
+  const getCategoryInfo = () => {
+    return FIXED_CATEGORIES.find(cat => cat.id === expense.categoryId) || FIXED_CATEGORIES[10]; // Default to 'Other'
   };
 
+  // Use FIXED_CATEGORIES to map to Ionicons
   const getCategoryIcon = () => {
-    const category = getCategory();
-    if (!category) return 'help-circle-outline';
+    const category = getCategoryInfo();
 
     const iconMap: Record<string, string> = {
       'Food & Dining': 'restaurant-outline',
@@ -107,6 +98,7 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
       'Travel': 'airplane-outline',
       'Business': 'briefcase-outline',
       'Personal Care': 'person-outline',
+      'Gifts & Donations': 'gift-outline',
       'Other': 'ellipsis-horizontal-outline',
     };
 
@@ -114,8 +106,7 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
   };
 
   const getCategoryColor = () => {
-    const category = getCategory();
-    if (!category) return colors.textMuted;
+    const category = getCategoryInfo();
 
     const colorMap: Record<string, string> = {
       'Food & Dining': colors.warning,
@@ -128,13 +119,12 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
       'Travel': colors.accent,
       'Business': colors.textSecondary,
       'Personal Care': colors.accent,
+      'Gifts & Donations': colors.success,
       'Other': colors.textMuted,
     };
 
     return colorMap[category.name] || colors.textMuted;
   };
-
-  const category = getCategory();
 
   const content = (
     <View style={styles.container}>
@@ -151,7 +141,7 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
       <View style={styles.details}>
         <View style={styles.mainInfo}>
           <Text style={[styles.category, { color: colors.text }]}>
-            {category?.name || 'Unknown Category'}
+            {getCategoryInfo().name}
           </Text>
           {expense.description && (
             <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={1}>

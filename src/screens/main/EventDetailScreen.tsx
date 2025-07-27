@@ -217,7 +217,8 @@ export default function EventDetailScreen() {
 
   const handleDelete = () => {
     if (!event) {
-      router.back();
+      // Navigate to events tab if no event found
+      router.replace('/(tabs)/event');
       return;
     }
     setShowDeleteDialog(true);
@@ -229,7 +230,8 @@ export default function EventDetailScreen() {
     try {
       await deleteEvent(event.id);
       setShowDeleteDialog(false);
-      router.back();
+      // Navigate to events tab instead of trying to go back
+      router.replace('/(tabs)/event');
     } catch (err: any) {
       showMessage(err.message || 'Failed to delete event.', 'error');
     }
@@ -239,7 +241,12 @@ export default function EventDetailScreen() {
     if (isEditing) {
       setShowBackDialog(true);
     } else {
-      router.back();
+      // Try to go back, but fallback to events tab if no previous screen
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/event');
+      }
     }
   };
 
@@ -735,7 +742,12 @@ export default function EventDetailScreen() {
                   onPress: () => {
                     setShowBackDialog(false);
                     handleCancel();
-                    router.back();
+                    // Try to go back, but fallback to events tab if no previous screen
+                    if (router.canGoBack()) {
+                      router.back();
+                    } else {
+                      router.replace('/(tabs)/event');
+                    }
                   },
                   style: 'destructive'
                 }
