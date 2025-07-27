@@ -326,22 +326,22 @@ export default function HomeScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
                   Daily Tasks
                 </Text>
-                <View style={styles.taskButtons}>
-                  <TouchableOpacity
-                    style={[styles.addTaskBtn, { backgroundColor: '#025e94ff' }]}
-                    onPress={() => router.push('/add-task')}
-                  >
-                    <Text style={styles.addTaskBtnText}>Add Task</Text>
-                  </TouchableOpacity>
-                  {todayTasks.length > 0 && (
+                {todayTasks.length > 0 && (
+                  <View style={styles.taskButtons}>
+                    <TouchableOpacity
+                      style={[styles.addTaskBtn, { backgroundColor: colors.primary }]}
+                      onPress={() => router.push('/add-task')}
+                    >
+                      <Text style={styles.addTaskBtnText}>Add Task</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.clearTasksBtn, { backgroundColor: colors.error }]}
                       onPress={handleClearAllTasks}
                     >
                       <Text style={styles.clearTasksBtnText}>Clear All</Text>
                     </TouchableOpacity>
-                  )}
-                </View>
+                  </View>
+                )}
               </View>
 
               {todayTasks.length === 0 ? (
