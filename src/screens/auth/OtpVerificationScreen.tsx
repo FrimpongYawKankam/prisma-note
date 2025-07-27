@@ -149,7 +149,7 @@ export default function OtpVerificationScreen() {
       <MessageBox message={errorMessage} type={messageType} />
       <KeyboardAvoidingView
         style={[styles.outerContainer, { backgroundColor: colors.background }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ScrollView

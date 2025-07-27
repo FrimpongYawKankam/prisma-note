@@ -23,7 +23,7 @@ interface ExpenseItemProps {
 
 export const ExpenseItem: React.FC<ExpenseItemProps> = ({
   expense,
-  categories,
+  categories = [], // Default to empty array if undefined
   onPress,
   showDate = true,
 }) => {
@@ -38,6 +38,11 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
         </Text>
       </View>
     );
+  }
+
+  // Safety check for categories
+  if (!categories || !Array.isArray(categories)) {
+    console.warn('ExpenseItem: categories prop is not a valid array', categories);
   }
 
   const formatCurrency = (amount: number | undefined) => {
@@ -81,6 +86,9 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
   };
 
   const getCategory = () => {
+    if (!categories || !Array.isArray(categories)) {
+      return null;
+    }
     return categories.find(cat => cat.id === expense.categoryId);
   };
 

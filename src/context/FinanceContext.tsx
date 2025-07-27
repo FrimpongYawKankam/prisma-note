@@ -4,17 +4,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useReducer, useState } from 'react';
 import financeService from '../services/financeService';
 import {
-  Budget,
-  BudgetSummary,
-  Category,
-  CreateBudgetRequest,
-  CreateExpenseRequest,
-  Expense,
-  FinanceErrorState,
-  FinanceLoadingState,
-  FinanceState,
-  UpdateBudgetRequest,
-  UpdateExpenseRequest
+    Budget,
+    BudgetSummary,
+    Category,
+    CreateBudgetRequest,
+    CreateExpenseRequest,
+    Expense,
+    FinanceErrorState,
+    FinanceLoadingState,
+    FinanceState,
+    UpdateBudgetRequest,
+    UpdateExpenseRequest
 } from '../types/finance';
 
 // ===============================
@@ -802,11 +802,14 @@ export const useBudgetSummary = () => {
 export const useCategories = () => {
   const { categories, loading, errors } = useFinance();
   
+  // Ensure categories is always an array
+  const safeCategories = categories && Array.isArray(categories) ? categories : [];
+  
   return {
-    categories,
+    categories: safeCategories,
     isLoading: loading.categories,
     error: errors.categories,
-    getCategoryById: (id: number) => categories.find(cat => cat.id === id),
-    getCategoryByName: (name: string) => categories.find(cat => cat.name.toLowerCase() === name.toLowerCase()),
+    getCategoryById: (id: number) => safeCategories.find(cat => cat.id === id),
+    getCategoryByName: (name: string) => safeCategories.find(cat => cat.name.toLowerCase() === name.toLowerCase()),
   };
 };
