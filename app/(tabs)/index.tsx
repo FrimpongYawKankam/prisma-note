@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Menu, Provider } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MockDebugPanel } from '../../src/components/ui/MockDebugPanel';
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
@@ -199,9 +199,6 @@ export default function HomeScreen() {
     <Provider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-          {/* Mock Debug Panel */}
-          <MockDebugPanel />
-          
           {/* Header Section */}
           <View style={styles.headerRow}>
             <View>

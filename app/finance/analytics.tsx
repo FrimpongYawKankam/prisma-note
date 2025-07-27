@@ -7,14 +7,13 @@ import React, { useState } from 'react';
 import {
   Dimensions,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ModernCard } from '../../src/components/ui/ModernCard';
 import { useBudget, useBudgetSummary, useExpenses, useFinance } from '../../src/context/FinanceContext';
 import { useTheme } from '../../src/context/ThemeContext';

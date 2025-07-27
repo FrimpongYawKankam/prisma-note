@@ -6,7 +6,6 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     RefreshControl,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
@@ -14,6 +13,7 @@ import {
     View,
 } from 'react-native';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
 import { useFinance } from '../../src/context/FinanceContext';
