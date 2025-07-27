@@ -248,7 +248,7 @@ export default function NotesScreen(): React.JSX.Element {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderNoteItem}
           renderSectionHeader={renderSectionHeader}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: Spacing.base }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

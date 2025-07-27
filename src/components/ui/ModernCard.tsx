@@ -46,7 +46,9 @@ export const ModernCard: React.FC<ModernCardProps> = ({
 
     const variantStyles = {
       elevated: {
-        ...Shadows.md,
+        ...Shadows.sm,
+        shadowColor: theme === 'dark' ? '#000' : colors.text,
+        shadowOpacity: theme === 'dark' ? 0.3 : 0.08,
         borderWidth: 0,
       },
       outlined: {

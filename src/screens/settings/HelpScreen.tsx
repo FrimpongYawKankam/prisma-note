@@ -176,7 +176,8 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.sm,
   },
   headerRow: {
     flexDirection: 'row',

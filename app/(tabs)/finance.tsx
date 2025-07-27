@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing.base,
   },
   header: {
     paddingHorizontal: Spacing.base,

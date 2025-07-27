@@ -247,7 +247,7 @@ export default function HomeScreen() {
 
           <ScrollView 
             style={styles.content}
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -263,7 +263,14 @@ export default function HomeScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 From {currentQuote.author},
               </Text>
-              <ModernCard style={[styles.quoteCard, { borderLeftColor: colors.primary }] as any}>
+              <ModernCard 
+                variant="elevated" 
+                padding="lg"
+                style={[styles.quoteCard, { 
+                  borderLeftColor: colors.primary,
+                  backgroundColor: theme === 'dark' ? colors.surface : colors.card,
+                }] as any}
+              >
                 <View style={styles.quoteIconContainer}>
                   <Ionicons name="bulb-outline" size={24} color={colors.primary} />
                 </View>
@@ -279,7 +286,7 @@ export default function HomeScreen() {
                 For Today
               </Text>
               {todayEvents.length === 0 ? (
-                <ModernCard style={styles.emptyCard}>
+                <ModernCard variant="elevated" padding="lg" style={styles.emptyCard}>
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                     Nothing for today!
                   </Text>
@@ -289,6 +296,8 @@ export default function HomeScreen() {
                   {todayEvents.map((event) => (
                     <ModernCard 
                       key={event.id} 
+                      variant="elevated"
+                      padding="md"
                       style={styles.eventCard}
                       onPress={() => router.push({ pathname: '/event-detail', params: { id: event.id } })}
                     >
@@ -336,7 +345,7 @@ export default function HomeScreen() {
               </View>
 
               {todayTasks.length === 0 ? (
-                <ModernCard style={styles.emptyCard}>
+                <ModernCard variant="elevated" padding="lg" style={styles.emptyCard}>
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                     No tasks set for today
                   </Text>
@@ -351,6 +360,8 @@ export default function HomeScreen() {
                   {todayTasks.map((task) => (
                     <ModernCard 
                       key={task.id} 
+                      variant="elevated"
+                      padding="md"
                       style={[
                         styles.taskCard,
                         {
@@ -412,7 +423,11 @@ export default function HomeScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Quick Notes
               </Text>
-              <ModernCard style={styles.notesCard}>
+              <ModernCard 
+                variant="elevated" 
+                padding="lg"
+                style={styles.notesCard}
+              >
                 <View style={styles.notesContent}>
                   <View style={styles.notesInfo}>
                     <Ionicons name="document-text" size={24} color={colors.primary} />
@@ -457,14 +472,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.sm,
+  },
+  scrollContent: {
+    paddingBottom: Spacing.base,
   },
   headerRow: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'flex-start',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     paddingTop: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
   },
   headerText: { 
     fontSize: Typography.fontSize['2xl'],
@@ -537,7 +557,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyCard: {
-    padding: Spacing.lg,
     alignItems: 'center',
   },
   emptyText: {
@@ -550,7 +569,6 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     marginBottom: Spacing.base,
-    padding: Spacing.base,
   },
   eventHeader: {
     flexDirection: 'row',
@@ -574,7 +592,6 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     marginBottom: Spacing.base,
-    padding: Spacing.base,
   },
   taskContent: {
     flexDirection: 'row',
@@ -608,7 +625,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   notesCard: {
-    padding: Spacing.lg,
     marginBottom: Spacing.base,
   },
   notesContent: {
@@ -644,13 +660,10 @@ const styles = StyleSheet.create({
   },
   quoteCard: {
     alignItems: 'center',
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: 'rgba(128, 128, 128, 0.05)',
     borderLeftWidth: 3,
   },
   quoteIconContainer: {
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.base,
   },
   quoteText: {
     fontSize: Typography.fontSize.base,
