@@ -44,17 +44,16 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? '#0d0d0d' : '#fefefe' }]}>
-      {/* Header with Back Button and Title */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
-          <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
-          <Text style={[styles.backText, { color: colors.primary }]}>
-            Back
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
+      {/* Header with Back Button and Title */}      
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => safeNavigateBack('/')}>
+            <Ionicons name="arrow-back-outline" size={22} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>
+            Back
+            </Text>
+          </TouchableOpacity>
+        </View>
         {/* Profile Shortcut */}
         <View style={styles.section}>
           <TouchableOpacity 

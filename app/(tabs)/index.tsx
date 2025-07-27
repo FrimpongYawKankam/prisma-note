@@ -13,7 +13,6 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Menu, Provider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MockDebugPanel } from '../../src/components/ui/MockDebugPanel';
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
 import { ModernDialog } from '../../src/components/ui/ModernDialog';
@@ -198,50 +197,14 @@ export default function HomeScreen() {
   return (
     <Provider>
       <GestureHandlerRootView style={{ flex: 1 }}>
+                <ModernDialog
+          visible={dialog.visible}
+          title={dialog.title}
+          message={dialog.message}
+          buttons={dialog.buttons}
+          onClose={hideDialog}
+        />
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-          {/* Header Section */}
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={[styles.headerText, { color: colors.primary }]}>
-                {getTimeBasedGreeting()}, {user?.fullName?.split(' ')[0] || 'User'}!
-              </Text>
-            </View>
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
-                <TouchableOpacity 
-                  onPress={() => setMenuVisible(true)}
-                  style={styles.menuButton}
-                >
-                  <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
-                </TouchableOpacity>
-              }
-              contentStyle={{ backgroundColor: colors.surface }}
-            >
-              <Menu.Item 
-                onPress={() => { setMenuVisible(false); router.push('/settings'); }} 
-                title="Settings" 
-                titleStyle={{ color: colors.text }}
-              />
-              <Menu.Item
-                onPress={() => { setMenuVisible(false); router.push('/calculator'); }} 
-                title="Calculator" 
-                titleStyle={{ color: colors.text }}
-              />
-              <Menu.Item 
-                onPress={() => { setMenuVisible(false); router.push('/about'); }} 
-                title="About" 
-                titleStyle={{ color: colors.text }}
-              />
-              <Menu.Item
-                onPress={() => { setMenuVisible(false); router.push('/trash'); }} 
-                title="Trash" 
-                titleStyle={{ color: colors.text }}
-              />
-            </Menu>
-          </View>
-
           <ScrollView 
             style={styles.content}
             contentContainerStyle={styles.scrollContent}
@@ -255,6 +218,48 @@ export default function HomeScreen() {
               />
             }
           >
+            {/* Header Section */}
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={[styles.headerText, { color: colors.primary }]}>
+                  {getTimeBasedGreeting()}, {user?.fullName?.split(' ')[0] || 'User'}!
+                </Text>
+              </View>
+              <Menu
+                visible={menuVisible}
+                onDismiss={() => setMenuVisible(false)}
+                anchor={
+                  <TouchableOpacity 
+                    onPress={() => setMenuVisible(true)}
+                    style={styles.menuButton}
+                  >
+                    <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                }
+                contentStyle={{ backgroundColor: colors.surface }}
+              >
+                <Menu.Item 
+                  onPress={() => { setMenuVisible(false); router.push('/settings'); }} 
+                  title="Settings" 
+                  titleStyle={{ color: colors.text }}
+                />
+                <Menu.Item
+                  onPress={() => { setMenuVisible(false); router.push('/calculator'); }} 
+                  title="Calculator" 
+                  titleStyle={{ color: colors.text }}
+                />
+                <Menu.Item 
+                  onPress={() => { setMenuVisible(false); router.push('/about'); }} 
+                  title="About" 
+                  titleStyle={{ color: colors.text }}
+                />
+                <Menu.Item
+                  onPress={() => { setMenuVisible(false); router.push('/trash'); }} 
+                  title="Trash" 
+                  titleStyle={{ color: colors.text }}
+                />
+              </Menu>
+            </View>
             {/* Inspirational Quote Section */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -453,14 +458,6 @@ export default function HomeScreen() {
             </View>
           </ScrollView>
         </SafeAreaView>
-
-        <ModernDialog
-          visible={dialog.visible}
-          title={dialog.title}
-          message={dialog.message}
-          buttons={dialog.buttons}
-          onClose={hideDialog}
-        />
       </GestureHandlerRootView>
     </Provider>
   );

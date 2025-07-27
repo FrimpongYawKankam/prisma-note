@@ -268,7 +268,7 @@ export default function NotesScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: Spacing.base,
+    padding: Spacing.sm,
   },
   headerSection: {
     marginBottom: Spacing.lg,

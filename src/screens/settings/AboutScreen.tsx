@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    paddingTop: 20,
+    paddingTop: 5,
   },
   headerContainer: {
     flexDirection: 'row',

@@ -45,7 +45,7 @@ export default function ProfileScreen() {
             const noteDate = new Date(note.timeCreated);
             return noteDate < earliest ? noteDate : earliest;
           }, new Date(notes[0].timeCreated))
-        : new Date('2024-01-01');
+        : new Date('2025-07-30'); // Fallback date if no notes exist
 
       if (user) {
         setUserData({

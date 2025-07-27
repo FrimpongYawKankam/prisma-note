@@ -4,7 +4,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    FlatList,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -24,7 +23,6 @@ interface ExpenseListCardProps {
   onViewAll?: () => void;
   title?: string;
   showAddButton?: boolean;
-  maxHeight?: number;
 }
 
 export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
@@ -34,7 +32,6 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
   onViewAll,
   title = "Expenses",
   showAddButton = true,
-  maxHeight = 300,
 }) => {
   const { colors } = useTheme();
 
@@ -129,16 +126,14 @@ export const ExpenseListCard: React.FC<ExpenseListCardProps> = ({
         {isEmpty ? (
           renderEmptyState()
         ) : (
-          <FlatList
-            data={validExpenses}
-            renderItem={renderExpenseItem}
-            keyExtractor={(item) => item?.id?.toString() || Math.random().toString()}
-            ItemSeparatorComponent={renderSeparator}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={validExpenses.length > 3}
-            style={{ maxHeight }}
-            contentContainerStyle={validExpenses.length <= 3 ? { flexGrow: 1 } : undefined}
-          />
+          <View>
+            {validExpenses.map((item, index) => (
+              <View key={item?.id?.toString() || `expense-${index}`}>
+                {renderExpenseItem({ item })}
+                {index < validExpenses.length - 1 && renderSeparator()}
+              </View>
+            ))}
+          </View>
         )}
       </View>
     </ModernCard>
