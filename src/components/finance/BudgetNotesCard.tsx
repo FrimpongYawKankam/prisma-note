@@ -5,14 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { useTheme } from '../../context/ThemeContext';
-import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
+import { Spacing, Typography } from '../../styles/tokens';
 import { Note } from '../../types/api';
 import { ModernButton } from '../ui/ModernButton';
 import { ModernCard } from '../ui/ModernCard';
@@ -37,8 +37,7 @@ export const BudgetNotesCard: React.FC<BudgetNotesCardProps> = ({
   const displayedNotes = expanded ? notes : notes.slice(0, 3);
   const hasMoreNotes = notes.length > 3;
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -124,7 +123,7 @@ export const BudgetNotesCard: React.FC<BudgetNotesCardProps> = ({
                   {note.title}
                 </Text>
                 <Text style={[styles.noteDate, { color: colors.textSecondary }]}>
-                  {formatDate(note.createdAt)}
+                  {formatDate(note.timeCreated)}
                 </Text>
               </View>
               
@@ -132,26 +131,6 @@ export const BudgetNotesCard: React.FC<BudgetNotesCardProps> = ({
                 <Text style={[styles.noteContent, { color: colors.textSecondary }]} numberOfLines={2}>
                   {truncateContent(note.content)}
                 </Text>
-              )}
-
-              {note.tags && note.tags.length > 0 && (
-                <View style={styles.tagsContainer}>
-                  {note.tags.slice(0, 3).map((tag, index) => (
-                    <View
-                      key={index}
-                      style={[styles.tag, { backgroundColor: `${colors.primary}15` }]}
-                    >
-                      <Text style={[styles.tagText, { color: colors.primary }]}>
-                        {tag}
-                      </Text>
-                    </View>
-                  ))}
-                  {note.tags.length > 3 && (
-                    <Text style={[styles.moreTagsText, { color: colors.textSecondary }]}>
-                      +{note.tags.length - 3} more
-                    </Text>
-                  )}
-                </View>
               )}
             </TouchableOpacity>
           ))}
@@ -245,25 +224,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     lineHeight: Typography.lineHeight.sm,
     marginBottom: Spacing.sm,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  tag: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-  },
-  tagText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.medium as any,
-  },
-  moreTagsText: {
-    fontSize: Typography.fontSize.xs,
-    fontStyle: 'italic',
   },
   expandButton: {
     flexDirection: 'row',

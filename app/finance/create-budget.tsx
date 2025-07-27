@@ -33,6 +33,14 @@ export default function CreateBudgetScreen() {
     period: 'MONTHLY' as BudgetPeriod,
   });
 
+  // Currency symbols mapping
+  const currencySymbols = {
+    GHS: '₵',
+    USD: '$',
+    EUR: '€',
+    GBP: '£'
+  };
+
   // Date selection state
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(() => {
@@ -155,7 +163,7 @@ export default function CreateBudgetScreen() {
           <View style={styles.placeholder} />
         </View>
         <ModernCard variant="elevated" padding="lg" style={styles.formCard}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>
+          <Text style={[styles.cardTitle, { color: colors.primary }]}>
             Budget Details
           </Text>
           
@@ -166,7 +174,7 @@ export default function CreateBudgetScreen() {
             </Text>
             <View style={[styles.inputContainer, { borderColor: colors.border }]}>
               <Text style={[styles.currencySymbol, { color: colors.textSecondary }]}>
-                ₵
+                {currencySymbols[formData.currency]}
               </Text>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -182,7 +190,7 @@ export default function CreateBudgetScreen() {
 
           {/* Currency Selection */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>
+            <Text style={[styles.label, { color: colors.primary }]}>
               Currency
             </Text>
             <View style={styles.currencyButtons}>
@@ -200,7 +208,7 @@ export default function CreateBudgetScreen() {
 
           {/* Period Selection */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>
+            <Text style={[styles.label, { color: colors.primary }]}>
               Budget Period
             </Text>
             <View style={styles.periodButtons}>
@@ -220,6 +228,7 @@ export default function CreateBudgetScreen() {
           <View style={styles.dateSection}>
             <ModernDatePicker
               label="Start Date"
+              labelColor={colors.primary}
               value={startDate}
               onDateChange={setStartDate}
               minimumDate={new Date()}
@@ -227,6 +236,7 @@ export default function CreateBudgetScreen() {
             
             <ModernDatePicker
               label="End Date"
+              labelColor={colors.primary}
               value={endDate}
               onDateChange={setEndDate}
               minimumDate={new Date(startDate.getTime() + 24 * 60 * 60 * 1000)} // Next day
@@ -273,14 +283,17 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   backButton: {
-    width: 40,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.semiBold as any,
   },
   placeholder: {
-    width: 40,
+    width: 44,
   },
   content: {
     flex: 1,
@@ -321,10 +334,12 @@ const styles = StyleSheet.create({
   },
   currencyButtons: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   currencyButton: {
     flex: 1,
+    minHeight: 44,
+    paddingHorizontal: Spacing.xs,
   },
   periodButtons: {
     flexDirection: 'row',

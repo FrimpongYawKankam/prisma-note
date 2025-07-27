@@ -22,6 +22,7 @@ interface DatePickerProps {
   value: Date;
   onDateChange: (date: Date) => void;
   label?: string;
+  labelColor?: string;
   placeholder?: string;
   minimumDate?: Date;
   maximumDate?: Date;
@@ -33,6 +34,7 @@ export const ModernDatePicker: React.FC<DatePickerProps> = ({
   value,
   onDateChange,
   label,
+  labelColor,
   placeholder = 'Select date',
   minimumDate,
   maximumDate,
@@ -88,7 +90,7 @@ export const ModernDatePicker: React.FC<DatePickerProps> = ({
   return (
     <View style={styles.container}>
       {label && (
-        <Text style={[styles.label, { color: colors.text }]}>
+        <Text style={[styles.label, { color: labelColor || colors.text }]}>
           {label}
         </Text>
       )}
