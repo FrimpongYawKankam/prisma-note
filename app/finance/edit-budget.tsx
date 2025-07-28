@@ -34,6 +34,14 @@ export default function EditBudgetScreen() {
     period: 'MONTHLY' as BudgetPeriod,
   });
 
+  // Currency symbols mapping
+  const currencySymbols = {
+    GHS: '₵',
+    USD: '$',
+    EUR: '€',
+    GBP: '£'
+  };
+
   // Date selection state
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(() => {
@@ -71,8 +79,10 @@ export default function EditBudgetScreen() {
     const newEndDate = new Date(startDate);
     if (formData.period === 'WEEKLY') {
       newEndDate.setDate(newEndDate.getDate() + 7);
-    } else {
+    } else if (formData.period === 'MONTHLY') {
       newEndDate.setMonth(newEndDate.getMonth() + 1);
+    } else if (formData.period === 'YEARLY') {
+      newEndDate.setFullYear(newEndDate.getFullYear() + 1);
     }
     setEndDate(newEndDate);
   }, [startDate, formData.period]);
@@ -123,35 +133,41 @@ export default function EditBudgetScreen() {
 
   if (!budget) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
-        <View style={styles.header}>
-          <ModernButton
-            title=""
-            onPress={() => router.push('/(tabs)/finance')}
-            variant="ghost"
-            leftIcon={<Ionicons name="arrow-back" size={24} color={colors.text} />}
-            style={styles.backButton}
-          />
-          <Text style={[styles.title, { color: colors.text }]}>Edit Budget</Text>
-          <View style={styles.placeholder} />
-        </View>
-        
-        <View style={styles.centeredContent}>
-          <Text style={[styles.errorText, { color: colors.error }]}>
-            No active budget found to edit.
-          </Text>
-          <ModernButton
-            title="Create Budget"
-            onPress={() => router.replace('/finance/create-budget')}
-            variant="primary"
-          />
-        </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+        <ScrollView 
+          style={styles.content} 
+          contentContainerStyle={[styles.scrollContent, { flex: 1 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <ModernButton
+              title=" "
+              onPress={() => router.push('/(tabs)/finance')}
+              variant="ghost"
+              leftIcon={<Ionicons name="arrow-back" size={24} color={colors.primary} />}
+              style={styles.backButton}
+            />
+            <Text style={[styles.title, { color: colors.primary }]}>Edit Budget</Text>
+            <View style={styles.placeholder} />
+          </View>
+          
+          <View style={styles.centeredContent}>
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              No active budget found to edit.
+            </Text>
+            <ModernButton
+              title="Create Budget"
+              onPress={() => router.replace('/finance/create-budget')}
+              variant="primary"
+            />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
       {/* Success Dialog */}
       <ModernDialog
         visible={successDialog}
@@ -186,17 +202,21 @@ export default function EditBudgetScreen() {
         onClose={() => setErrorDialog(false)}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <ModernButton
-            title=""
+            title=" "
             onPress={() => router.push('/(tabs)/finance')}
             variant="ghost"
-            leftIcon={<Ionicons name="arrow-back" size={24} color={colors.text} />}
+            leftIcon={<Ionicons name="arrow-back" size={24} color={colors.primary} />}
             style={styles.backButton}
           />
-          <Text style={[styles.title, { color: colors.text }]}>Edit Budget</Text>
+          <Text style={[styles.title, { color: colors.primary }]}>Edit Budget</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -207,7 +227,7 @@ export default function EditBudgetScreen() {
               Current Budget
             </Text>
             <Text style={[styles.currentBudgetAmount, { color: colors.primary }]}>
-              ₵ {budget.totalBudget.toFixed(2)}
+              {currencySymbols[budget.currency]} {budget.totalBudget.toFixed(2)}
             </Text>
             <Text style={[styles.currentBudgetPeriod, { color: colors.textSecondary }]}>
               {budget.period.toLowerCase()} • {budget.currency}
@@ -216,7 +236,7 @@ export default function EditBudgetScreen() {
 
           {/* Amount Input */}
           <View style={styles.inputSection}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
+            <Text style={[styles.inputLabel, { color: colors.primary }]}>
               New Budget Amount
             </Text>
             <View style={[styles.inputContainer, { 
@@ -224,7 +244,7 @@ export default function EditBudgetScreen() {
               backgroundColor: colors.surface 
             }]}>
               <Text style={[styles.currencyPrefix, { color: colors.textSecondary }]}>
-                ₵
+                {currencySymbols[formData.currency]}
               </Text>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -241,11 +261,11 @@ export default function EditBudgetScreen() {
 
           {/* Currency Selection */}
           <View style={styles.inputSection}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
+            <Text style={[styles.inputLabel, { color: colors.primary }]}>
               Currency
             </Text>
             <View style={styles.currencyButtons}>
-              {(['GHS', 'USD', 'EUR'] as Currency[]).map((currency) => (
+              {(['GHS', 'USD', 'EUR', 'GBP'] as Currency[]).map((currency) => (
                 <ModernButton
                   key={currency}
                   title={currency}
@@ -261,14 +281,14 @@ export default function EditBudgetScreen() {
 
           {/* Period Selection */}
           <View style={styles.inputSection}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
+            <Text style={[styles.inputLabel, { color: colors.primary }]}>
               Budget Period
             </Text>
             <View style={styles.periodButtons}>
               {(['WEEKLY', 'MONTHLY', 'YEARLY'] as BudgetPeriod[]).map((period) => (
                 <ModernButton
                   key={period}
-                  title={period.toLowerCase()}
+                  title={period === 'WEEKLY' ? 'Weekly' : period === 'MONTHLY' ? 'Monthly' : 'Yearly'}
                   onPress={() => 
                     setFormData(prev => ({ ...prev, period }))
                   }
@@ -322,6 +342,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: Spacing.xl,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -331,15 +354,17 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: Typography.fontSize.xl,
     fontWeight: Typography.fontWeight.semiBold as any,
   },
   placeholder: {
-    width: 40,
+    width: 44,
   },
   centeredContent: {
     flex: 1,
@@ -355,7 +380,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: Spacing.xl,
   },
   formCard: {
     marginHorizontal: Spacing.base,
@@ -412,17 +436,21 @@ const styles = StyleSheet.create({
   },
   currencyButtons: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   currencyButton: {
     flex: 1,
+    minHeight: 44,
+    paddingHorizontal: Spacing.xs,
   },
   periodButtons: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   periodButton: {
     flex: 1,
+    minHeight: 44,
+    paddingHorizontal: Spacing.xs,
   },
   dateSection: {
     gap: Spacing.base,
@@ -441,8 +469,8 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
   },
   updateButton: {
-    marginTop: Spacing.base,
-    marginBottom: Spacing.xl,
+    marginTop: Spacing.lg,
     marginHorizontal: Spacing.base,
+    marginBottom: Spacing.lg,
   },
 });

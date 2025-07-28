@@ -212,7 +212,7 @@ export default function AnalyticsScreen() {
 
         {/* Overview Stats */}
         <ModernCard style={styles.statsCard}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Overview</Text>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Overview</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: colors.primary }]}>
@@ -254,7 +254,7 @@ export default function AnalyticsScreen() {
         {/* Budget Progress */}
         {hasActiveBudget && hasSummaryData && budget && summary && (
           <ModernCard style={styles.budgetCard}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Budget Progress</Text>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Budget Progress</Text>
             <View style={styles.budgetProgress}>
               <View style={styles.budgetInfo}>
                 <Text style={[styles.budgetAmount, { color: colors.text }]}>
@@ -282,7 +282,7 @@ export default function AnalyticsScreen() {
         {/* Category Breakdown */}
         {categoryBreakdown.length > 0 && (
           <ModernCard style={styles.categoryCard}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>
               Spending by Category
             </Text>
             {categoryBreakdown.map((category, index) => (
