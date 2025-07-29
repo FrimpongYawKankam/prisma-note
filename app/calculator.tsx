@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    Vibration,
-    View
+  Animated,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Vibration,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ModernDialog } from '../src/components/ui/ModernDialog';
@@ -260,6 +260,54 @@ export default function CalculatorScreen() {
     return true;
   };
 
+  // Auto-multiplication helper
+  const addAutoMultiplication = (currentExpression: string, newInput: string): string => {
+    const lastChar = currentExpression.slice(-1);
+    
+    // Add multiplication before opening parenthesis if preceded by:
+    // - A number (0-9)
+    // - A closing parenthesis )
+    // - Constants (π, e)
+    if (newInput === '(' && currentExpression.length > 0) {
+      if (/[0-9)πe]/.test(lastChar)) {
+        return currentExpression + '×(';
+      }
+    }
+    
+    // Add multiplication after closing parenthesis if followed by:
+    // - A number (0-9)
+    // - An opening parenthesis (
+    // - Constants (π, e)
+    // - Functions (sin, cos, tan, ln, log, √)
+    if (lastChar === ')') {
+      if (/[0-9(πe]/.test(newInput) || 
+          ['sin', 'cos', 'tan', 'ln', 'log', '√'].some(func => newInput.startsWith(func))) {
+        return currentExpression + '×' + newInput;
+      }
+    }
+    
+    // Add multiplication before constants if preceded by numbers or closing parenthesis
+    if (['π', 'e'].includes(newInput) && currentExpression.length > 0) {
+      if (/[0-9)]/.test(lastChar)) {
+        return currentExpression + '×' + newInput;
+      }
+    }
+    
+    // Add multiplication before functions if preceded by numbers or closing parenthesis
+    if (['sin', 'cos', 'tan', 'ln', 'log', '√'].includes(newInput) && currentExpression.length > 0) {
+      if (/[0-9)]/.test(lastChar)) {
+        return currentExpression + '×' + newInput;
+      }
+    }
+    
+    // Add multiplication after numbers if followed by opening parenthesis
+    if (/[0-9]/.test(lastChar) && newInput === '(') {
+      return currentExpression + '×(';
+    }
+    
+    return currentExpression + newInput;
+  };
+
   const handlePress = (val: string) => {
     // Trigger button animation
     animateButtonPress(val);
@@ -293,7 +341,7 @@ export default function CalculatorScreen() {
         setResult('');
       }
     } else if (val === 'ans') {
-      setExpression(prev => prev + ans);
+      setExpression(prev => addAutoMultiplication(prev, ans));
     } else if (val === '±') {
       if (expression) {
         if (expression.startsWith('-')) {
@@ -327,17 +375,17 @@ export default function CalculatorScreen() {
         setExpression(prev => `(${prev})²`);
       }
     } else if (val === '√') {
-      setExpression(prev => prev ? `√(${prev})` : '√(');
+      setExpression(prev => prev ? addAutoMultiplication(prev, '√') : '√');
     } else if (val === 'sin') {
-      setExpression(prev => prev ? `sin(${prev})` : 'sin(');
+      setExpression(prev => addAutoMultiplication(prev, 'sin('));
     } else if (val === 'cos') {
-      setExpression(prev => prev ? `cos(${prev})` : 'cos(');
+      setExpression(prev => addAutoMultiplication(prev, 'cos('));
     } else if (val === 'tan') {
-      setExpression(prev => prev ? `tan(${prev})` : 'tan(');
+      setExpression(prev => addAutoMultiplication(prev, 'tan('));
     } else if (val === 'ln') {
-      setExpression(prev => prev ? `ln(${prev})` : 'ln(');
+      setExpression(prev => addAutoMultiplication(prev, 'ln('));
     } else if (val === 'log') {
-      setExpression(prev => prev ? `log(${prev})` : 'log(');
+      setExpression(prev => addAutoMultiplication(prev, 'log('));
     } else if (val === '^') {
       setExpression(prev => prev + '^');
     } else if (val === '!') {
@@ -379,7 +427,7 @@ export default function CalculatorScreen() {
         }
       }
     } else if (val === 'mr') {
-      setExpression(prev => prev + memory);
+      setExpression(prev => addAutoMultiplication(prev, memory));
       showDialog('Memory', `Recalled: ${memory}`);
     } else if (val === 'mc') {
       setMemory('0');
@@ -389,9 +437,9 @@ export default function CalculatorScreen() {
     } else if (val === 'EE') {
       setExpression(prev => prev + 'e');
     } else if (val === 'π') {
-      setExpression(prev => prev + 'π');
+      setExpression(prev => addAutoMultiplication(prev, 'π'));
     } else if (val === 'e') {
-      setExpression(prev => prev + 'e');
+      setExpression(prev => addAutoMultiplication(prev, 'e'));
     } else {
       // Apply input validation for basic inputs
       if (['+', '−', '×', '÷', '^', '.'].includes(val)) {
@@ -401,8 +449,19 @@ export default function CalculatorScreen() {
           // Provide feedback for invalid input
           Vibration.vibrate([100, 50, 100]);
         }
+      } else if (val === '(') {
+        // Handle opening parenthesis with auto-multiplication
+        setExpression(prev => addAutoMultiplication(prev, '('));
+      } else if (val === ')') {
+        // Handle closing parenthesis - add it normally first
+        setExpression(prev => prev + ')');
       } else {
-        setExpression(prev => prev + val);
+        // Handle numbers and other inputs
+        if (/[0-9]/.test(val)) {
+          setExpression(prev => addAutoMultiplication(prev, val));
+        } else {
+          setExpression(prev => prev + val);
+        }
       }
     }
   };
