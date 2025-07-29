@@ -5,14 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { ModernDatePicker } from '../../src/components/ui/DatePicker';
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
@@ -266,7 +265,7 @@ export default function CreateBudgetScreen() {
           title="Create Budget"
           onPress={handleCreateBudget}
           variant="primary"
-          loading={loading.budget}
+          loading={loading.creatingBudget}
           disabled={!formData.totalBudget.trim()}
           leftIcon={<Ionicons name="wallet-outline" size={20} color="white" />}
           style={styles.createButton}
