@@ -16,6 +16,7 @@ import {
     UpdateBudgetRequest,
     UpdateExpenseRequest
 } from '../types/finance';
+import { useAuth } from './AuthContext';
 
 // ===============================
 // CONTEXT DEFINITION
@@ -43,6 +44,7 @@ interface FinanceContextType extends FinanceState {
   // Utility actions
   clearErrors: () => void;
   setError: (type: keyof FinanceErrorState, error: string) => void;
+  resetState: () => void;
 }
 
 // ===============================
@@ -55,6 +57,8 @@ type FinanceAction =
   // Error actions
   | { type: 'SET_ERROR'; payload: { key: keyof FinanceErrorState; value: string | null } }
   | { type: 'CLEAR_ERRORS' }
+  // Reset action
+  | { type: 'RESET_STATE' }
   // Data actions
   | { type: 'SET_BUDGET'; payload: Budget | null }
   | { type: 'SET_EXPENSES'; payload: Expense[] }
@@ -125,6 +129,12 @@ function financeReducer(state: FinanceState, action: FinanceAction): FinanceStat
           categories: null,
           general: null,
         },
+      };
+
+    case 'RESET_STATE':
+      console.log('🔄 Resetting Finance Context state');
+      return {
+        ...initialState,
       };
 
     case 'SET_BUDGET':
@@ -233,6 +243,7 @@ const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(financeReducer, initialState);
   const [initialized, setInitialized] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
   console.log('🏭 FinanceProvider render:', { initialized, budgetExists: state.budget ? 'YES' : 'NO' });
 
@@ -252,11 +263,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     dispatch({ type: 'CLEAR_ERRORS' });
   }, []);
 
+  const resetState = useCallback(() => {
+    console.log('🔄 Finance Context: Resetting state due to auth change');
+    dispatch({ type: 'RESET_STATE' });
+    setInitialized(false);
+  }, []);
+
   const handleApiError = useCallback((error: any, type: keyof FinanceErrorState) => {
     const errorMessage = error.message || 'An unexpected error occurred';
     setError(type, errorMessage);
     console.error(`Finance ${type} error:`, error);
   }, [setError]);
+
+  // ===============================
+  // AUTH LISTENER - Reset state when user logs out
+  // ===============================
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // User logged out or never logged in, reset state
+      console.log('🔄 Finance Context: User not authenticated, resetting state');
+      resetState();
+    }
+  }, [isAuthenticated, resetState]);
 
   // ===============================
   // BUDGET OPERATIONS
@@ -689,6 +718,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Utility actions
     clearErrors,
     setError,
+    resetState,
   };
 
   return (

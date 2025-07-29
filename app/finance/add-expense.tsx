@@ -6,13 +6,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ModernButton } from '../../src/components/ui/ModernButton';
@@ -24,10 +24,35 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../src/styles/tokens';
 import { CategoryId, FIXED_CATEGORIES } from '../../src/types/finance';
 
+// Fallback categories in case of import issues
+const FALLBACK_CATEGORIES = [
+  { id: 1, name: 'Food & Dining', icon: '🍽️' },
+  { id: 2, name: 'Transportation', icon: '🚗' },
+  { id: 3, name: 'Shopping', icon: '🛒' },
+  { id: 4, name: 'Entertainment', icon: '🎬' },
+  { id: 5, name: 'Bills & Utilities', icon: '🏠' },
+  { id: 6, name: 'Healthcare', icon: '🏥' },
+  { id: 7, name: 'Education', icon: '📚' },
+  { id: 8, name: 'Travel', icon: '✈️' },
+  { id: 9, name: 'Personal Care', icon: '💳' },
+  { id: 10, name: 'Gifts & Donations', icon: '🎁' },
+  { id: 11, name: 'Other', icon: '📦' },
+];
+
 export default function AddExpenseScreen() {
   const router = useRouter();
   const { theme, colors } = useTheme();
   const { addExpense } = useFinance();
+
+  // Debug categories to prevent iterator error
+  React.useEffect(() => {
+    console.log('🐛 AddExpense Debug:', {
+      FIXED_CATEGORIES: FIXED_CATEGORIES ? 'EXISTS' : 'NULL',
+      isArray: Array.isArray(FIXED_CATEGORIES),
+      fallbackUsed: !Array.isArray(FIXED_CATEGORIES),
+      categoriesLength: Array.isArray(FIXED_CATEGORIES) ? FIXED_CATEGORIES.length : 'NOT_ARRAY'
+    });
+  }, []);
 
   const [formData, setFormData] = useState({
     amount: '',
@@ -211,7 +236,7 @@ export default function AddExpenseScreen() {
                 </Text>
               ) : null}
               <View style={styles.categoriesGrid}>
-                {FIXED_CATEGORIES.map((category) => (
+                {(Array.isArray(FIXED_CATEGORIES) ? FIXED_CATEGORIES : FALLBACK_CATEGORIES).map((category) => (
                   <TouchableOpacity
                     key={category.id}
                     style={[
