@@ -2,14 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
     Dimensions,
-    SafeAreaView,
     StatusBar,
     StyleSheet,
     Text,
     View
 } from 'react-native';
 import { useTheme } from '../src/context/ThemeContext';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 const { width, height } = Dimensions.get('window');
 
 export default function SplashScreen() {
