@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 
+import { useBudget } from '../../context/FinanceContext';
 import { useTheme } from '../../context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
 import { Expense, FIXED_CATEGORIES } from '../../types/finance';
@@ -26,6 +27,7 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
   showDate = true,
 }) => {
   const { colors } = useTheme();
+  const { budget } = useBudget();
 
   // Safety check for invalid expense object
   if (!expense || typeof expense !== 'object') {
@@ -39,10 +41,24 @@ export const ExpenseItem: React.FC<ExpenseItemProps> = ({
   }
 
   const formatCurrency = (amount: number | undefined) => {
+    // Get currency symbol from budget with comprehensive mapping
+    const getCurrencySymbol = (currency: string | undefined) => {
+      switch (currency) {
+        case 'GHS': return '₵';
+        case 'USD': return '$';
+        case 'EUR': return '€';
+        case 'GBP': return '£';
+        default: return '₵'; // Default to Cedi
+      }
+    };
+
+    const currencySymbol = getCurrencySymbol(budget?.currency);
+
     if (amount === undefined || amount === null || isNaN(amount)) {
-      return '₵0.00';
+      return `${currencySymbol}0.00`;
     }
-    return `₵${amount.toLocaleString('en-US', {
+    
+    return `${currencySymbol}${amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;

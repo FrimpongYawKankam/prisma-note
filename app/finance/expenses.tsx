@@ -5,18 +5,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ModernButton } from '../../src/components/ui/ModernButton';
 import { ModernCard } from '../../src/components/ui/ModernCard';
-import { useFinance } from '../../src/context/FinanceContext';
+import { useBudget, useFinance } from '../../src/context/FinanceContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../src/styles/tokens';
 import { FIXED_CATEGORIES } from '../../src/types/finance';
@@ -28,6 +28,7 @@ export default function AllExpensesScreen() {
   const router = useRouter();
   const { theme, colors } = useTheme();
   const { expenses, loading, refreshAllData } = useFinance();
+  const { budget } = useBudget();
 
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
@@ -49,10 +50,24 @@ export default function AllExpensesScreen() {
   };
 
   const formatAmount = (amount: number | undefined) => {
+    // Get currency symbol from budget with comprehensive mapping
+    const getCurrencySymbol = (currency: string | undefined) => {
+      switch (currency) {
+        case 'GHS': return '₵';
+        case 'USD': return '$';
+        case 'EUR': return '€';
+        case 'GBP': return '£';
+        default: return '₵'; // Default to Cedi
+      }
+    };
+
+    const currencySymbol = getCurrencySymbol(budget?.currency);
+
     if (amount === undefined || amount === null || isNaN(amount)) {
-      return '₵ 0.00';
+      return `${currencySymbol} 0.00`;
     }
-    return `₵ ${amount.toFixed(2)}`;
+    
+    return `${currencySymbol} ${amount.toFixed(2)}`;
   };
 
   const formatDate = (dateString: string | undefined) => {

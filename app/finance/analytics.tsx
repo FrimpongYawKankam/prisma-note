@@ -61,7 +61,20 @@ export default function AnalyticsScreen() {
   };
 
   const formatAmount = (amount: number) => {
-    return `₵ ${amount.toFixed(2)}`;
+    // Get currency symbol from budget with comprehensive mapping
+    const getCurrencySymbol = (currency: string | undefined) => {
+      switch (currency) {
+        case 'GHS': return '₵';
+        case 'USD': return '$';
+        case 'EUR': return '€';
+        case 'GBP': return '£';
+        default: return '₵'; // Default to Cedi
+      }
+    };
+
+    const currencySymbol = getCurrencySymbol(budget?.currency);
+    
+    return `${currencySymbol} ${amount.toFixed(2)}`;
   };
 
   const getFilteredExpenses = () => {
