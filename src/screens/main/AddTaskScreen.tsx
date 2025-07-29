@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MessageBox } from '../../components/ui/MessageBox';
@@ -222,14 +222,17 @@ const AddTaskScreen = () => {
           <ModernButton
             title="Cancel"
             onPress={handleCancel}
-            style={styles.cancelButton}
+            variant="ghost"
             disabled={loading}
+            style={styles.cancelButton}
           />
           <ModernButton
             title={isEditing ? 'Update Task' : 'Create Task'}
             onPress={handleSave}
+            variant="primary"
             loading={loading}
             disabled={loading || !taskText.trim()}
+            leftIcon={<Ionicons name="checkmark" size={20} color="white" />}
             style={styles.saveButton}
           />
         </View>
@@ -385,13 +388,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#ccc',
   },
   saveButton: {
     flex: 1,
-    backgroundColor: '#007bff',
   },
 });
 
