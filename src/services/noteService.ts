@@ -363,7 +363,7 @@ export const getTrashedNotesCount = async (): Promise<number> => {
 // ============================================
 
 /**
- * Checks if a note belongs to the current user
+ * Checks if a note belongs to the current user 151582
  */
 export const isNoteOwner = (note: Note, userEmail: string): boolean => {
   return note.ownerEmail === userEmail;

@@ -3,24 +3,25 @@
     "name": "PrismaNote",
     "slug": "PrismaNote",
     "scheme": "prisma-note",
-    "owner": "frimpongyawkankam03",
+    "owner": "joaboateng9",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/images/logo.png",
     "splash": {
       "image": "./assets/images/finallogo.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#000000"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.frimpongyawkankam03.prisma-note",
+      "bundleIdentifier": "com.joaboateng9.prisma-note",
       "usesAppleSignIn": true,
       "splash": {
         "image": "./assets/images/finallogo.png",
-        "resizeMode": "contain",
+        "resizeMode": "cover",
         "backgroundColor": "#000000",
         "tabletImage": "./assets/images/finallogo.png"
       },
@@ -29,19 +30,18 @@
       }
     },
     "android": {
-      "package": "com.frimpongyawkankam03.prisma-note",
-      "usesCleartextTraffic": true,
-      "networkSecurityConfig": {
-        "domain-config": [
-          {
-            "domain": "192.168.39.163",
-            "cleartextTrafficPermitted": true
-          }
-        ]
-      },
+      "package": "com.joaboateng9.prismanote",
+      "icon": "./assets/images/logo.png",
+      "permissions": [
+        "INTERNET",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
+      "usesCleartextTraffic": false,
       "splash": {
         "image": "./assets/images/finallogo.png",
-        "resizeMode": "contain",
+        "resizeMode": "cover",
         "backgroundColor": "#000000",
         "mdpi": "./assets/images/finallogo.png",
         "hdpi": "./assets/images/finallogo.png",
@@ -65,6 +65,12 @@
           "defaultChannel": "event-reminders"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "31acb497-fdfe-4d9b-8da4-0cfe11f23f59"
+      }
+    }
   }
 }
