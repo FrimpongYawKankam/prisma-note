@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 
+import { useBudget } from '../../context/FinanceContext';
 import { useTheme } from '../../context/ThemeContext';
 import { BorderRadius, Spacing, Typography } from '../../styles/tokens';
 import { BudgetSummary, FIXED_CATEGORIES } from '../../types/finance';
@@ -25,9 +26,15 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = ({
   onViewAnalytics,
 }) => {
   const { colors } = useTheme();
+  const { budget } = useBudget();
 
   const formatCurrency = (amount: number) => {
-    return `₵${amount.toLocaleString('en-US', {
+    // Use current budget currency symbol
+    const symbol = budget?.currency === 'GHS' ? '₵' :
+                   budget?.currency === 'USD' ? '$' :
+                   budget?.currency === 'EUR' ? '€' :
+                   budget?.currency === 'GBP' ? '£' : budget?.currency || '';
+    return `${symbol}${amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
