@@ -4,9 +4,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    StyleSheet,
-    Text,
-    View,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 import { useTheme } from '../../context/ThemeContext';
@@ -65,7 +65,9 @@ export const BudgetOverviewCard: React.FC<BudgetOverviewCardProps> = ({
 
   const getRemainingBudget = () => {
     if (!summary) return budget.totalBudget;
-    return Math.max(budget.totalBudget - summary.totalSpent, 0);
+    // If over budget, return the overspent amount; else return remaining budget
+    const diff = budget.totalBudget - summary.totalSpent;
+    return diff < 0 ? Math.abs(diff) : diff;
   };
 
   const isOverBudget = summary ? summary.totalSpent > budget.totalBudget : false;
