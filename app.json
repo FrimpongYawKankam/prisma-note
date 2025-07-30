@@ -24,9 +24,6 @@
         "resizeMode": "cover",
         "backgroundColor": "#000000",
         "tabletImage": "./assets/images/finallogo.png"
-      },
-      "notification": {
-        "icon": "./assets/images/logo.png"
       }
     },
     "android": {
@@ -38,7 +35,6 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE"
       ],
-      "usesCleartextTraffic": false,
       "splash": {
         "image": "./assets/images/finallogo.png",
         "resizeMode": "cover",
@@ -48,10 +44,6 @@
         "xhdpi": "./assets/images/finallogo.png",
         "xxhdpi": "./assets/images/finallogo.png",
         "xxxhdpi": "./assets/images/finallogo.png"
-      },
-      "notification": {
-        "icon": "./assets/images/logo.png",
-        "color": "#0ea5e9"
       }
     },
     "plugins": [
